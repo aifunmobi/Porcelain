@@ -1,0 +1,159 @@
+/* Camera App Styles - Porcelain OS */
+
+.camera {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #000;
+}
+
+.camera__viewfinder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.camera__loading,
+.camera__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-porcelain-400);
+  text-align: center;
+}
+
+.camera__error-hint {
+  font-size: var(--text-xs);
+  color: var(--color-porcelain-500);
+}
+
+.camera__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera__video--mirrored {
+  transform: scaleX(-1);
+}
+
+.camera__countdown {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 120px;
+  font-weight: var(--font-bold);
+  color: white;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: countdownPulse 0.5s ease-out;
+}
+
+@keyframes countdownPulse {
+  from {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.camera__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-4);
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.camera__control-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.camera__control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.camera__capture-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: white;
+  padding: 4px;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.camera__capture-btn:hover {
+  transform: scale(1.05);
+}
+
+.camera__capture-btn:active {
+  transform: scale(0.95);
+}
+
+.camera__capture-btn:disabled {
+  opacity: 0.5;
+}
+
+.camera__capture-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: white;
+  border: 3px solid #333;
+}
+
+.camera__gallery {
+  background: rgba(0, 0, 0, 0.9);
+  max-height: 120px;
+}
+
+.camera__gallery-header {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-porcelain-400);
+}
+
+.camera__gallery-grid {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-2);
+  overflow-x: auto;
+}
+
+.camera__thumbnail {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.camera__thumbnail:hover {
+  border-color: var(--color-accent);
+}
+
+.camera__thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

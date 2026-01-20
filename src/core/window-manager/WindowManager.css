@@ -1,0 +1,15 @@
+/* Window Manager Styles - Porcelain OS */
+
+.window-manager {
+  position: absolute;
+  top: 28px; /* Menu bar height */
+  left: 0;
+  right: 0;
+  bottom: 70px; /* Dock height */
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.window-manager > * {
+  pointer-events: auto;
+}

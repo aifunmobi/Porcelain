@@ -1,0 +1,45 @@
+/* Porcelain OS - Color Design Tokens */
+:root {
+  /* Primary Porcelain Colors */
+  --color-porcelain-50: #faf9f7;
+  --color-porcelain-100: #f5f3ef;
+  --color-porcelain-200: #ebe8e2;
+  --color-porcelain-300: #ddd9d0;
+  --color-porcelain-400: #c4bfb4;
+  --color-porcelain-500: #9e978a;
+  --color-porcelain-600: #7a7368;
+  --color-porcelain-700: #5c564d;
+  --color-porcelain-800: #3d3933;
+  --color-porcelain-900: #1e1c19;
+
+  /* Accent Colors */
+  --color-accent: #a8b5c4;
+  --color-accent-hover: #95a3b4;
+  --color-accent-active: #8291a3;
+
+  /* Semantic Colors */
+  --color-success: #9cb89c;
+  --color-warning: #d4c4a8;
+  --color-error: #c9a8a8;
+  --color-info: #a8b5c4;
+
+  /* Surface Colors */
+  --color-surface-primary: var(--color-porcelain-100);
+  --color-surface-secondary: var(--color-porcelain-50);
+  --color-surface-elevated: #ffffff;
+
+  /* Text Colors */
+  --color-text-primary: var(--color-porcelain-800);
+  --color-text-secondary: var(--color-porcelain-600);
+  --color-text-tertiary: var(--color-porcelain-500);
+  --color-text-disabled: var(--color-porcelain-400);
+
+  /* Border Colors */
+  --color-border-subtle: var(--color-porcelain-200);
+  --color-border-default: var(--color-porcelain-300);
+  --color-border-strong: var(--color-porcelain-400);
+
+  /* Icon Colors */
+  --color-icon-primary: var(--color-porcelain-600);
+  --color-icon-secondary: var(--color-porcelain-400);
+}
