@@ -250,3 +250,101 @@
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }
+
+/* Header with add button */
+.music-player__playlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.music-player__add-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-porcelain-100);
+  color: var(--color-text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.music-player__add-btn:hover {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Loading and empty states */
+.music-player__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  gap: var(--space-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.music-player__spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-porcelain-200);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: music-player-spin 0.8s linear infinite;
+}
+
+@keyframes music-player-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.music-player__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  gap: var(--space-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.music-player__browse-btn {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  background: var(--color-accent);
+  color: white;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.music-player__browse-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+.music-player__footer {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  color: white;
+  background: var(--color-success);
+  text-align: center;
+  font-weight: var(--font-medium);
+}
+
+/* Disabled button state */
+.music-player__control-btn:disabled,
+.music-player__play-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.music-player__slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

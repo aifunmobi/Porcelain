@@ -23,31 +23,6 @@ interface ForecastDay {
   condition: string;
 }
 
-// Simulated weather data (in a real app, this would come from an API)
-const getWeatherIcon = (condition: string): string => {
-  switch (condition.toLowerCase()) {
-    case 'sunny':
-    case 'clear':
-      return '☀️';
-    case 'partly cloudy':
-      return '⛅';
-    case 'cloudy':
-      return '☁️';
-    case 'rainy':
-    case 'rain':
-      return '🌧️';
-    case 'stormy':
-      return '⛈️';
-    case 'snowy':
-    case 'snow':
-      return '❄️';
-    case 'foggy':
-      return '🌫️';
-    default:
-      return '☀️';
-  }
-};
-
 const mockWeatherData: WeatherData = {
   location: 'San Francisco',
   temperature: 68,
@@ -72,7 +47,7 @@ const mockForecast: ForecastDay[] = [
 
 export const Weather: React.FC<AppProps> = () => {
   const [weather, setWeather] = useState<WeatherData>(mockWeatherData);
-  const [forecast, setForecast] = useState<ForecastDay[]>(mockForecast);
+  const [forecast] = useState<ForecastDay[]>(mockForecast);
   const [location, setLocation] = useState('San Francisco');
   const [isLoading, setIsLoading] = useState(false);
   const [unit, setUnit] = useState<'F' | 'C'>('F');

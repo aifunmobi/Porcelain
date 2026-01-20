@@ -16,15 +16,6 @@ export const Browser: React.FC<AppProps> = () => {
   const [historyIndex, setHistoryIndex] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const isValidUrl = (string: string): boolean => {
-    try {
-      new URL(string);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const formatUrl = (input: string): string => {
     const trimmed = input.trim();
 
