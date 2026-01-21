@@ -82,6 +82,7 @@ export const Window: React.FC<WindowProps> = ({ window: win, children }) => {
     return null;
   }
 
+
   return (
     <Rnd
       position={{ x: win.position.x, y: win.position.y }}
@@ -99,6 +100,8 @@ export const Window: React.FC<WindowProps> = ({ window: win, children }) => {
       dragHandleClassName="window-drag-handle"
       disableDragging={win.isMaximized}
       enableResizing={!win.isMaximized}
+      enableUserSelectHack={false}
+      cancel=".file-manager__grid-item,.file-manager__list-item"
     >
       <motion.div
         className="window__content"

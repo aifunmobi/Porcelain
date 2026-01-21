@@ -3,6 +3,7 @@ import { Desktop } from './core/desktop/Desktop';
 import { MenuBar } from './core/menubar/MenuBar';
 import { Dock } from './core/dock/Dock';
 import { WindowManager } from './core/window-manager/WindowManager';
+import { DragOverlay } from './components/DragOverlay';
 import { useFileSystemStore } from './stores/fileSystemStore';
 import { useSettingsStore } from './stores/settingsStore';
 import type { DesktopIcon } from './types';
@@ -45,10 +46,40 @@ const getFileIcon = (filename: string): string => {
 
 // Grid snapping for icon positions
 const GRID_SIZE = 90;
-const snapToGrid = (x: number, y: number) => ({
-  x: Math.round(x / GRID_SIZE) * GRID_SIZE + 20,
-  y: Math.round(y / GRID_SIZE) * GRID_SIZE + 20,
-});
+const MIN_X = 20;
+const MIN_Y = 20;
+const ICON_WIDTH = 80;
+const ICON_HEIGHT = 100;
+const DOCK_HEIGHT = 80;
+const MENUBAR_HEIGHT = 28;
+
+const snapToGrid = (x: number, y: number) => {
+  // Safety check for window dimensions
+  const winWidth = window.innerWidth || 1920;
+  const winHeight = window.innerHeight || 1080;
+
+  // Desktop area is window minus menubar at top and dock at bottom
+  const desktopHeight = winHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
+  const desktopWidth = winWidth;
+
+  // Calculate valid grid boundaries (ensure at least 0)
+  const maxGridX = Math.max(0, Math.floor((desktopWidth - ICON_WIDTH - MIN_X) / GRID_SIZE));
+  const maxGridY = Math.max(0, Math.floor((desktopHeight - ICON_HEIGHT - MIN_Y) / GRID_SIZE));
+
+  // Snap to nearest grid position
+  let gridX = Math.round((x - MIN_X) / GRID_SIZE);
+  let gridY = Math.round((y - MIN_Y) / GRID_SIZE);
+
+  // Clamp to valid grid range
+  gridX = Math.max(0, Math.min(maxGridX, gridX));
+  gridY = Math.max(0, Math.min(maxGridY, gridY));
+
+  // Convert back to pixel coordinates
+  return {
+    x: gridX * GRID_SIZE + MIN_X,
+    y: gridY * GRID_SIZE + MIN_Y
+  };
+};
 
 function App() {
   const initializeFileSystem = useFileSystemStore((state) => state.initializeFileSystem);
@@ -190,6 +221,44 @@ function App() {
     }
   }, [desktopIcons, addDesktopIcon, updateDesktopIcon]);
 
+  // Handle drop from the DragOverlay (pointer-based drag system)
+  const handleOverlayDrop = useCallback((
+    data: { name: string; path: string; isDirectory: boolean },
+    dropX: number,
+    dropY: number
+  ) => {
+    console.log('[App] overlay drop:', data, 'at', dropX, dropY);
+
+    const snapped = snapToGrid(dropX, dropY);
+
+    // Check if icon already exists for this path
+    const existingIcon = desktopIcons.find(i => i.filePath === data.path);
+    if (existingIcon) {
+      // Just move the existing icon
+      updateDesktopIcon(existingIcon.id, { position: snapped });
+      return;
+    }
+
+    // Generate thumbnail for images
+    let thumbnail: string | undefined;
+    if (isImageFile(data.name) && convertFileSrc && data.path) {
+      thumbnail = convertFileSrc(data.path);
+    }
+
+    const newIcon: DesktopIcon = {
+      id: `desktop-file-${Date.now()}`,
+      name: data.name,
+      icon: getFileIcon(data.name),
+      position: snapped,
+      filePath: data.path,
+      isFile: !data.isDirectory,
+      thumbnail,
+    };
+
+    console.log('[App] overlay drop - adding icon:', newIcon);
+    addDesktopIcon(newIcon);
+  }, [desktopIcons, addDesktopIcon, updateDesktopIcon]);
+
   return (
     <div
       className={`porcelain-os ${isDragOver ? 'porcelain-os--drag-over' : ''}`}
@@ -208,6 +277,7 @@ function App() {
       <Desktop />
       <WindowManager />
       <Dock />
+      <DragOverlay onDrop={handleOverlayDrop} />
     </div>
   );
 }

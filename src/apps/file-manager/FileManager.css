@@ -445,6 +445,9 @@
 .file-manager__grid-item[draggable="true"],
 .file-manager__list-item[draggable="true"] {
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: element;
 }
 
 .file-manager__grid-item[draggable="true"]:active,

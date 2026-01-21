@@ -53,20 +53,41 @@ const getFileIcon = (filename: string): string => {
 const GRID_SIZE = 90;
 const MIN_X = 20;
 const MIN_Y = 20;
+const ICON_WIDTH = 80;
+const ICON_HEIGHT = 100;
+const DOCK_HEIGHT = 80;
+const MENUBAR_HEIGHT = 28;
 
 const snapToGrid = (x: number, y: number) => {
-  // Snap to grid
-  let snappedX = Math.round(x / GRID_SIZE) * GRID_SIZE + MIN_X;
-  let snappedY = Math.round(y / GRID_SIZE) * GRID_SIZE + MIN_Y;
+  // Safety check for window dimensions
+  const winWidth = window.innerWidth || 1920;
+  const winHeight = window.innerHeight || 1080;
 
-  // Clamp to valid boundaries (keep icons visible)
-  const maxX = Math.max(MIN_X, window.innerWidth - 100);  // Leave room for icon width
-  const maxY = Math.max(MIN_Y, window.innerHeight - 150); // Leave room for icon height + taskbar
+  // Desktop area is window minus menubar at top and dock at bottom
+  const desktopHeight = winHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
+  const desktopWidth = winWidth;
 
-  snappedX = Math.max(MIN_X, Math.min(maxX, snappedX));
-  snappedY = Math.max(MIN_Y, Math.min(maxY, snappedY));
+  // Calculate valid grid boundaries (ensure at least 0)
+  const maxGridX = Math.max(0, Math.floor((desktopWidth - ICON_WIDTH - MIN_X) / GRID_SIZE));
+  const maxGridY = Math.max(0, Math.floor((desktopHeight - ICON_HEIGHT - MIN_Y) / GRID_SIZE));
 
-  return { x: snappedX, y: snappedY };
+  // Snap to nearest grid position
+  let gridX = Math.round((x - MIN_X) / GRID_SIZE);
+  let gridY = Math.round((y - MIN_Y) / GRID_SIZE);
+
+  // Clamp to valid grid range
+  gridX = Math.max(0, Math.min(maxGridX, gridX));
+  gridY = Math.max(0, Math.min(maxGridY, gridY));
+
+  // Convert back to pixel coordinates
+  const result = {
+    x: gridX * GRID_SIZE + MIN_X,
+    y: gridY * GRID_SIZE + MIN_Y
+  };
+
+  console.log('[snapToGrid] input:', { x, y }, 'output:', result, 'desktop:', { desktopWidth, desktopHeight }, 'maxGrid:', { maxGridX, maxGridY });
+
+  return result;
 };
 
 export const Desktop: React.FC = () => {
@@ -88,6 +109,7 @@ export const Desktop: React.FC = () => {
   const [newFolderName, setNewFolderName] = useState('untitled folder');
   const [newFolderPosition, setNewFolderPosition] = useState({ x: 20, y: 20 });
   const [clipboard, setClipboard] = useState<DesktopIcon | null>(null);
+  const [systemClipboardHasFile, setSystemClipboardHasFile] = useState(false);
 
   // Wait for Tauri to initialize
   useEffect(() => {
@@ -253,11 +275,22 @@ export const Desktop: React.FC = () => {
 
   const handleIconDoubleClick = useCallback(
     async (icon: DesktopIcon) => {
+      console.log('[Desktop] double-click icon:', icon);
+
       // If it's an app icon
       if (icon.appId) {
         const app = appRegistry[icon.appId];
         if (app) {
           openWindow(app);
+        }
+        return;
+      }
+
+      // If it's a folder (not a file), open File Manager
+      if (!icon.isFile) {
+        const fileManagerApp = appRegistry['file-manager'];
+        if (fileManagerApp) {
+          openWindow(fileManagerApp);
         }
         return;
       }
@@ -305,11 +338,27 @@ export const Desktop: React.FC = () => {
     setContextMenu(null);
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, iconId?: string) => {
+  const handleContextMenu = useCallback(async (e: React.MouseEvent, iconId?: string) => {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, iconId });
     if (iconId) setSelectedIcon(iconId);
+
+    // Check if system clipboard has a valid porcelain icon
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (clipboardText) {
+        const parsed = JSON.parse(clipboardText);
+        if (parsed.type === 'porcelain-desktop-icon' && parsed.icon) {
+          setSystemClipboardHasFile(true);
+          setClipboard(parsed.icon);
+          return;
+        }
+      }
+    } catch {
+      // Ignore clipboard read errors
+    }
+    setSystemClipboardHasFile(false);
   }, []);
 
   const handleRemoveIcon = useCallback(() => {
@@ -368,20 +417,56 @@ export const Desktop: React.FC = () => {
     setIsCreatingFolder(false);
   }, []);
 
-  // Copy selected icon to clipboard
-  const handleCopy = useCallback(() => {
+  // Copy selected icon to system clipboard
+  const handleCopy = useCallback(async () => {
+    console.log('[Desktop] handleCopy called, contextMenu:', contextMenu);
     if (contextMenu?.iconId) {
       const icon = desktopIcons.find(i => i.id === contextMenu.iconId);
+      console.log('[Desktop] found icon to copy:', icon);
       if (icon) {
+        // Store in local state
         setClipboard(icon);
+
+        // Also write to system clipboard as JSON
+        try {
+          const clipboardData = JSON.stringify({
+            type: 'porcelain-desktop-icon',
+            icon: icon,
+          });
+          await navigator.clipboard.writeText(clipboardData);
+          console.log('[Desktop] written to system clipboard:', clipboardData);
+        } catch (err) {
+          console.error('[Desktop] failed to write to system clipboard:', err);
+        }
       }
     }
     setContextMenu(null);
   }, [contextMenu, desktopIcons]);
 
-  // Paste icon from clipboard
-  const handlePaste = useCallback(() => {
-    if (!clipboard) return;
+  // Paste icon from clipboard (reads from system clipboard)
+  const handlePaste = useCallback(async () => {
+    let iconToPaste: DesktopIcon | null = clipboard;
+
+    // Try to read from system clipboard first
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      console.log('[Desktop] system clipboard text:', clipboardText);
+
+      if (clipboardText) {
+        const parsed = JSON.parse(clipboardText);
+        if (parsed.type === 'porcelain-desktop-icon' && parsed.icon) {
+          iconToPaste = parsed.icon as DesktopIcon;
+          console.log('[Desktop] parsed icon from system clipboard:', iconToPaste);
+        }
+      }
+    } catch (err) {
+      console.log('[Desktop] could not read system clipboard, using local:', err);
+    }
+
+    if (!iconToPaste) {
+      console.log('[Desktop] no icon to paste');
+      return;
+    }
 
     // Find a free position near the context menu location or default position
     const usedPositions = new Set(
@@ -403,9 +488,9 @@ export const Desktop: React.FC = () => {
 
     // Create a copy of the clipboard item
     const newIcon: DesktopIcon = {
-      ...clipboard,
-      id: `${clipboard.id}-copy-${Date.now()}`,
-      name: `${clipboard.name} copy`,
+      ...iconToPaste,
+      id: `${iconToPaste.id}-copy-${Date.now()}`,
+      name: iconToPaste.name.endsWith(' copy') ? iconToPaste.name : `${iconToPaste.name} copy`,
       position,
     };
 
@@ -580,18 +665,15 @@ export const Desktop: React.FC = () => {
             onContextMenu={(e) => handleContextMenu(e, icon.id)}
             drag
             dragMomentum={false}
-            dragConstraints={{
-              left: MIN_X - icon.position.x,
-              right: window.innerWidth - 100 - icon.position.x,
-              top: MIN_Y - icon.position.y,
-              bottom: window.innerHeight - 150 - icon.position.y,
-            }}
+            dragElastic={0}
+            dragSnapToOrigin
             onDragStart={() => setSelectedIcon(icon.id)}
             onDragEnd={(_, info) => {
-              const newPos = snapToGrid(
-                icon.position.x + info.offset.x,
-                icon.position.y + info.offset.y
-              );
+              // Use offset from original position
+              const newX = icon.position.x + info.offset.x;
+              const newY = icon.position.y + info.offset.y;
+              const newPos = snapToGrid(newX, newY);
+              console.log('[Desktop] onDragEnd - icon:', icon.name, 'newPos:', newPos);
               updateDesktopIcon(icon.id, { position: newPos });
             }}
             whileHover={{ scale: 1.05 }}
@@ -619,8 +701,7 @@ export const Desktop: React.FC = () => {
         <div
           className="desktop__icon desktop__icon--selected desktop__icon--creating"
           style={{
-            left: newFolderPosition.x,
-            top: newFolderPosition.y,
+            transform: `translate(${newFolderPosition.x}px, ${newFolderPosition.y}px)`,
           }}
         >
           <div className="desktop__icon-image">
@@ -699,14 +780,15 @@ export const Desktop: React.FC = () => {
                   New Folder
                 </div>
                 <div
-                  className={`desktop__context-item ${!clipboard ? 'desktop__context-item--disabled' : ''}`}
+                  className={`desktop__context-item ${(!clipboard && !systemClipboardHasFile) ? 'desktop__context-item--disabled' : ''}`}
                   onClick={() => {
-                    if (clipboard) {
+                    console.log('[Desktop] Paste clicked, clipboard:', clipboard, 'systemClipboardHasFile:', systemClipboardHasFile);
+                    if (clipboard || systemClipboardHasFile) {
                       handlePaste();
                     }
                   }}
                 >
-                  Paste {clipboard ? '' : '(empty)'}
+                  Paste{clipboard ? ` "${clipboard.name}"` : ''}
                 </div>
                 <div className="desktop__context-divider" />
                 <div

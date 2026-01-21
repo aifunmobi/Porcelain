@@ -1,0 +1,68 @@
+/* DragOverlay - Full screen overlay for drag operations */
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+/* Drop zone indicator in the center */
+.drag-overlay__drop-zone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-6, 24px) var(--space-8, 32px);
+  border: 2px dashed var(--color-accent, #007AFF);
+  border-radius: var(--radius-lg, 12px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  color: var(--color-accent, #007AFF);
+  font-size: var(--text-sm, 14px);
+  font-weight: 500;
+  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.15));
+  animation: dropZonePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dropZonePulse {
+  0%, 100% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+}
+
+/* Dragged item preview */
+.drag-overlay__preview {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--color-surface-elevated, #fff);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.15));
+  font-size: var(--text-sm, 14px);
+  color: var(--color-text-primary, #1d1d1f);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translate(-50%, -120%);
+  pointer-events: none;
+}
+
+.drag-overlay__preview span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

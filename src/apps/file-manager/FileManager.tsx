@@ -302,60 +302,79 @@ export const FileManager: React.FC<AppProps> = () => {
   };
 
   // Get drag store
-  const { startDrag, endDrag } = useDragStore();
+  const { startDrag, isDragging } = useDragStore();
+  const [pendingDrag, setPendingDrag] = useState<{
+    file: FileNode | RealFileEntry;
+    startX: number;
+    startY: number;
+  } | null>(null);
 
-  // Handle drag start for dragging files to desktop
-  const handleDragStart = useCallback((e: React.DragEvent, file: FileNode | RealFileEntry) => {
-    // CRITICAL: Stop propagation to prevent Rnd from interfering
+  // Threshold for starting drag (pixels)
+  const DRAG_THRESHOLD = 5;
+
+  // Use pointer events instead of native drag - bypasses React-Rnd interference
+  const handlePointerDown = useCallback((e: React.PointerEvent, file: FileNode | RealFileEntry) => {
+    // Only start drag on primary button (left click)
+    if (e.button !== 0) return;
+
+    // Don't start drag if clicking on rename input
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
     e.stopPropagation();
 
-    const isDir = isInTauri
-      ? (file as RealFileEntry).isDirectory
-      : (file as FileNode).type === 'folder';
+    // Store the pending drag info - we'll start the actual drag after movement threshold
+    setPendingDrag({
+      file,
+      startX: e.clientX,
+      startY: e.clientY,
+    });
 
-    // Create transfer data
-    const transferData = {
-      name: file.name,
-      path: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
-      isDirectory: isDir,
-      source: 'porcelain-file-manager',
+    console.log('[FileManager] pointerDown - pending drag for:', file.name);
+  }, []);
+
+  // Handle pointer move to detect drag threshold
+  useEffect(() => {
+    if (!pendingDrag) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!pendingDrag || isDragging) return;
+
+      const dx = Math.abs(e.clientX - pendingDrag.startX);
+      const dy = Math.abs(e.clientY - pendingDrag.startY);
+
+      // Start drag if moved beyond threshold
+      if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+        const file = pendingDrag.file;
+        const isDir = isInTauri
+          ? (file as RealFileEntry).isDirectory
+          : (file as FileNode).type === 'folder';
+
+        const transferData = {
+          name: file.name,
+          path: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
+          isDirectory: isDir,
+          source: 'porcelain-file-manager',
+        };
+
+        console.log('[FileManager] threshold exceeded - starting drag:', transferData);
+        startDrag(transferData, { x: e.clientX, y: e.clientY });
+        setPendingDrag(null);
+      }
     };
 
-    // Use shared drag store (works across components)
-    startDrag(transferData);
+    const handlePointerUp = () => {
+      // Clear pending drag on mouse up (click without drag)
+      setPendingDrag(null);
+    };
 
-    const jsonData = JSON.stringify(transferData);
-    console.log('[FileManager] dragStart - setting data:', jsonData);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
 
-    // Also set dataTransfer for native drag (backup)
-    try {
-      e.dataTransfer.setData('application/x-porcelain-file', jsonData);
-      e.dataTransfer.setData('text/plain', jsonData);
-      e.dataTransfer.effectAllowed = 'all';
-    } catch (err) {
-      console.error('[FileManager] dragStart - error setting data:', err);
-    }
-
-    // Create a drag image
-    const dragPreview = document.createElement('div');
-    dragPreview.className = 'file-manager__drag-preview';
-    dragPreview.textContent = file.name;
-    dragPreview.style.cssText = 'position:fixed;top:-1000px;left:-1000px;padding:8px 12px;background:var(--color-porcelain-100);border-radius:6px;font-size:12px;z-index:99999;';
-    document.body.appendChild(dragPreview);
-    e.dataTransfer.setDragImage(dragPreview, 0, 0);
-
-    // Clean up the preview element after drag starts
-    setTimeout(() => {
-      if (dragPreview.parentNode) {
-        document.body.removeChild(dragPreview);
-      }
-    }, 100);
-  }, [isInTauri, startDrag]);
-
-  // Handle drag end
-  const handleDragEnd = useCallback(() => {
-    endDrag();
-  }, [endDrag]);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [pendingDrag, isDragging, isInTauri, startDrag]);
 
   // Sidebar items
   const getSidebarItems = () => {
@@ -521,6 +540,41 @@ export const FileManager: React.FC<AppProps> = () => {
               <>
                 <button
                   className="file-manager__action-btn"
+                  onClick={async () => {
+                    const file = isInTauri
+                      ? realFiles.find(f => f.path === selectedFile)
+                      : files[selectedFile];
+                    if (file) {
+                      // Copy to system clipboard for paste on desktop
+                      const iconData = {
+                        type: 'porcelain-desktop-icon',
+                        icon: {
+                          id: `file-${Date.now()}`,
+                          name: file.name,
+                          icon: isInTauri
+                            ? ((file as RealFileEntry).isDirectory ? 'folder' : 'file')
+                            : ((file as FileNode).type === 'folder' ? 'folder' : 'file'),
+                          position: { x: 20, y: 20 },
+                          isFile: isInTauri
+                            ? !(file as RealFileEntry).isDirectory
+                            : (file as FileNode).type !== 'folder',
+                          filePath: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
+                        },
+                      };
+                      try {
+                        await navigator.clipboard.writeText(JSON.stringify(iconData));
+                        console.log('[FileManager] Copied to clipboard:', iconData);
+                      } catch (err) {
+                        console.error('[FileManager] Failed to copy:', err);
+                      }
+                    }
+                  }}
+                >
+                  <Icon name="copy" size={14} />
+                  Copy
+                </button>
+                <button
+                  className="file-manager__action-btn"
                   onClick={() => {
                     const file = isInTauri
                       ? realFiles.find(f => f.path === selectedFile)
@@ -567,13 +621,7 @@ export const FileManager: React.FC<AppProps> = () => {
                     className={`file-manager__grid-item ${selectedFile === fileId ? 'selected' : ''}`}
                     onClick={() => setSelectedFile(fileId)}
                     onDoubleClick={() => handleNavigate(file)}
-                    draggable="true"
-                    onDragStart={(e) => handleDragStart(e, file)}
-                    onDragEnd={handleDragEnd}
-                    onMouseDown={(e) => {
-                      // Prevent Rnd from capturing this for window dragging
-                      e.stopPropagation();
-                    }}
+                    onPointerDown={(e) => handlePointerDown(e, file)}
                   >
                     <div className="file-manager__grid-icon">
                       {hasThumbnail ? (
@@ -624,13 +672,7 @@ export const FileManager: React.FC<AppProps> = () => {
                     className={`file-manager__list-item ${selectedFile === fileId ? 'selected' : ''}`}
                     onClick={() => setSelectedFile(fileId)}
                     onDoubleClick={() => handleNavigate(file)}
-                    draggable="true"
-                    onDragStart={(e) => handleDragStart(e, file)}
-                    onDragEnd={handleDragEnd}
-                    onMouseDown={(e) => {
-                      // Prevent Rnd from capturing this for window dragging
-                      e.stopPropagation();
-                    }}
+                    onPointerDown={(e) => handlePointerDown(e, file)}
                   >
                     <span className="file-manager__list-col file-manager__list-col--name">
                       {hasListThumbnail ? (
