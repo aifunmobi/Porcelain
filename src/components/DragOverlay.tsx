@@ -35,12 +35,16 @@ export const DragOverlay: React.FC<DragOverlayProps> = ({ onDropToDesktop, onDro
     const isOverWindow = elemBelow.closest('.window') !== null;
     const isOverDock = elemBelow.closest('.dock') !== null;
     const isOverMenuBar = elemBelow.closest('.menu-bar') !== null;
+    const isOverDesktopFolder = elemBelow.closest('.desktop__icon:not(.desktop__icon--file)') !== null;
 
     // Determine drop target based on drag source and hover location
     if (dragData?.source === 'desktop' && isOverFileManager) {
       setDropTarget('file-manager');
     } else if (dragData?.source === 'file-manager' && !isOverWindow && !isOverDock && !isOverMenuBar) {
       setDropTarget('desktop');
+    } else if (isOverDesktopFolder && !isOverWindow) {
+      // Dropping on a desktop folder - let the folder handle it
+      setDropTarget(null);
     } else {
       setDropTarget(null);
     }
@@ -66,16 +70,24 @@ export const DragOverlay: React.FC<DragOverlayProps> = ({ onDropToDesktop, onDro
     const isOverWindow = elemBelow?.closest('.window') !== null;
     const isOverDock = elemBelow?.closest('.dock') !== null;
     const isOverMenuBar = elemBelow?.closest('.menu-bar') !== null;
+    const isOverDesktopFolder = elemBelow?.closest('.desktop__icon:not(.desktop__icon--file)') !== null;
 
     console.log('[DragOverlay] drop - source:', dragData.source);
     console.log('[DragOverlay] drop - elemBelow:', elemBelow?.tagName, elemBelow?.className);
     console.log('[DragOverlay] drop - closest .file-manager:', elemBelow?.closest('.file-manager'));
-    console.log('[DragOverlay] drop - isOverFileManager:', isOverFileManager, 'isOverWindow:', isOverWindow);
+    console.log('[DragOverlay] drop - isOverFileManager:', isOverFileManager, 'isOverWindow:', isOverWindow, 'isOverDesktopFolder:', isOverDesktopFolder);
+
+    // If dropping on a desktop folder, let the folder handle it (don't process here)
+    if (isOverDesktopFolder && !isOverWindow) {
+      console.log('[DragOverlay] dropping on desktop folder - letting folder handle it');
+      // Don't end drag here - the folder's pointerup will handle it
+      return;
+    }
 
     if (dragData.source === 'file-manager') {
       // Dragging FROM file manager
-      if (!isOverWindow && !isOverDock && !isOverMenuBar) {
-        // Drop on desktop - create icon
+      if (!isOverWindow && !isOverDock && !isOverMenuBar && !isOverDesktopFolder) {
+        // Drop on desktop (not on a folder) - create icon
         console.log('[DragOverlay] dropping to desktop:', dragData);
         onDropToDesktop(dragData, dropX, dropY);
       }

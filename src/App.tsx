@@ -4,8 +4,17 @@ import { MenuBar } from './core/menubar/MenuBar';
 import { Dock } from './core/dock/Dock';
 import { WindowManager } from './core/window-manager/WindowManager';
 import { DragOverlay } from './components/DragOverlay';
+import { ToastContainer } from './components/Notifications';
 import { useFileSystemStore } from './stores/fileSystemStore';
 import { useSettingsStore } from './stores/settingsStore';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import {
+  snapToGrid,
+  isImageFile,
+  getFileIcon,
+  GRID_SIZE,
+  createDropToFileManagerEvent,
+} from './utils/desktop';
 import type { DesktopIcon } from './types';
 import './styles/globals.css';
 
@@ -22,77 +31,34 @@ const initTauri = async () => {
   }
 };
 
-// Helper to check if file is an image
-const isImageFile = (filename: string): boolean => {
-  const ext = filename.toLowerCase().split('.').pop() || '';
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
-};
-
-// Helper to get file icon based on extension
-const getFileIcon = (filename: string): string => {
-  const ext = filename.toLowerCase().split('.').pop() || '';
-
-  if (isImageFile(filename)) return 'image';
-  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'].includes(ext)) return 'music';
-  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return 'video';
-  if (['pdf'].includes(ext)) return 'file-text';
-  if (['doc', 'docx', 'txt', 'rtf', 'md'].includes(ext)) return 'file-text';
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'file-spreadsheet';
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
-  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'rs'].includes(ext)) return 'code';
-
-  return 'file';
-};
-
-// Grid snapping for icon positions
-const GRID_SIZE = 90;
-const MIN_X = 20;
-const MIN_Y = 20;
-const ICON_WIDTH = 80;
-const ICON_HEIGHT = 100;
-const DOCK_HEIGHT = 80;
-const MENUBAR_HEIGHT = 28;
-
-const snapToGrid = (x: number, y: number) => {
-  // Safety check for window dimensions
-  const winWidth = window.innerWidth || 1920;
-  const winHeight = window.innerHeight || 1080;
-
-  // Desktop area is window minus menubar at top and dock at bottom
-  const desktopHeight = winHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
-  const desktopWidth = winWidth;
-
-  // Calculate valid grid boundaries (ensure at least 0)
-  const maxGridX = Math.max(0, Math.floor((desktopWidth - ICON_WIDTH - MIN_X) / GRID_SIZE));
-  const maxGridY = Math.max(0, Math.floor((desktopHeight - ICON_HEIGHT - MIN_Y) / GRID_SIZE));
-
-  // Snap to nearest grid position
-  let gridX = Math.round((x - MIN_X) / GRID_SIZE);
-  let gridY = Math.round((y - MIN_Y) / GRID_SIZE);
-
-  // Clamp to valid grid range
-  gridX = Math.max(0, Math.min(maxGridX, gridX));
-  gridY = Math.max(0, Math.min(maxGridY, gridY));
-
-  // Convert back to pixel coordinates
-  return {
-    x: gridX * GRID_SIZE + MIN_X,
-    y: gridY * GRID_SIZE + MIN_Y
-  };
-};
-
 function App() {
   const initializeFileSystem = useFileSystemStore((state) => state.initializeFileSystem);
   const brightness = useSettingsStore((state) => state.brightness);
+  const theme = useSettingsStore((state) => state.theme);
   const desktopIcons = useSettingsStore((state) => state.desktopIcons);
   const addDesktopIcon = useSettingsStore((state) => state.addDesktopIcon);
   const updateDesktopIcon = useSettingsStore((state) => state.updateDesktopIcon);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Enable keyboard shortcuts
+  useKeyboardShortcuts();
+
   useEffect(() => {
     initializeFileSystem();
     initTauri();
   }, [initializeFileSystem]);
+
+  // Apply theme class to root element
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark', 'theme-auto');
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else if (theme === 'auto') {
+      root.classList.add('theme-auto');
+    }
+    // 'light' is the default, no class needed
+  }, [theme]);
 
   // Global drag handlers to catch drops anywhere
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -263,12 +229,9 @@ function App() {
   const handleDropToFileManager = useCallback((
     data: { name: string; path: string; isDirectory: boolean; iconId?: string }
   ) => {
-    console.log('[App] drop to file manager:', data);
     // The actual file copy will be handled by the FileManager component
-    // This is dispatched via a custom event
-    window.dispatchEvent(new CustomEvent('porcelain-drop-to-filemanager', {
-      detail: data
-    }));
+    // This is dispatched via a type-safe custom event
+    window.dispatchEvent(createDropToFileManagerEvent(data));
   }, []);
 
   return (
@@ -290,6 +253,7 @@ function App() {
       <WindowManager />
       <Dock />
       <DragOverlay onDropToDesktop={handleOverlayDrop} onDropToFileManager={handleDropToFileManager} />
+      <ToastContainer />
     </div>
   );
 }

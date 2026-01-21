@@ -213,3 +213,14 @@
   background: white;
   outline: none;
 }
+
+/* Drop target state for folders */
+.desktop__icon--drop-target {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.desktop__icon--drop-target .desktop__icon-image {
+  box-shadow: 0 0 0 3px var(--color-accent), var(--shadow-md);
+  transform: scale(1.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}

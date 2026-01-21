@@ -5,6 +5,12 @@ import { useWindowStore } from '../../stores/windowStore';
 import { useDragStore } from '../../stores/dragStore';
 import { appRegistry } from '../../apps/registry';
 import { Icon } from '../../components/Icons';
+import {
+  snapToGrid,
+  isImageFile,
+  getFileIcon,
+  GRID_SIZE,
+} from '../../utils/desktop';
 import type { DesktopIcon } from '../../types';
 import './Desktop.css';
 
@@ -25,58 +31,6 @@ const initTauri = async () => {
 
 initTauri();
 
-// Helper to check if file is an image
-const isImageFile = (filename: string): boolean => {
-  const ext = filename.toLowerCase().split('.').pop() || '';
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
-};
-
-// Helper to get file icon based on extension
-const getFileIcon = (filename: string): string => {
-  const ext = filename.toLowerCase().split('.').pop() || '';
-
-  if (isImageFile(filename)) return 'image';
-  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'].includes(ext)) return 'music';
-  if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) return 'video';
-  if (['pdf'].includes(ext)) return 'file-text';
-  if (['doc', 'docx', 'txt', 'rtf', 'md'].includes(ext)) return 'file-text';
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'file-spreadsheet';
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
-  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'rs'].includes(ext)) return 'code';
-
-  return 'file';
-};
-
-// Grid snapping constants
-const GRID_SIZE = 90;
-const MIN_X = 20;
-const MIN_Y = 20;
-const ICON_WIDTH = 80;
-const ICON_HEIGHT = 100;
-const DOCK_HEIGHT = 80;
-const MENUBAR_HEIGHT = 28;
-
-const snapToGrid = (x: number, y: number) => {
-  const winWidth = window.innerWidth || 1920;
-  const winHeight = window.innerHeight || 1080;
-  const desktopHeight = winHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
-  const desktopWidth = winWidth;
-
-  const maxGridX = Math.max(0, Math.floor((desktopWidth - ICON_WIDTH - MIN_X) / GRID_SIZE));
-  const maxGridY = Math.max(0, Math.floor((desktopHeight - ICON_HEIGHT - MIN_Y) / GRID_SIZE));
-
-  let gridX = Math.round((x - MIN_X) / GRID_SIZE);
-  let gridY = Math.round((y - MIN_Y) / GRID_SIZE);
-
-  gridX = Math.max(0, Math.min(maxGridX, gridX));
-  gridY = Math.max(0, Math.min(maxGridY, gridY));
-
-  return {
-    x: gridX * GRID_SIZE + MIN_X,
-    y: gridY * GRID_SIZE + MIN_Y
-  };
-};
-
 export const Desktop: React.FC = () => {
   const {
     wallpaper,
@@ -87,7 +41,7 @@ export const Desktop: React.FC = () => {
     removeDesktopIcon
   } = useSettingsStore();
   const { openWindow } = useWindowStore();
-  const { isDragging, startDrag, dragData } = useDragStore();
+  const { isDragging, startDrag, dragData, endDrag } = useDragStore();
 
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; iconId?: string } | null>(null);
@@ -140,10 +94,17 @@ export const Desktop: React.FC = () => {
     addDesktopIcon(newIcon);
   }, [desktopIcons, addDesktopIcon, tauriReady]);
 
-  // Expose addIconFromData globally for DragOverlay
+  // Listen for add icon events from DragOverlay (type-safe alternative to global function)
   useEffect(() => {
-    (window as any).__desktopAddIcon = addIconFromData;
-    return () => { delete (window as any).__desktopAddIcon; };
+    const handleAddIcon = (e: CustomEvent<{ name: string; path: string; isDirectory: boolean; x: number; y: number }>) => {
+      const { name, path, isDirectory, x, y } = e.detail;
+      addIconFromData({ name, path, isDirectory }, x, y);
+    };
+
+    window.addEventListener('porcelain-add-desktop-icon', handleAddIcon as EventListener);
+    return () => {
+      window.removeEventListener('porcelain-add-desktop-icon', handleAddIcon as EventListener);
+    };
   }, [addIconFromData]);
 
   // Listen for icon reposition events from DragOverlay
@@ -287,19 +248,55 @@ export const Desktop: React.FC = () => {
   // Show visual indicator when dragging from file manager over desktop
   const showDropIndicator = isDragging && dragData?.source === 'file-manager';
 
-  // Handle starting cross-component drag immediately when drag starts
+  // Handle starting cross-component drag - now works for all icons
   const handleStartCrossComponentDrag = useCallback((icon: DesktopIcon, pos: { x: number; y: number }) => {
-    if (!icon.filePath) return;
-
-    console.log('[Desktop] Starting cross-component drag for file:', icon.name);
+    console.log('[Desktop] Starting cross-component drag for:', icon.name, 'hasPath:', !!icon.filePath);
     startDrag({
       name: icon.name,
-      path: icon.filePath,
+      path: icon.filePath || '', // Virtual folders have empty path
       isDirectory: !icon.isFile,
       source: 'desktop',
       iconId: icon.id,
     }, pos);
   }, [startDrag]);
+
+  // Handle dropping a file/folder onto a desktop folder
+  const handleDropToFolder = useCallback(async (targetFolder: DesktopIcon) => {
+    if (!dragData || targetFolder.isFile) return;
+
+    console.log('[Desktop] dropping', dragData.name, 'into folder:', targetFolder.name);
+
+    // Capture the data we need before ending the drag
+    const sourcePath = dragData.path;
+    const sourceIconId = dragData.iconId;
+    const sourceType = dragData.source;
+    const fileName = dragData.name;
+
+    // End the drag immediately
+    endDrag();
+
+    // If the target folder has a real path (Tauri), copy the file there
+    if (targetFolder.filePath && sourcePath && tauriReady && invoke) {
+      try {
+        const destPath = `${targetFolder.filePath}/${fileName}`;
+        console.log('[Desktop] copying from:', sourcePath, 'to:', destPath);
+
+        // Import copyFileToPath dynamically
+        const { copyFileToPath } = await import('../../services/tauriFs');
+        await copyFileToPath(sourcePath, destPath);
+        console.log('[Desktop] successfully copied file to folder');
+      } catch (err) {
+        console.error('[Desktop] Error copying file to folder:', err);
+      }
+    } else {
+      console.log('[Desktop] virtual folder drop - no real file operation');
+    }
+
+    // Remove the dragged icon from desktop if it was a desktop icon
+    if (sourceType === 'desktop' && sourceIconId) {
+      removeDesktopIcon(sourceIconId);
+    }
+  }, [dragData, tauriReady, removeDesktopIcon, endDrag]);
 
   return (
     <div
@@ -320,8 +317,8 @@ export const Desktop: React.FC = () => {
             onSelect={(e) => handleIconClick(icon.id, e)}
             onDoubleClick={() => handleIconDoubleClick(icon)}
             onContextMenu={(e) => handleContextMenu(e, icon.id)}
-            onPositionChange={(pos) => updateDesktopIcon(icon.id, { position: pos })}
             onStartCrossComponentDrag={handleStartCrossComponentDrag}
+            onDropToFolder={handleDropToFolder}
           />
         ))}
       </div>
@@ -422,8 +419,8 @@ interface DesktopIconComponentProps {
   onSelect: (e: React.MouseEvent) => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
-  onPositionChange: (pos: { x: number; y: number }) => void;
   onStartCrossComponentDrag: (icon: DesktopIcon, pos: { x: number; y: number }) => void;
+  onDropToFolder: (targetIcon: DesktopIcon) => void;
 }
 
 const DesktopIconComponent: React.FC<DesktopIconComponentProps> = ({
@@ -434,58 +431,114 @@ const DesktopIconComponent: React.FC<DesktopIconComponentProps> = ({
   onSelect,
   onDoubleClick,
   onContextMenu,
-  onPositionChange,
   onStartCrossComponentDrag,
+  onDropToFolder,
 }) => {
-  // For icons WITH file paths: use pointer-based drag (handled by DragOverlay)
-  // For icons WITHOUT file paths: use framer-motion drag (local desktop movement only)
-  const hasFilePath = !!icon.filePath;
+  const [pendingDrag, setPendingDrag] = useState<{ startX: number; startY: number } | null>(null);
+  const [isDropTarget, setIsDropTarget] = useState(false);
+
+  // Threshold for starting drag (pixels)
+  const DRAG_THRESHOLD = 5;
+
   const isThisIconBeingDragged = isDraggingGlobal && draggedIconId === icon.id;
 
-  // Handle pointer down for file-based icons
+  // This folder can accept drops if:
+  // - It's a folder (not a file)
+  // - Something is being dragged
+  // - It's not the icon being dragged itself
+  const canAcceptDrop = !icon.isFile && isDraggingGlobal && draggedIconId !== icon.id;
+
+  // Handle pointer down - start tracking potential drag
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (!hasFilePath) return;
     if (e.button !== 0) return; // Only left click
 
     // Don't start drag on double-click
     if (e.detail === 2) return;
 
-    e.preventDefault();
     e.stopPropagation();
 
-    // Start the cross-component drag immediately
-    onStartCrossComponentDrag(icon, { x: e.clientX, y: e.clientY });
-  }, [hasFilePath, icon, onStartCrossComponentDrag]);
+    // Store the pending drag info - we'll start the actual drag after movement threshold
+    setPendingDrag({
+      startX: e.clientX,
+      startY: e.clientY,
+    });
+  }, []);
+
+  // Handle pointer move to detect drag threshold
+  useEffect(() => {
+    if (!pendingDrag) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!pendingDrag || isDraggingGlobal) return;
+
+      const dx = Math.abs(e.clientX - pendingDrag.startX);
+      const dy = Math.abs(e.clientY - pendingDrag.startY);
+
+      // Start drag if moved beyond threshold
+      if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+        console.log('[DesktopIcon] threshold exceeded - starting drag for:', icon.name);
+        onStartCrossComponentDrag(icon, { x: e.clientX, y: e.clientY });
+        setPendingDrag(null);
+      }
+    };
+
+    const handlePointerUp = () => {
+      // Clear pending drag on mouse up (click without drag)
+      setPendingDrag(null);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [pendingDrag, isDraggingGlobal, icon, onStartCrossComponentDrag]);
+
+  // Handle pointer enter/leave for drop target highlighting
+  const handlePointerEnter = useCallback(() => {
+    if (canAcceptDrop) {
+      setIsDropTarget(true);
+    }
+  }, [canAcceptDrop]);
+
+  const handlePointerLeave = useCallback(() => {
+    setIsDropTarget(false);
+  }, []);
+
+  // Handle drop on this folder
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (canAcceptDrop && isDropTarget) {
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('[DesktopIcon] dropping on folder:', icon.name);
+      onDropToFolder(icon);
+      setIsDropTarget(false);
+    }
+  }, [canAcceptDrop, isDropTarget, icon, onDropToFolder]);
 
   return (
     <motion.div
-      className={`desktop__icon ${isSelected ? 'desktop__icon--selected' : ''} ${icon.isFile ? 'desktop__icon--file' : ''}`}
+      className={`desktop__icon ${isSelected ? 'desktop__icon--selected' : ''} ${icon.isFile ? 'desktop__icon--file' : ''} ${isDropTarget ? 'desktop__icon--drop-target' : ''}`}
       style={{
         left: icon.position.x,
         top: icon.position.y,
         // Hide this icon while it's being dragged (DragOverlay shows preview)
         opacity: isThisIconBeingDragged ? 0.3 : 1,
-        // CRITICAL: Disable pointer events while dragging so elementFromPoint can see through
+        // CRITICAL: Keep pointer events enabled so folders can receive drops
         pointerEvents: isThisIconBeingDragged ? 'none' : 'auto',
       }}
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
-      onPointerDown={hasFilePath ? handlePointerDown : undefined}
-      // Only use framer-motion drag for icons WITHOUT file paths
-      drag={!hasFilePath && !isDraggingGlobal}
-      dragMomentum={false}
-      dragElastic={0}
-      dragSnapToOrigin
-      onDragEnd={(_, info) => {
-        if (hasFilePath || isDraggingGlobal) return;
-
-        const newX = icon.position.x + info.offset.x;
-        const newY = icon.position.y + info.offset.y;
-        const newPos = snapToGrid(newX, newY);
-        onPositionChange(newPos);
-      }}
-      whileHover={{ scale: 1.05 }}
+      onPointerDown={handlePointerDown}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      onPointerUp={handlePointerUp}
+      // Disable framer-motion drag - we use pointer events for all icons now
+      drag={false}
+      whileHover={{ scale: isDropTarget ? 1.1 : 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
       <div className={`desktop__icon-image ${icon.thumbnail ? 'desktop__icon-image--thumbnail' : ''}`}>
