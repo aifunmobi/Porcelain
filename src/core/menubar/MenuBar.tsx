@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWindowStore } from '../../stores/windowStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useSpotlightStore } from '../../stores/spotlightStore';
 import { appRegistry } from '../../apps/registry';
 import { Icon } from '../../components/Icons';
 import { NotificationBell, NotificationCenter } from '../../components/Notifications';
@@ -31,6 +32,7 @@ export const MenuBar: React.FC = () => {
     openWindow
   } = useWindowStore();
   const { volume, showSeconds, use24Hour } = useSettingsStore();
+  const openSpotlight = useSpotlightStore((state) => state.open);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
@@ -396,6 +398,58 @@ export const MenuBar: React.FC = () => {
           { label: 'Weather Help', disabled: true },
         ],
       },
+      'text-editor': {
+        File: [
+          { label: 'New', shortcut: '⌥N', action: () => window.dispatchEvent(new CustomEvent('text-editor-command', { detail: 'new' })) },
+          { label: 'Open...', shortcut: '⌥O', action: () => window.dispatchEvent(new CustomEvent('text-editor-command', { detail: 'open' })) },
+          { label: 'divider', divider: true },
+          { label: 'Save', shortcut: '⌥S', action: () => window.dispatchEvent(new CustomEvent('text-editor-command', { detail: 'save' })) },
+          { label: 'Save As...', shortcut: '⌥⇧S', action: () => window.dispatchEvent(new CustomEvent('text-editor-command', { detail: 'saveAs' })) },
+          { label: 'divider', divider: true },
+          { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
+        ],
+        Edit: [
+          { label: 'Undo', shortcut: '⌘Z', disabled: true },
+          { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+          { label: 'divider', divider: true },
+          { label: 'Cut', shortcut: '⌘X', disabled: true },
+          { label: 'Copy', shortcut: '⌘C', disabled: true },
+          { label: 'Paste', shortcut: '⌘V', disabled: true },
+          { label: 'Select All', shortcut: '⌘A', disabled: true },
+          { label: 'divider', divider: true },
+          { label: 'Find...', shortcut: '⌘F', disabled: true },
+          { label: 'Find and Replace...', shortcut: '⌥⌘F', disabled: true },
+        ],
+        View: [
+          { label: 'Bigger', shortcut: '⌘+', disabled: true },
+          { label: 'Smaller', shortcut: '⌘-', disabled: true },
+          { label: 'divider', divider: true },
+          { label: 'Toggle Word Wrap', disabled: true },
+          { label: 'Toggle Line Numbers', disabled: true },
+        ],
+        Window: [
+          { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
+          { label: 'Zoom', action: zoomActiveWindow },
+        ],
+        Help: [
+          { label: 'Text Editor Help', disabled: true },
+        ],
+      },
+      'trash': {
+        File: [
+          { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
+        ],
+        Edit: [
+          { label: 'Select All', shortcut: '⌘A', disabled: true },
+        ],
+        Window: [
+          { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
+          { label: 'Zoom', action: zoomActiveWindow },
+        ],
+        Help: [
+          { label: 'Trash Help', disabled: true },
+        ],
+      },
     };
 
     return activeAppId && appMenus[activeAppId] ? appMenus[activeAppId] : defaultMenus;
@@ -629,6 +683,16 @@ export const MenuBar: React.FC = () => {
       </div>
 
       <div className="menubar__right">
+        <div
+          className="menubar__status-item"
+          onClick={(e) => {
+            e.stopPropagation();
+            openSpotlight();
+          }}
+          title="Search (⌘K)"
+        >
+          <Icon name="search" size={14} />
+        </div>
         <div className="menubar__status-item">
           <Icon name="bluetooth" size={14} />
         </div>

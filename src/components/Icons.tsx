@@ -782,6 +782,63 @@ export const AlertTriangleIcon: React.FC<IconProps> = ({ size = 24, className, c
   </svg>
 );
 
+export const FileTextIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path
+      d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"
+      fill={color}
+      fillOpacity="0.15"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M14 2V8H20" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M16 13H8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M16 17H8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M10 9H8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+export const CopyIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <rect x="9" y="9" width="13" height="13" rx="2" fill={color} fillOpacity="0.15" stroke={color} strokeWidth="1.5" />
+    <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke={color} strokeWidth="1.5" />
+  </svg>
+);
+
+export const SaveIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path
+      d="M19 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H16L21 8V19C21 20.1046 20.1046 21 19 21Z"
+      fill={color}
+      fillOpacity="0.15"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M17 21V13H7V21" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 3V8H15" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const AlignLeftIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M17 10H3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M21 6H3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M21 14H3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M17 18H3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+export const ArrowRightIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path d="M5 12H19" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 5L19 12L12 19" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 // Icon map for dynamic access
 export const iconMap: Record<string, React.FC<IconProps>> = {
   folder: FolderIcon,
@@ -842,6 +899,11 @@ export const iconMap: Record<string, React.FC<IconProps>> = {
   'check-circle': CheckCircleIcon,
   'alert-circle': AlertCircleIcon,
   'alert-triangle': AlertTriangleIcon,
+  'file-text': FileTextIcon,
+  copy: CopyIcon,
+  save: SaveIcon,
+  'align-left': AlignLeftIcon,
+  'arrow-right': ArrowRightIcon,
 };
 
 // Dynamic Icon component

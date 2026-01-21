@@ -12,23 +12,47 @@ export const Camera: React.FC<AppProps> = () => {
   const [captures, setCaptures] = useState<string[]>([]);
   const [, setStream] = useState<MediaStream | null>(null);
 
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
   useEffect(() => {
     let currentStream: MediaStream | null = null;
 
     const initCamera = async () => {
+      // Check if mediaDevices API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('Camera API not available');
+        setErrorMessage('Camera API not available. Make sure you\'re using HTTPS or localhost.');
+        setHasPermission(false);
+        return;
+      }
+
       try {
+        console.log('[Camera] Requesting camera access...');
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: 1280, height: 720 },
           audio: false,
         });
+        console.log('[Camera] Camera access granted, stream:', mediaStream);
         currentStream = mediaStream;
         setStream(mediaStream);
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
+          // Ensure video plays
+          videoRef.current.play().catch(e => console.error('[Camera] Video play error:', e));
         }
         setHasPermission(true);
       } catch (err) {
-        console.error('Camera access denied:', err);
+        console.error('[Camera] Camera access error:', err);
+        const error = err as Error;
+        if (error.name === 'NotAllowedError') {
+          setErrorMessage('Camera permission denied. Please allow camera access.');
+        } else if (error.name === 'NotFoundError') {
+          setErrorMessage('No camera found on this device.');
+        } else if (error.name === 'NotReadableError') {
+          setErrorMessage('Camera is in use by another application.');
+        } else {
+          setErrorMessage(`Camera error: ${error.message || 'Unknown error'}`);
+        }
         setHasPermission(false);
       }
     };
@@ -93,8 +117,8 @@ export const Camera: React.FC<AppProps> = () => {
         {hasPermission === false && (
           <div className="camera__error">
             <Icon name="camera" size={48} color="var(--color-error)" />
-            <p>Camera access denied</p>
-            <p className="camera__error-hint">Please allow camera access in your browser settings</p>
+            <p>Camera unavailable</p>
+            <p className="camera__error-hint">{errorMessage || 'Please allow camera access in your browser settings'}</p>
           </div>
         )}
         {hasPermission && (

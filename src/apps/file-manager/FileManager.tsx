@@ -50,10 +50,12 @@ export const FileManager: React.FC<AppProps> = () => {
   // Common state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [renamingFile, setRenamingFile] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; fileId: string | null } | null>(null);
 
   // Initialize
   useEffect(() => {
@@ -230,11 +232,23 @@ export const FileManager: React.FC<AppProps> = () => {
     }
   };
 
+  // Handle context menu
+  const handleContextMenu = useCallback((e: React.MouseEvent, file?: FileNode | RealFileEntry) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fileId = file ? (isInTauri ? (file as RealFileEntry).path : (file as FileNode).id) : null;
+    setContextMenu({ x: e.clientX, y: e.clientY, fileId });
+    if (fileId) {
+      setSelectedFile(fileId);
+    }
+  }, [isInTauri]);
+
   // Handle rename
   const handleStartRename = useCallback((file: FileNode | RealFileEntry) => {
     const id = isInTauri ? (file as RealFileEntry).path : (file as FileNode).id;
     setRenamingFile(id);
     setNewName(file.name);
+    setContextMenu(null);
   }, [isInTauri]);
 
   const handleFinishRename = useCallback(async () => {
@@ -301,6 +315,47 @@ export const FileManager: React.FC<AppProps> = () => {
   const getFileId = (file: FileNode | RealFileEntry): string => {
     return isInTauri ? (file as RealFileEntry).path : (file as FileNode).id;
   };
+
+  // Handle file selection with multi-select support
+  const handleSelectFile = useCallback((fileId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (e.metaKey || e.ctrlKey) {
+      // Toggle selection with Cmd/Ctrl click
+      setSelectedFiles(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(fileId)) {
+          newSet.delete(fileId);
+        } else {
+          newSet.add(fileId);
+        }
+        return newSet;
+      });
+      setSelectedFile(fileId);
+    } else if (e.shiftKey && selectedFile) {
+      // Range selection with Shift click
+      const fileIds = filteredChildren.map(f => getFileId(f));
+      const startIndex = fileIds.indexOf(selectedFile);
+      const endIndex = fileIds.indexOf(fileId);
+      if (startIndex !== -1 && endIndex !== -1) {
+        const start = Math.min(startIndex, endIndex);
+        const end = Math.max(startIndex, endIndex);
+        const range = fileIds.slice(start, end + 1);
+        setSelectedFiles(new Set(range));
+      }
+    } else {
+      // Single selection
+      setSelectedFile(fileId);
+      setSelectedFiles(new Set([fileId]));
+    }
+  }, [selectedFile, filteredChildren, getFileId]);
+
+  // Clear selection when clicking empty area
+  const handleClearSelection = useCallback(() => {
+    setSelectedFile(null);
+    setSelectedFiles(new Set());
+    setContextMenu(null);
+  }, []);
 
   // Get drag store
   const { startDrag, isDragging, dragData, endDrag } = useDragStore();
@@ -520,6 +575,8 @@ export const FileManager: React.FC<AppProps> = () => {
     <div
       className={`file-manager ${isDropTarget ? 'file-manager--drop-target' : ''}`}
       onPointerUp={handleFileManagerPointerUp}
+      onClick={handleClearSelection}
+      onContextMenu={(e) => handleContextMenu(e)}
     >
       <div className="file-manager__toolbar">
         <div className="file-manager__nav-buttons">
@@ -707,10 +764,11 @@ export const FileManager: React.FC<AppProps> = () => {
                 return (
                   <div
                     key={fileId}
-                    className={`file-manager__grid-item ${selectedFile === fileId ? 'selected' : ''}`}
-                    onClick={() => setSelectedFile(fileId)}
+                    className={`file-manager__grid-item ${selectedFiles.has(fileId) || selectedFile === fileId ? 'selected' : ''}`}
+                    onClick={(e) => handleSelectFile(fileId, e)}
                     onDoubleClick={() => handleNavigate(file)}
                     onPointerDown={(e) => handlePointerDown(e, file)}
+                    onContextMenu={(e) => handleContextMenu(e, file)}
                   >
                     <div className="file-manager__grid-icon">
                       {hasThumbnail ? (
@@ -758,10 +816,11 @@ export const FileManager: React.FC<AppProps> = () => {
                 return (
                   <div
                     key={fileId}
-                    className={`file-manager__list-item ${selectedFile === fileId ? 'selected' : ''}`}
-                    onClick={() => setSelectedFile(fileId)}
+                    className={`file-manager__list-item ${selectedFiles.has(fileId) || selectedFile === fileId ? 'selected' : ''}`}
+                    onClick={(e) => handleSelectFile(fileId, e)}
                     onDoubleClick={() => handleNavigate(file)}
                     onPointerDown={(e) => handlePointerDown(e, file)}
+                    onContextMenu={(e) => handleContextMenu(e, file)}
                   >
                     <span className="file-manager__list-col file-manager__list-col--name">
                       {hasListThumbnail ? (
@@ -806,8 +865,135 @@ export const FileManager: React.FC<AppProps> = () => {
       <div className="file-manager__statusbar">
         {isInTauri && <span className="file-manager__statusbar-tauri">📁 Real File System</span>}
         {filteredChildren.length} items
-        {selectedFile && ` • 1 selected`}
+        {selectedFiles.size > 0 && ` • ${selectedFiles.size} selected`}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="file-manager__context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.fileId ? (
+            <>
+              <button
+                className="file-manager__context-menu-item"
+                onClick={() => {
+                  const file = isInTauri
+                    ? realFiles.find(f => f.path === contextMenu.fileId)
+                    : files[contextMenu.fileId!];
+                  if (file) handleNavigate(file);
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="folder" size={14} />
+                Open
+              </button>
+              <button
+                className="file-manager__context-menu-item"
+                onClick={async () => {
+                  const file = isInTauri
+                    ? realFiles.find(f => f.path === contextMenu.fileId)
+                    : files[contextMenu.fileId!];
+                  if (file) {
+                    const iconData = {
+                      type: 'porcelain-desktop-icon',
+                      icon: {
+                        id: `file-${Date.now()}`,
+                        name: file.name,
+                        icon: isInTauri
+                          ? ((file as RealFileEntry).isDirectory ? 'folder' : 'file')
+                          : ((file as FileNode).type === 'folder' ? 'folder' : 'file'),
+                        position: { x: 20, y: 20 },
+                        isFile: isInTauri
+                          ? !(file as RealFileEntry).isDirectory
+                          : (file as FileNode).type !== 'folder',
+                        filePath: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
+                      },
+                    };
+                    await navigator.clipboard.writeText(JSON.stringify(iconData));
+                  }
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="copy" size={14} />
+                Copy
+              </button>
+              <button
+                className="file-manager__context-menu-item"
+                onClick={() => {
+                  const file = isInTauri
+                    ? realFiles.find(f => f.path === contextMenu.fileId)
+                    : files[contextMenu.fileId!];
+                  if (file) handleStartRename(file);
+                }}
+              >
+                Rename
+              </button>
+              <div className="file-manager__context-menu-divider" />
+              <button
+                className="file-manager__context-menu-item file-manager__context-menu-item--danger"
+                onClick={() => {
+                  setSelectedFile(contextMenu.fileId);
+                  handleDelete();
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="trash" size={14} />
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="file-manager__context-menu-item"
+                onClick={() => {
+                  handleNewFolder();
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="plus" size={14} />
+                New Folder
+              </button>
+              <button
+                className="file-manager__context-menu-item"
+                onClick={async () => {
+                  // Paste from clipboard
+                  try {
+                    const clipboardText = await navigator.clipboard.readText();
+                    const data = JSON.parse(clipboardText);
+                    if (data.type === 'porcelain-desktop-icon' && data.icon?.filePath) {
+                      if (isInTauri) {
+                        const destPath = `${realCurrentPath}/${data.icon.name}`;
+                        await copyFileToPath(data.icon.filePath, destPath);
+                        loadRealDirectory(realCurrentPath);
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Paste failed:', err);
+                  }
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="copy" size={14} />
+                Paste
+              </button>
+              <div className="file-manager__context-menu-divider" />
+              <button
+                className="file-manager__context-menu-item"
+                onClick={() => {
+                  loadRealDirectory(realCurrentPath);
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="refresh" size={14} />
+                Refresh
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -36,7 +36,7 @@ export const WindowManager: React.FC = () => {
 
           return (
             <Window key={win.id} window={win}>
-              <AppComponent windowId={win.id} />
+              <AppComponent windowId={win.id} {...win.props} />
             </Window>
           );
         })}

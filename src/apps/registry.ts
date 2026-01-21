@@ -12,6 +12,8 @@ import { Camera } from './camera/Camera';
 import { PhotoViewer } from './photo-viewer/PhotoViewer';
 import { Browser } from './browser/Browser';
 import { Weather } from './weather/Weather';
+import { Trash } from './trash/Trash';
+import { TextEditor } from './text-editor/TextEditor';
 
 export const appRegistry: Record<string, AppDefinition> = {
   'file-manager': {
@@ -123,6 +125,23 @@ export const appRegistry: Record<string, AppDefinition> = {
     defaultSize: { width: 400, height: 550 },
     minSize: { width: 350, height: 450 },
     singleInstance: true,
+  },
+  trash: {
+    id: 'trash',
+    name: 'Trash',
+    icon: 'trash',
+    component: Trash,
+    defaultSize: { width: 500, height: 400 },
+    minSize: { width: 350, height: 300 },
+    singleInstance: true,
+  },
+  'text-editor': {
+    id: 'text-editor',
+    name: 'Text Editor',
+    icon: 'file-text',
+    component: TextEditor,
+    defaultSize: { width: 700, height: 500 },
+    minSize: { width: 400, height: 300 },
   },
 };
 

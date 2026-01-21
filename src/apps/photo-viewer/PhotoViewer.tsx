@@ -25,10 +25,14 @@ interface ImageFile {
   path: string;
 }
 
-export const PhotoViewer: React.FC<AppProps> = () => {
+interface PhotoViewerProps extends AppProps {
+  initialImage?: ImageFile;
+}
+
+export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
   const [isInTauri, setIsInTauri] = useState(false);
-  const [images, setImages] = useState<ImageFile[]>(sampleImages);
-  const [selectedImage, setSelectedImage] = useState<ImageFile | null>(sampleImages[0]);
+  const [images, setImages] = useState<ImageFile[]>(initialImage ? [initialImage] : sampleImages);
+  const [selectedImage, setSelectedImage] = useState<ImageFile | null>(initialImage || sampleImages[0]);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(false);

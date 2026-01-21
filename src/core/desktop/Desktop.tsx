@@ -3,11 +3,16 @@ import { motion } from 'framer-motion';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useWindowStore } from '../../stores/windowStore';
 import { useDragStore } from '../../stores/dragStore';
+import { useTrashStore } from '../../stores/trashStore';
+import { useSpotlightStore } from '../../stores/spotlightStore';
 import { appRegistry } from '../../apps/registry';
 import { Icon } from '../../components/Icons';
+import { Spotlight } from '../../components/Spotlight';
 import {
   snapToGrid,
   isImageFile,
+  isAudioFile,
+  isVideoFile,
   getFileIcon,
   GRID_SIZE,
 } from '../../utils/desktop';
@@ -42,6 +47,8 @@ export const Desktop: React.FC = () => {
   } = useSettingsStore();
   const { openWindow } = useWindowStore();
   const { isDragging, startDrag, dragData, endDrag } = useDragStore();
+  const { moveToTrash } = useTrashStore();
+  const { isOpen: isSpotlightOpen, open: openSpotlight, close: closeSpotlight } = useSpotlightStore();
 
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; iconId?: string } | null>(null);
@@ -58,6 +65,18 @@ export const Desktop: React.FC = () => {
     };
     checkTauri();
   }, []);
+
+  // Spotlight keyboard shortcut (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openSpotlight();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [openSpotlight]);
 
   // Helper function to add icon from dropped file data
   const addIconFromData = useCallback((fileData: { name: string; path: string; isDirectory: boolean }, dropX: number, dropY: number) => {
@@ -154,13 +173,67 @@ export const Desktop: React.FC = () => {
         return;
       }
 
-      // If it's a file with a real path, open with system default app
-      if (icon.filePath && icon.isFile && tauriReady && invoke) {
+      // It's a file - determine which app to open based on file type
+      const fileName = icon.name;
+
+      // If it's a file with a real path in Tauri mode, open with system default app
+      if (icon.filePath && tauriReady && invoke) {
         try {
           await invoke('open_file_with_default_app', { path: icon.filePath });
         } catch (err) {
           console.error('Error opening file:', err);
         }
+        return;
+      }
+
+      // Browser mode - open with appropriate app based on file type
+      if (isImageFile(fileName)) {
+        const photoViewerApp = appRegistry['photo-viewer'];
+        if (photoViewerApp) {
+          // Pass the thumbnail data to the photo viewer
+          openWindow(photoViewerApp, {
+            initialImage: icon.thumbnail ? {
+              id: icon.id,
+              name: icon.name,
+              url: icon.thumbnail,
+              path: ''
+            } : undefined
+          });
+        }
+        return;
+      }
+
+      if (isAudioFile(fileName)) {
+        const musicPlayerApp = appRegistry['music-player'];
+        if (musicPlayerApp) {
+          openWindow(musicPlayerApp);
+        }
+        return;
+      }
+
+      if (isVideoFile(fileName)) {
+        const videoPlayerApp = appRegistry['video-player'];
+        if (videoPlayerApp) {
+          openWindow(videoPlayerApp);
+        }
+        return;
+      }
+
+      // For text files, open text editor
+      const textExtensions = ['txt', 'md', 'json', 'js', 'ts', 'css', 'html', 'xml', 'yaml', 'yml'];
+      const ext = fileName.toLowerCase().split('.').pop() || '';
+      if (textExtensions.includes(ext)) {
+        const textEditorApp = appRegistry['text-editor'];
+        if (textEditorApp) {
+          openWindow(textEditorApp);
+        }
+        return;
+      }
+
+      // Default: try to open with file manager
+      const fileManagerApp = appRegistry['file-manager'];
+      if (fileManagerApp) {
+        openWindow(fileManagerApp);
       }
     },
     [openWindow, tauriReady]
@@ -280,11 +353,16 @@ export const Desktop: React.FC = () => {
 
   const handleDeleteIcon = useCallback(() => {
     if (selectedIcon) {
-      removeDesktopIcon(selectedIcon);
+      const icon = desktopIcons.find(i => i.id === selectedIcon);
+      if (icon) {
+        // Move to trash instead of permanent delete
+        moveToTrash(icon);
+        removeDesktopIcon(selectedIcon);
+      }
       setSelectedIcon(null);
     }
     setContextMenu(null);
-  }, [selectedIcon, removeDesktopIcon]);
+  }, [selectedIcon, desktopIcons, moveToTrash, removeDesktopIcon]);
 
   // Show visual indicator when dragging from file manager over desktop
   const showDropIndicator = isDragging && dragData?.source === 'file-manager';
@@ -424,7 +502,8 @@ export const Desktop: React.FC = () => {
                 className="desktop__context-menu-item desktop__context-menu-item--danger"
                 onClick={handleDeleteIcon}
               >
-                Delete
+                <Icon name="trash" size={14} />
+                Move to Trash
               </button>
             </>
           ) : (
@@ -445,6 +524,9 @@ export const Desktop: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Spotlight Search */}
+      <Spotlight isOpen={isSpotlightOpen} onClose={closeSpotlight} />
     </div>
   );
 };

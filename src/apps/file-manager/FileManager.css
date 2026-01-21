@@ -486,3 +486,46 @@
   z-index: 100;
   pointer-events: none;
 }
+
+/* Context Menu */
+.file-manager__context-menu {
+  position: fixed;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  min-width: 160px;
+  padding: 4px 0;
+  z-index: 1000;
+}
+
+.file-manager__context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.file-manager__context-menu-item:hover {
+  background: #007AFF;
+  color: white;
+}
+
+.file-manager__context-menu-item--danger:hover {
+  background: var(--color-danger, #dc3545);
+}
+
+.file-manager__context-menu-divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: 4px 8px;
+}
