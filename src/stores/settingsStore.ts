@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserSettings, DesktopIcon } from '../types';
 
+export type ThemeMode = 'light' | 'dark' | 'auto';
+
 interface SettingsState extends UserSettings {
+  theme: ThemeMode;
   // Actions
   setWallpaper: (wallpaper: string, type?: 'image' | 'color' | 'gradient') => void;
   setVolume: (volume: number) => void;
@@ -19,10 +22,11 @@ interface SettingsState extends UserSettings {
   setDockAutoHide: (autoHide: boolean) => void;
   setShowSeconds: (show: boolean) => void;
   setUse24Hour: (use24: boolean) => void;
+  setTheme: (theme: ThemeMode) => void;
   resetSettings: () => void;
 }
 
-const defaultSettings: UserSettings = {
+const defaultSettings: UserSettings & { theme: ThemeMode } = {
   wallpaper: 'linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%)',
   wallpaperType: 'gradient',
   volume: 75,
@@ -53,6 +57,7 @@ const defaultSettings: UserSettings = {
   dockAutoHide: false,
   showSeconds: false,
   use24Hour: false,
+  theme: 'light',
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -118,6 +123,9 @@ export const useSettingsStore = create<SettingsState>()(
 
       setUse24Hour: (use24Hour) =>
         set({ use24Hour }),
+
+      setTheme: (theme) =>
+        set({ theme }),
 
       resetSettings: () =>
         set(defaultSettings),

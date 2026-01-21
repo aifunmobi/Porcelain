@@ -223,9 +223,50 @@ export const Desktop: React.FC = () => {
     setContextMenu(null);
   }, [selectedIcon, desktopIcons]);
 
-  const handlePasteIcon = useCallback((x: number, y: number) => {
+  const handlePasteIcon = useCallback(async (x: number, y: number) => {
+    const snapped = snapToGrid(x - 40, y - 50);
+
+    // First try to read from system clipboard (for cross-app paste)
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (clipboardText) {
+        const data = JSON.parse(clipboardText);
+        if (data.type === 'porcelain-desktop-icon' && data.icon) {
+          // Check if icon already exists for this path
+          const existingIcon = desktopIcons.find(i => i.filePath === data.icon.filePath);
+          if (!existingIcon) {
+            let thumbnail: string | undefined;
+            if (tauriReady && convertFileSrc && data.icon.filePath && isImageFile(data.icon.name)) {
+              try {
+                thumbnail = convertFileSrc(data.icon.filePath);
+              } catch (err) {
+                console.error('Error creating thumbnail:', err);
+              }
+            }
+
+            const newIcon: DesktopIcon = {
+              id: `pasted-${Date.now()}`,
+              name: data.icon.name,
+              icon: data.icon.icon || getFileIcon(data.icon.name),
+              position: snapped,
+              isFile: data.icon.isFile,
+              filePath: data.icon.filePath,
+              thumbnail,
+            };
+            console.log('[Desktop] Pasting from system clipboard:', newIcon);
+            addDesktopIcon(newIcon);
+            setContextMenu(null);
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      // Clipboard read failed or not valid JSON, fall through to local clipboard
+      console.log('[Desktop] System clipboard not available or invalid, using local clipboard');
+    }
+
+    // Fall back to local clipboard
     if (clipboard) {
-      const snapped = snapToGrid(x - 40, y - 50);
       const newIcon: DesktopIcon = {
         ...clipboard,
         id: `${clipboard.id}-copy-${Date.now()}`,
@@ -235,7 +276,7 @@ export const Desktop: React.FC = () => {
       addDesktopIcon(newIcon);
     }
     setContextMenu(null);
-  }, [clipboard, addDesktopIcon]);
+  }, [clipboard, addDesktopIcon, desktopIcons, tauriReady]);
 
   const handleDeleteIcon = useCallback(() => {
     if (selectedIcon) {
@@ -394,14 +435,12 @@ export const Desktop: React.FC = () => {
               >
                 New Folder
               </button>
-              {clipboard && (
-                <button
-                  className="desktop__context-menu-item"
-                  onClick={() => handlePasteIcon(contextMenu.x, contextMenu.y)}
-                >
-                  Paste
-                </button>
-              )}
+              <button
+                className="desktop__context-menu-item"
+                onClick={() => handlePasteIcon(contextMenu.x, contextMenu.y)}
+              >
+                Paste
+              </button>
             </>
           )}
         </div>

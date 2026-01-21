@@ -730,6 +730,58 @@ export const XIcon: React.FC<IconProps> = ({ size = 24, className, color = 'curr
   </svg>
 );
 
+export const BellIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path
+      d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+      fill={color}
+      fillOpacity="0.15"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+export const CheckCircleIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="10" fill={color} fillOpacity="0.1" stroke={color} strokeWidth="1.5" />
+    <path d="M9 12L11 14L15 10" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const AlertCircleIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="10" fill={color} fillOpacity="0.1" stroke={color} strokeWidth="1.5" />
+    <path d="M12 8V12" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="16" r="1" fill={color} />
+  </svg>
+);
+
+export const AlertTriangleIcon: React.FC<IconProps> = ({ size = 24, className, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <path
+      d="M10.29 3.86L1.82 18C1.64 18.3 1.55 18.64 1.55 19C1.55 19.36 1.64 19.7 1.82 20C2 20.3 2.26 20.56 2.56 20.74C2.86 20.92 3.2 21.01 3.55 21H20.45C20.8 21.01 21.14 20.92 21.44 20.74C21.74 20.56 22 20.3 22.18 20C22.36 19.7 22.45 19.36 22.45 19C22.45 18.64 22.36 18.3 22.18 18L13.71 3.86C13.53 3.56 13.27 3.32 12.97 3.14C12.67 2.96 12.33 2.87 11.99 2.87C11.65 2.87 11.31 2.96 11.01 3.14C10.71 3.32 10.46 3.56 10.29 3.86Z"
+      fill={color}
+      fillOpacity="0.15"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M12 9V13" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="17" r="1" fill={color} />
+  </svg>
+);
+
 // Icon map for dynamic access
 export const iconMap: Record<string, React.FC<IconProps>> = {
   folder: FolderIcon,
@@ -786,6 +838,10 @@ export const iconMap: Record<string, React.FC<IconProps>> = {
   weather: WeatherIcon,
   info: InfoIcon,
   x: XIcon,
+  bell: BellIcon,
+  'check-circle': CheckCircleIcon,
+  'alert-circle': AlertCircleIcon,
+  'alert-triangle': AlertTriangleIcon,
 };
 
 // Dynamic Icon component

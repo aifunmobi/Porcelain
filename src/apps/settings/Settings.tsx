@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { Icon } from '../../components/Icons';
+import { FULL_VERSION } from '../../version';
 import type { AppProps } from '../../types';
 import './Settings.css';
 
@@ -35,12 +36,14 @@ export const Settings: React.FC<AppProps> = () => {
     accentColor,
     showSeconds,
     use24Hour,
+    theme,
     setWallpaper,
     setVolume,
     setBrightness,
     setAccentColor,
     setShowSeconds,
     setUse24Hour,
+    setTheme,
     resetSettings,
   } = useSettingsStore();
 
@@ -115,6 +118,32 @@ export const Settings: React.FC<AppProps> = () => {
         {activePanel === 'display' && (
           <div className="settings__panel">
             <h2 className="settings__panel-title">Display</h2>
+            <div className="settings__section">
+              <h3 className="settings__section-title">Appearance</h3>
+              <div className="settings__theme-selector">
+                <button
+                  className={`settings__theme-option ${theme === 'light' ? 'settings__theme-option--active' : ''}`}
+                  onClick={() => setTheme('light')}
+                >
+                  <div className="settings__theme-preview settings__theme-preview--light" />
+                  <span>Light</span>
+                </button>
+                <button
+                  className={`settings__theme-option ${theme === 'dark' ? 'settings__theme-option--active' : ''}`}
+                  onClick={() => setTheme('dark')}
+                >
+                  <div className="settings__theme-preview settings__theme-preview--dark" />
+                  <span>Dark</span>
+                </button>
+                <button
+                  className={`settings__theme-option ${theme === 'auto' ? 'settings__theme-option--active' : ''}`}
+                  onClick={() => setTheme('auto')}
+                >
+                  <div className="settings__theme-preview settings__theme-preview--auto" />
+                  <span>Auto</span>
+                </button>
+              </div>
+            </div>
             <div className="settings__section">
               <div className="settings__row">
                 <label className="settings__label">Brightness</label>
@@ -191,7 +220,7 @@ export const Settings: React.FC<AppProps> = () => {
             <div className="settings__section">
               <div className="settings__about-logo">🏺</div>
               <h3 className="settings__about-name">Porcelain OS</h3>
-              <p className="settings__about-version">Version 1.0.0</p>
+              <p className="settings__about-version">Version {FULL_VERSION}</p>
               <p className="settings__about-description">
                 A beautiful, minimal desktop environment with a soft porcelain aesthetic.
               </p>

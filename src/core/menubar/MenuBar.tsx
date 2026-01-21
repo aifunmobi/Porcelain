@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWindowStore } from '../../stores/windowStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { appRegistry } from '../../apps/registry';
 import { Icon } from '../../components/Icons';
+import { NotificationBell, NotificationCenter } from '../../components/Notifications';
+import { FULL_VERSION, BUILD_TIMESTAMP } from '../../version';
 import './MenuBar.css';
 
 interface MenuItem {
@@ -30,6 +33,8 @@ export const MenuBar: React.FC = () => {
   const { volume, showSeconds, use24Hour } = useSettingsStore();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const activeWindow = activeWindowId ? windows.get(activeWindowId) : null;
   const activeApp = activeWindow ? appRegistry[activeWindow.appId] : null;
@@ -470,6 +475,7 @@ export const MenuBar: React.FC = () => {
   const menuNames = Object.keys(currentMenus);
 
   return (
+    <>
     <motion.div
       className="menubar"
       initial={{ y: -28 }}
@@ -497,7 +503,10 @@ export const MenuBar: React.FC = () => {
               transition={{ duration: 0.1 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="menubar__dropdown-item">
+              <div
+                className="menubar__dropdown-item"
+                onClick={() => { setShowAbout(true); setActiveMenu(null); }}
+              >
                 <span><strong>About Porcelain OS</strong></span>
               </div>
               <div className="menubar__dropdown-divider" />
@@ -540,7 +549,10 @@ export const MenuBar: React.FC = () => {
               transition={{ duration: 0.1 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="menubar__dropdown-item">
+              <div
+                className="menubar__dropdown-item"
+                onClick={() => { setShowAbout(true); setActiveMenu(null); }}
+              >
                 <span><strong>About {activeApp?.name || 'Porcelain OS'}</strong></span>
               </div>
               <div className="menubar__dropdown-divider" />
@@ -629,12 +641,60 @@ export const MenuBar: React.FC = () => {
         <div className="menubar__status-item">
           <Icon name="battery" size={18} />
         </div>
+        <NotificationBell
+          onClick={() => setNotificationCenterOpen(!notificationCenterOpen)}
+          isActive={notificationCenterOpen}
+        />
+        <NotificationCenter
+          isOpen={notificationCenterOpen}
+          onClose={() => setNotificationCenterOpen(false)}
+        />
         <div className="menubar__datetime">
           <span className="menubar__date">{formatDate(currentTime)}</span>
           <span className="menubar__time">{formatTime(currentTime)}</span>
         </div>
       </div>
     </motion.div>
+
+    {/* About Modal - rendered via portal to avoid transform issues */}
+    {ReactDOM.createPortal(
+      <AnimatePresence>
+        {showAbout && (
+          <>
+            <motion.div
+              className="about-modal__overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAbout(false)}
+            />
+            <motion.div
+              className="about-modal"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="about-modal__icon">
+                <Icon name="computer" size={80} />
+              </div>
+              <h1 className="about-modal__title">Porcelain OS</h1>
+              <p className="about-modal__version">Version {FULL_VERSION}</p>
+              <p className="about-modal__build">Built on {BUILD_TIMESTAMP}</p>
+              <p className="about-modal__copyright">© 2026 Porcelain OS Project</p>
+              <button
+                className="about-modal__button"
+                onClick={() => setShowAbout(false)}
+              >
+                OK
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+  </>
   );
 };
 

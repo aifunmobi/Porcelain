@@ -26,12 +26,19 @@
     {
       "identifier": "fs:scope",
       "allow": [
+        "$HOME",
         "$HOME/**",
+        "$DOCUMENT",
         "$DOCUMENT/**",
+        "$DOWNLOAD",
         "$DOWNLOAD/**",
+        "$PICTURE",
         "$PICTURE/**",
+        "$VIDEO",
         "$VIDEO/**",
+        "$AUDIO",
         "$AUDIO/**",
+        "$DESKTOP",
         "$DESKTOP/**"
       ]
     }

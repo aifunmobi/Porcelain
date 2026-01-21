@@ -35,6 +35,10 @@
   color: #c9a8a8;
 }
 
+.terminal__line--success {
+  color: #7fb87f;
+}
+
 .terminal__input-line {
   display: flex;
   align-items: center;

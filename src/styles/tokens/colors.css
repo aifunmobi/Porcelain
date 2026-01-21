@@ -19,9 +19,13 @@
 
   /* Semantic Colors */
   --color-success: #9cb89c;
+  --color-success-light: rgba(156, 184, 156, 0.15);
   --color-warning: #d4c4a8;
+  --color-warning-light: rgba(212, 196, 168, 0.15);
   --color-error: #c9a8a8;
+  --color-error-light: rgba(201, 168, 168, 0.15);
   --color-info: #a8b5c4;
+  --color-info-light: rgba(168, 181, 196, 0.15);
 
   /* Surface Colors */
   --color-surface-primary: var(--color-porcelain-100);
@@ -42,4 +46,106 @@
   /* Icon Colors */
   --color-icon-primary: var(--color-porcelain-600);
   --color-icon-secondary: var(--color-porcelain-400);
+}
+
+/* Dark Mode Theme */
+.dark {
+  /* Primary Porcelain Colors (inverted scale) */
+  --color-porcelain-50: #1a1917;
+  --color-porcelain-100: #242320;
+  --color-porcelain-200: #2e2d29;
+  --color-porcelain-300: #3d3b35;
+  --color-porcelain-400: #504d46;
+  --color-porcelain-500: #6b665c;
+  --color-porcelain-600: #8a8478;
+  --color-porcelain-700: #a8a294;
+  --color-porcelain-800: #c9c4b6;
+  --color-porcelain-900: #e8e4da;
+
+  /* Accent Colors (slightly brighter for dark mode) */
+  --color-accent: #8fa8c4;
+  --color-accent-hover: #a0b7d0;
+  --color-accent-active: #7295b8;
+
+  /* Semantic Colors (adjusted for dark backgrounds) */
+  --color-success: #7fb87f;
+  --color-success-light: rgba(127, 184, 127, 0.2);
+  --color-warning: #d4b878;
+  --color-warning-light: rgba(212, 184, 120, 0.2);
+  --color-error: #d49090;
+  --color-error-light: rgba(212, 144, 144, 0.2);
+  --color-info: #8fa8c4;
+  --color-info-light: rgba(143, 168, 196, 0.2);
+
+  /* Surface Colors */
+  --color-surface-primary: var(--color-porcelain-100);
+  --color-surface-secondary: var(--color-porcelain-50);
+  --color-surface-elevated: #2a2924;
+
+  /* Text Colors */
+  --color-text-primary: var(--color-porcelain-900);
+  --color-text-secondary: var(--color-porcelain-700);
+  --color-text-tertiary: var(--color-porcelain-600);
+  --color-text-disabled: var(--color-porcelain-500);
+
+  /* Border Colors */
+  --color-border-subtle: var(--color-porcelain-200);
+  --color-border-default: var(--color-porcelain-300);
+  --color-border-strong: var(--color-porcelain-400);
+
+  /* Icon Colors */
+  --color-icon-primary: var(--color-porcelain-700);
+  --color-icon-secondary: var(--color-porcelain-600);
+}
+
+/* Respect user's system preference */
+@media (prefers-color-scheme: dark) {
+  .theme-auto {
+    /* Primary Porcelain Colors (inverted scale) */
+    --color-porcelain-50: #1a1917;
+    --color-porcelain-100: #242320;
+    --color-porcelain-200: #2e2d29;
+    --color-porcelain-300: #3d3b35;
+    --color-porcelain-400: #504d46;
+    --color-porcelain-500: #6b665c;
+    --color-porcelain-600: #8a8478;
+    --color-porcelain-700: #a8a294;
+    --color-porcelain-800: #c9c4b6;
+    --color-porcelain-900: #e8e4da;
+
+    /* Accent Colors */
+    --color-accent: #8fa8c4;
+    --color-accent-hover: #a0b7d0;
+    --color-accent-active: #7295b8;
+
+    /* Semantic Colors */
+    --color-success: #7fb87f;
+    --color-success-light: rgba(127, 184, 127, 0.2);
+    --color-warning: #d4b878;
+    --color-warning-light: rgba(212, 184, 120, 0.2);
+    --color-error: #d49090;
+    --color-error-light: rgba(212, 144, 144, 0.2);
+    --color-info: #8fa8c4;
+    --color-info-light: rgba(143, 168, 196, 0.2);
+
+    /* Surface Colors */
+    --color-surface-primary: var(--color-porcelain-100);
+    --color-surface-secondary: var(--color-porcelain-50);
+    --color-surface-elevated: #2a2924;
+
+    /* Text Colors */
+    --color-text-primary: var(--color-porcelain-900);
+    --color-text-secondary: var(--color-porcelain-700);
+    --color-text-tertiary: var(--color-porcelain-600);
+    --color-text-disabled: var(--color-porcelain-500);
+
+    /* Border Colors */
+    --color-border-subtle: var(--color-porcelain-200);
+    --color-border-default: var(--color-porcelain-300);
+    --color-border-strong: var(--color-porcelain-400);
+
+    /* Icon Colors */
+    --color-icon-primary: var(--color-porcelain-700);
+    --color-icon-secondary: var(--color-porcelain-600);
+  }
 }

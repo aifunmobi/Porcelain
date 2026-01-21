@@ -33,6 +33,7 @@ export const PhotoViewer: React.FC<AppProps> = () => {
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [currentFolder, setCurrentFolder] = useState<string>('');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; image: ImageFile } | null>(null);
 
   // Load images from a folder
   const loadImagesFromFolder = useCallback(async (folderPath: string) => {
@@ -184,6 +185,52 @@ export const PhotoViewer: React.FC<AppProps> = () => {
     return parts[parts.length - 1] || parts[parts.length - 2] || 'Library';
   };
 
+  // Handle context menu
+  const handleContextMenu = useCallback((e: React.MouseEvent, image: ImageFile) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, image });
+  }, []);
+
+  // Handle copy to clipboard
+  const handleCopy = useCallback(async (image: ImageFile) => {
+    if (!image.path) {
+      console.log('[PhotoViewer] Cannot copy - no file path');
+      setContextMenu(null);
+      return;
+    }
+
+    const iconData = {
+      type: 'porcelain-desktop-icon',
+      icon: {
+        id: `photo-${Date.now()}`,
+        name: image.name,
+        icon: 'image',
+        position: { x: 20, y: 20 },
+        isFile: true,
+        filePath: image.path,
+      },
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(iconData));
+      console.log('[PhotoViewer] Copied to clipboard:', iconData);
+    } catch (err) {
+      console.error('[PhotoViewer] Failed to copy:', err);
+    }
+
+    setContextMenu(null);
+  }, []);
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
+
   return (
     <div className="photo-viewer">
       <div className="photo-viewer__sidebar">
@@ -225,6 +272,7 @@ export const PhotoViewer: React.FC<AppProps> = () => {
                     : ''
                 }`}
                 onClick={() => handleSelectImage(img)}
+                onContextMenu={(e) => handleContextMenu(e, img)}
                 title={img.name}
               >
                 {img.url ? (
@@ -273,6 +321,7 @@ export const PhotoViewer: React.FC<AppProps> = () => {
                   style={{
                     transform: `scale(${zoom}) rotate(${rotation}deg)`,
                   }}
+                  onContextMenu={(e) => handleContextMenu(e, selectedImage)}
                 />
               ) : (
                 <div className="photo-viewer__loading-main">
@@ -354,6 +403,24 @@ export const PhotoViewer: React.FC<AppProps> = () => {
           </div>
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="photo-viewer__context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="photo-viewer__context-menu-item"
+            onClick={() => handleCopy(contextMenu.image)}
+            disabled={!contextMenu.image.path}
+          >
+            <Icon name="copy" size={14} />
+            Copy
+          </button>
+        </div>
+      )}
     </div>
   );
 };

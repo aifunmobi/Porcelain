@@ -191,6 +191,101 @@
   text-align: center;
 }
 
+/* Theme Selector */
+.settings__theme-selector {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.settings__theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+  background: transparent;
+}
+
+.settings__theme-option:hover {
+  background: var(--color-porcelain-100);
+}
+
+.settings__theme-option--active {
+  border-color: var(--color-accent);
+  background: var(--color-porcelain-50);
+}
+
+.settings__theme-preview {
+  width: 80px;
+  height: 50px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.settings__theme-preview--light {
+  background: linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%);
+}
+
+.settings__theme-preview--light::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 2px;
+}
+
+.settings__theme-preview--dark {
+  background: linear-gradient(135deg, #1a1917 0%, #242320 50%, #2e2d29 100%);
+}
+
+.settings__theme-preview--dark::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: 6px;
+  background: rgba(50, 48, 44, 0.9);
+  border-radius: 2px;
+}
+
+.settings__theme-preview--auto {
+  background: linear-gradient(135deg,
+    #f5f3ef 0%, #ebe8e2 25%,
+    #242320 75%, #2e2d29 100%
+  );
+}
+
+.settings__theme-preview--auto::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: 6px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(50, 48, 44, 0.9) 100%);
+  border-radius: 2px;
+}
+
+.settings__theme-option span {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.settings__theme-option--active span {
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}
+
 /* Accent Colors */
 .settings__accent-colors {
   display: flex;
