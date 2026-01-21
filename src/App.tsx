@@ -259,6 +259,18 @@ function App() {
     addDesktopIcon(newIcon);
   }, [desktopIcons, addDesktopIcon, updateDesktopIcon]);
 
+  // Handle drop to file manager - this is a placeholder, actual copy happens in FileManager
+  const handleDropToFileManager = useCallback((
+    data: { name: string; path: string; isDirectory: boolean; iconId?: string }
+  ) => {
+    console.log('[App] drop to file manager:', data);
+    // The actual file copy will be handled by the FileManager component
+    // This is dispatched via a custom event
+    window.dispatchEvent(new CustomEvent('porcelain-drop-to-filemanager', {
+      detail: data
+    }));
+  }, []);
+
   return (
     <div
       className={`porcelain-os ${isDragOver ? 'porcelain-os--drag-over' : ''}`}
@@ -277,7 +289,7 @@ function App() {
       <Desktop />
       <WindowManager />
       <Dock />
-      <DragOverlay onDrop={handleOverlayDrop} />
+      <DragOverlay onDropToDesktop={handleOverlayDrop} onDropToFileManager={handleDropToFileManager} />
     </div>
   );
 }

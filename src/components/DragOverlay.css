@@ -42,6 +42,12 @@
   }
 }
 
+.drag-overlay__drop-zone--active {
+  border-color: #34c759;
+  color: #34c759;
+  background: rgba(52, 199, 89, 0.1);
+}
+
 /* Dragged item preview */
 .drag-overlay__preview {
   position: absolute;

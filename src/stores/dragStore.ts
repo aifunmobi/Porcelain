@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 
 // Shared drag state for cross-component file dragging
-interface DragData {
+export interface DragData {
   name: string;
   path: string;
   isDirectory: boolean;
-  source: string;
+  source: 'file-manager' | 'desktop';
+  iconId?: string;
 }
 
 interface Position {
@@ -14,28 +15,33 @@ interface Position {
 }
 
 interface DragStore {
+  // Cross-component drag state (file manager <-> desktop)
   isDragging: boolean;
   dragData: DragData | null;
   mousePosition: Position | null;
-  startPosition: Position | null;
-  startDrag: (data: DragData, startPos: Position) => void;
+  dropTarget: 'desktop' | 'file-manager' | null;
+
+  // Actions
+  startDrag: (data: DragData, pos: Position) => void;
   updateMousePosition: (pos: Position) => void;
-  endDrag: () => { dragData: DragData | null; mousePosition: Position | null };
+  setDropTarget: (target: 'desktop' | 'file-manager' | null) => void;
+  endDrag: () => DragData | null;
+  cancelDrag: () => void;
 }
 
 export const useDragStore = create<DragStore>((set, get) => ({
   isDragging: false,
   dragData: null,
   mousePosition: null,
-  startPosition: null,
+  dropTarget: null,
 
-  startDrag: (data, startPos) => {
-    console.log('[DragStore] startDrag:', data, 'at', startPos);
+  startDrag: (data, pos) => {
+    console.log('[DragStore] startDrag:', data.name, 'from', data.source);
     set({
       isDragging: true,
       dragData: data,
-      mousePosition: startPos,
-      startPosition: startPos
+      mousePosition: pos,
+      dropTarget: null,
     });
   },
 
@@ -43,11 +49,29 @@ export const useDragStore = create<DragStore>((set, get) => ({
     set({ mousePosition: pos });
   },
 
+  setDropTarget: (target) => {
+    set({ dropTarget: target });
+  },
+
   endDrag: () => {
-    const state = get();
-    console.log('[DragStore] endDrag at position:', state.mousePosition);
-    const result = { dragData: state.dragData, mousePosition: state.mousePosition };
-    set({ isDragging: false, dragData: null, mousePosition: null, startPosition: null });
-    return result;
+    const { dragData, dropTarget } = get();
+    console.log('[DragStore] endDrag - dropTarget:', dropTarget);
+    set({
+      isDragging: false,
+      dragData: null,
+      mousePosition: null,
+      dropTarget: null,
+    });
+    return dragData;
+  },
+
+  cancelDrag: () => {
+    console.log('[DragStore] cancelDrag');
+    set({
+      isDragging: false,
+      dragData: null,
+      mousePosition: null,
+      dropTarget: null,
+    });
   },
 }));

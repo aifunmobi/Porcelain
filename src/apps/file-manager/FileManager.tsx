@@ -10,6 +10,7 @@ import {
   createDirectory,
   deleteFile as deleteTauriFile,
   renameFile as renameTauriFile,
+  copyFileToPath,
   getFileIcon as getTauriFileIcon,
   formatFileSize,
   isImageFile,
@@ -302,12 +303,15 @@ export const FileManager: React.FC<AppProps> = () => {
   };
 
   // Get drag store
-  const { startDrag, isDragging } = useDragStore();
+  const { startDrag, isDragging, dragData, endDrag } = useDragStore();
   const [pendingDrag, setPendingDrag] = useState<{
     file: FileNode | RealFileEntry;
     startX: number;
     startY: number;
   } | null>(null);
+
+  // Track if we're a drop target (dragging from desktop)
+  const isDropTarget = isDragging && dragData?.source === 'desktop';
 
   // Threshold for starting drag (pixels)
   const DRAG_THRESHOLD = 5;
@@ -332,6 +336,49 @@ export const FileManager: React.FC<AppProps> = () => {
     console.log('[FileManager] pointerDown - pending drag for:', file.name);
   }, []);
 
+  // Handle drops from desktop icons
+  useEffect(() => {
+    const handleDesktopDrop = async (e: CustomEvent<{ name: string; path: string; isDirectory: boolean; iconId?: string }>) => {
+      const data = e.detail;
+      console.log('[FileManager] received drop from desktop:', data);
+
+      if (!isInTauri) {
+        console.log('[FileManager] virtual file system - skipping copy');
+        return;
+      }
+
+      // Validate source path
+      const sourcePath = data.path;
+      if (!sourcePath || sourcePath === '') {
+        console.error('[FileManager] No source path provided for drop!');
+        alert('Cannot copy: The desktop icon does not have a file path. Try dragging from the File Manager first.');
+        return;
+      }
+
+      // Build destination path - avoid double slashes
+      const cleanCurrentPath = realCurrentPath.endsWith('/') ? realCurrentPath.slice(0, -1) : realCurrentPath;
+      const destPath = `${cleanCurrentPath}/${data.name}`;
+
+      console.log('[FileManager] copying from:', sourcePath, 'to:', destPath);
+
+      try {
+        await copyFileToPath(sourcePath, destPath);
+        console.log('[FileManager] successfully copied file to:', destPath);
+        // Refresh the directory listing
+        loadRealDirectory(realCurrentPath);
+      } catch (err) {
+        console.error('[FileManager] Error copying file:', err);
+        alert('Failed to copy file: ' + (err instanceof Error ? err.message : String(err)));
+      }
+    };
+
+    window.addEventListener('porcelain-drop-to-filemanager', handleDesktopDrop as unknown as EventListener);
+
+    return () => {
+      window.removeEventListener('porcelain-drop-to-filemanager', handleDesktopDrop as unknown as EventListener);
+    };
+  }, [isInTauri, realCurrentPath]);
+
   // Handle pointer move to detect drag threshold
   useEffect(() => {
     if (!pendingDrag) return;
@@ -353,7 +400,7 @@ export const FileManager: React.FC<AppProps> = () => {
           name: file.name,
           path: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
           isDirectory: isDir,
-          source: 'porcelain-file-manager',
+          source: 'file-manager' as const,
         };
 
         console.log('[FileManager] threshold exceeded - starting drag:', transferData);
@@ -430,8 +477,50 @@ export const FileManager: React.FC<AppProps> = () => {
   // Check if at root
   const isAtRoot = isInTauri ? realCurrentPath === '/' : virtualCurrentPath === '/';
 
+  // Handle pointer up directly on file manager - this catches drops from desktop
+  const handleFileManagerPointerUp = useCallback(async (e: React.PointerEvent) => {
+    // Only handle if we're a drop target (desktop item is being dragged)
+    if (!isDropTarget || !dragData) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    // End the drag immediately to prevent DragOverlay from also handling it
+    const capturedDragData = { ...dragData };
+    endDrag();
+
+    console.log('[FileManager] direct pointerUp - handling drop from desktop:', capturedDragData);
+
+    if (!isInTauri) {
+      console.log('[FileManager] virtual file system - skipping copy');
+      return;
+    }
+
+    const sourcePath = capturedDragData.path;
+    if (!sourcePath || sourcePath === '') {
+      console.error('[FileManager] No source path provided!');
+      return;
+    }
+
+    const cleanCurrentPath = realCurrentPath.endsWith('/') ? realCurrentPath.slice(0, -1) : realCurrentPath;
+    const destPath = `${cleanCurrentPath}/${capturedDragData.name}`;
+
+    console.log('[FileManager] copying from:', sourcePath, 'to:', destPath);
+
+    try {
+      await copyFileToPath(sourcePath, destPath);
+      console.log('[FileManager] successfully copied file!');
+      loadRealDirectory(realCurrentPath);
+    } catch (err) {
+      console.error('[FileManager] Error copying file:', err);
+    }
+  }, [isDropTarget, dragData, isInTauri, realCurrentPath, endDrag]);
+
   return (
-    <div className="file-manager">
+    <div
+      className={`file-manager ${isDropTarget ? 'file-manager--drop-target' : ''}`}
+      onPointerUp={handleFileManagerPointerUp}
+    >
       <div className="file-manager__toolbar">
         <div className="file-manager__nav-buttons">
           <button

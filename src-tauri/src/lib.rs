@@ -41,6 +41,14 @@ pub fn run() {
             .build(),
         )?;
       }
+      // Open DevTools in debug builds
+      #[cfg(debug_assertions)]
+      {
+        use tauri::Manager;
+        if let Some(window) = app.get_webview_window("main") {
+          window.open_devtools();
+        }
+      }
       Ok(())
     })
     .run(tauri::generate_context!())
