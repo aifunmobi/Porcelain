@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Window } from './Window';
 import { useWindowStore } from '../../stores/windowStore';
@@ -10,8 +10,23 @@ export const WindowManager: React.FC = () => {
   const windowsMap = useWindowStore((state) => state.windows);
   const windows = useMemo(() => Array.from(windowsMap.values()), [windowsMap]);
 
+  // Allow drag events to pass through to the Desktop below
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    // Don't prevent default - let it bubble to Desktop
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((_e: React.DragEvent) => {
+    // Don't handle drops here - let them go to Desktop
+    // The WindowManager has pointer-events: none anyway, but just in case
+  }, []);
+
   return (
-    <div className="window-manager">
+    <div
+      className="window-manager"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <AnimatePresence>
         {windows.map((win) => {
           const app = appRegistry[win.appId];

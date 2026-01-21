@@ -13,6 +13,8 @@ interface SettingsState extends UserSettings {
   removePinnedApp: (appId: string) => void;
   setDesktopIcons: (icons: DesktopIcon[]) => void;
   updateDesktopIcon: (id: string, updates: Partial<DesktopIcon>) => void;
+  addDesktopIcon: (icon: DesktopIcon) => void;
+  removeDesktopIcon: (id: string) => void;
   setDockPosition: (position: 'bottom' | 'left' | 'right') => void;
   setDockAutoHide: (autoHide: boolean) => void;
   setShowSeconds: (show: boolean) => void;
@@ -93,6 +95,16 @@ export const useSettingsStore = create<SettingsState>()(
           desktopIcons: state.desktopIcons.map((icon) =>
             icon.id === id ? { ...icon, ...updates } : icon
           ),
+        })),
+
+      addDesktopIcon: (icon) =>
+        set((state) => ({
+          desktopIcons: [...state.desktopIcons, icon],
+        })),
+
+      removeDesktopIcon: (id) =>
+        set((state) => ({
+          desktopIcons: state.desktopIcons.filter((icon) => icon.id !== id),
         })),
 
       setDockPosition: (dockPosition) =>

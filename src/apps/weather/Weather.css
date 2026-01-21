@@ -234,3 +234,83 @@
   font-size: var(--text-sm);
   color: var(--color-text-tertiary);
 }
+
+/* Error State */
+.weather__error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.weather__error-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.weather__error-message {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  max-width: 300px;
+}
+
+.weather__error-retry {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: white;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.weather__error-retry:hover,
+.weather__retry-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+.weather__retry-btn {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: white;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  margin-top: var(--space-2);
+}
+
+/* Loading text */
+.weather__loading-text {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+/* Location button */
+.weather__location-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-porcelain-200);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.weather__location-button:hover {
+  background: var(--color-porcelain-300);
+  color: var(--color-text-primary);
+}

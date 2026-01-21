@@ -93,9 +93,13 @@ export interface DesktopIcon {
   id: string;
   appId?: string;
   fileId?: string;
+  filePath?: string; // Real file system path (for Tauri)
   name: string;
   icon: string;
   position: Position;
+  thumbnail?: string; // For image previews
+  isFile?: boolean; // true for files, false for apps/folders
+  mimeType?: string;
 }
 
 export interface UserSettings {

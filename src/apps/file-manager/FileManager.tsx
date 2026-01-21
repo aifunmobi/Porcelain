@@ -300,6 +300,53 @@ export const FileManager: React.FC<AppProps> = () => {
     return isInTauri ? (file as RealFileEntry).path : (file as FileNode).id;
   };
 
+  // Handle drag start for dragging files to desktop
+  const handleDragStart = useCallback((e: React.DragEvent, file: FileNode | RealFileEntry) => {
+    // CRITICAL: Stop propagation to prevent Rnd from interfering
+    e.stopPropagation();
+
+    const isDir = isInTauri
+      ? (file as RealFileEntry).isDirectory
+      : (file as FileNode).type === 'folder';
+
+    // Create transfer data
+    const transferData = {
+      name: file.name,
+      path: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
+      isDirectory: isDir,
+      source: 'porcelain-file-manager',  // Add source identifier
+    };
+
+    const jsonData = JSON.stringify(transferData);
+    console.log('[FileManager] dragStart - setting data:', jsonData);
+
+    // Set multiple data types for better compatibility
+    try {
+      e.dataTransfer.setData('application/x-porcelain-file', jsonData);
+      e.dataTransfer.setData('text/plain', jsonData); // Fallback
+      e.dataTransfer.effectAllowed = 'all';
+
+      console.log('[FileManager] dragStart - data set successfully');
+    } catch (err) {
+      console.error('[FileManager] dragStart - error setting data:', err);
+    }
+
+    // Create a drag image
+    const dragPreview = document.createElement('div');
+    dragPreview.className = 'file-manager__drag-preview';
+    dragPreview.textContent = file.name;
+    dragPreview.style.cssText = 'position:fixed;top:-1000px;left:-1000px;padding:8px 12px;background:var(--color-porcelain-100);border-radius:6px;font-size:12px;z-index:99999;';
+    document.body.appendChild(dragPreview);
+    e.dataTransfer.setDragImage(dragPreview, 0, 0);
+
+    // Clean up the preview element after drag starts
+    setTimeout(() => {
+      if (dragPreview.parentNode) {
+        document.body.removeChild(dragPreview);
+      }
+    }, 100);
+  }, [isInTauri]);
+
   // Sidebar items
   const getSidebarItems = () => {
     if (isInTauri && specialDirs) {
@@ -510,6 +557,12 @@ export const FileManager: React.FC<AppProps> = () => {
                     className={`file-manager__grid-item ${selectedFile === fileId ? 'selected' : ''}`}
                     onClick={() => setSelectedFile(fileId)}
                     onDoubleClick={() => handleNavigate(file)}
+                    draggable="true"
+                    onDragStart={(e) => handleDragStart(e, file)}
+                    onMouseDown={(e) => {
+                      // Prevent Rnd from capturing this for window dragging
+                      e.stopPropagation();
+                    }}
                   >
                     <div className="file-manager__grid-icon">
                       {hasThumbnail ? (
@@ -560,6 +613,12 @@ export const FileManager: React.FC<AppProps> = () => {
                     className={`file-manager__list-item ${selectedFile === fileId ? 'selected' : ''}`}
                     onClick={() => setSelectedFile(fileId)}
                     onDoubleClick={() => handleNavigate(file)}
+                    draggable="true"
+                    onDragStart={(e) => handleDragStart(e, file)}
+                    onMouseDown={(e) => {
+                      // Prevent Rnd from capturing this for window dragging
+                      e.stopPropagation();
+                    }}
                   >
                     <span className="file-manager__list-col file-manager__list-col--name">
                       {hasListThumbnail ? (

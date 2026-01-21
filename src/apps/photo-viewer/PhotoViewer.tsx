@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import {
@@ -6,9 +6,9 @@ import {
   getSpecialDirs,
   readDirectory,
   isImageFile,
-  readFileAsDataUrl,
   openFileDialog,
 } from '../../services/tauriFs';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import './PhotoViewer.css';
 
 // Sample images for browser mode
@@ -32,102 +32,95 @@ export const PhotoViewer: React.FC<AppProps> = () => {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingImage, setLoadingImage] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<string>('');
 
-  // Initialize
+  // Load images from a folder
+  const loadImagesFromFolder = useCallback(async (folderPath: string) => {
+    setIsLoading(true);
+    setCurrentFolder(folderPath);
+
+    try {
+      const entries = await readDirectory(folderPath);
+      const imageFiles = entries.filter(
+        (entry) => !entry.isDirectory && isImageFile(entry.name)
+      );
+
+      const loadedImages: ImageFile[] = imageFiles.slice(0, 100).map((file) => ({
+        id: file.path,
+        name: file.name,
+        url: convertFileSrc(file.path), // Use convertFileSrc for efficient loading
+        path: file.path,
+      }));
+
+      if (loadedImages.length > 0) {
+        setImages(loadedImages);
+        setSelectedImage(loadedImages[0]);
+      } else {
+        setImages([]);
+        setSelectedImage(null);
+      }
+    } catch (err) {
+      console.error('Error loading images from folder:', err);
+      setImages([]);
+      setSelectedImage(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initialize - auto-load from Pictures folder
   useEffect(() => {
     const init = async () => {
       const tauriEnv = isTauri();
       setIsInTauri(tauriEnv);
 
       if (tauriEnv) {
-        // Load images from Pictures folder
-        await loadImagesFromPictures();
+        // Load images from Pictures folder by default
+        try {
+          const dirs = await getSpecialDirs();
+          if (dirs.pictures) {
+            await loadImagesFromFolder(dirs.pictures);
+          }
+        } catch (err) {
+          console.error('Error initializing:', err);
+        }
       }
     };
     init();
-  }, []);
-
-  // Load images from Pictures folder
-  const loadImagesFromPictures = async () => {
-    setIsLoading(true);
-    try {
-      const dirs = await getSpecialDirs();
-      if (dirs.pictures) {
-        const entries = await readDirectory(dirs.pictures);
-        const imageFiles = entries.filter(
-          (entry) => entry.isFile && isImageFile(entry.name)
-        );
-
-        const loadedImages: ImageFile[] = [];
-        for (const file of imageFiles.slice(0, 50)) {
-          // Limit to 50 images
-          loadedImages.push({
-            id: file.path,
-            name: file.name,
-            url: '', // Will load on demand
-            path: file.path,
-          });
-        }
-
-        if (loadedImages.length > 0) {
-          setImages(loadedImages);
-          // Load the first image
-          const firstImage = loadedImages[0];
-          const url = await loadImageUrl(firstImage.path);
-          setImages((prev) =>
-            prev.map((img) =>
-              img.id === firstImage.id ? { ...img, url } : img
-            )
-          );
-          setSelectedImage({ ...firstImage, url });
-        } else {
-          setImages([]);
-          setSelectedImage(null);
-        }
-      }
-    } catch (err) {
-      console.error('Error loading images:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Load image URL
-  const loadImageUrl = async (path: string): Promise<string> => {
-    try {
-      return await readFileAsDataUrl(path);
-    } catch (err) {
-      console.error('Error loading image:', err);
-      return '';
-    }
-  };
+  }, [loadImagesFromFolder]);
 
   // Select image
-  const handleSelectImage = async (img: ImageFile) => {
+  const handleSelectImage = useCallback((img: ImageFile) => {
     setZoom(1);
     setRotation(0);
+    setSelectedImage(img);
+  }, []);
 
-    if (isInTauri && !img.url && img.path) {
-      setLoadingImage(img.id);
-      const url = await loadImageUrl(img.path);
-      setImages((prev) =>
-        prev.map((i) => (i.id === img.id ? { ...i, url } : i))
-      );
-      setSelectedImage({ ...img, url });
-      setLoadingImage(null);
-    } else {
-      setSelectedImage(img);
-    }
-  };
-
-  // Open file dialog
-  const handleOpenFile = async () => {
+  // Open folder dialog
+  const handleOpenFolder = useCallback(async () => {
     if (!isInTauri) return;
 
     try {
       const selected = await openFileDialog({
-        title: 'Open Image',
+        title: 'Select Image Folder',
+        directory: true,
+      });
+
+      if (selected && typeof selected === 'string') {
+        await loadImagesFromFolder(selected);
+      }
+    } catch (err) {
+      console.error('Error opening folder:', err);
+    }
+  }, [isInTauri, loadImagesFromFolder]);
+
+  // Open file dialog (for individual files)
+  const handleOpenFiles = useCallback(async () => {
+    if (!isInTauri) return;
+
+    try {
+      const selected = await openFileDialog({
+        title: 'Open Images',
         filters: [
           {
             name: 'Images',
@@ -139,32 +132,25 @@ export const PhotoViewer: React.FC<AppProps> = () => {
 
       if (selected) {
         const paths = Array.isArray(selected) ? selected : [selected];
-        const newImages: ImageFile[] = [];
-
-        for (const path of paths) {
+        const newImages: ImageFile[] = paths.map((path) => {
           const name = path.split('/').pop() || 'image';
-          newImages.push({
+          return {
             id: path,
             name,
-            url: '',
+            url: convertFileSrc(path),
             path,
-          });
-        }
+          };
+        });
 
         if (newImages.length > 0) {
-          // Load first new image
-          const firstImage = newImages[0];
-          const url = await loadImageUrl(firstImage.path);
-          newImages[0] = { ...firstImage, url };
-
           setImages((prev) => [...prev, ...newImages]);
           setSelectedImage(newImages[0]);
         }
       }
     } catch (err) {
-      console.error('Error opening file:', err);
+      console.error('Error opening files:', err);
     }
-  };
+  }, [isInTauri]);
 
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
@@ -175,35 +161,51 @@ export const PhotoViewer: React.FC<AppProps> = () => {
   };
 
   // Navigate to next/previous image
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (!selectedImage) return;
     const currentIndex = images.findIndex((img) => img.id === selectedImage.id);
     if (currentIndex > 0) {
       handleSelectImage(images[currentIndex - 1]);
     }
-  };
+  }, [selectedImage, images, handleSelectImage]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!selectedImage) return;
     const currentIndex = images.findIndex((img) => img.id === selectedImage.id);
     if (currentIndex < images.length - 1) {
       handleSelectImage(images[currentIndex + 1]);
     }
+  }, [selectedImage, images, handleSelectImage]);
+
+  // Get folder name from path
+  const getFolderName = (path: string) => {
+    if (!path) return 'Library';
+    const parts = path.split('/');
+    return parts[parts.length - 1] || parts[parts.length - 2] || 'Library';
   };
 
   return (
     <div className="photo-viewer">
       <div className="photo-viewer__sidebar">
         <div className="photo-viewer__sidebar-header">
-          <span>Library</span>
+          <span title={currentFolder}>{getFolderName(currentFolder)}</span>
           {isInTauri && (
-            <button
-              className="photo-viewer__open-btn"
-              onClick={handleOpenFile}
-              title="Open Image"
-            >
-              <Icon name="plus" size={14} />
-            </button>
+            <div className="photo-viewer__header-buttons">
+              <button
+                className="photo-viewer__open-btn"
+                onClick={handleOpenFolder}
+                title="Open Folder"
+              >
+                <Icon name="folder" size={14} />
+              </button>
+              <button
+                className="photo-viewer__open-btn"
+                onClick={handleOpenFiles}
+                title="Add Images"
+              >
+                <Icon name="plus" size={14} />
+              </button>
+            </div>
           )}
         </div>
 
@@ -221,12 +223,12 @@ export const PhotoViewer: React.FC<AppProps> = () => {
                   selectedImage?.id === img.id
                     ? 'photo-viewer__thumbnail--active'
                     : ''
-                } ${loadingImage === img.id ? 'photo-viewer__thumbnail--loading' : ''}`}
+                }`}
                 onClick={() => handleSelectImage(img)}
                 title={img.name}
               >
                 {img.url ? (
-                  <img src={img.url} alt={img.name} />
+                  <img src={img.url} alt={img.name} loading="lazy" />
                 ) : (
                   <div className="photo-viewer__thumbnail-placeholder">
                     <Icon name="image" size={24} color="var(--color-porcelain-400)" />
@@ -238,18 +240,23 @@ export const PhotoViewer: React.FC<AppProps> = () => {
         ) : (
           <div className="photo-viewer__empty-hint">
             <Icon name="image" size={32} color="var(--color-porcelain-300)" />
-            <p>{isInTauri ? 'No images in Pictures folder' : 'Drop images here to add'}</p>
+            <p>{isInTauri ? 'No images found' : 'Sample images'}</p>
             {isInTauri && (
-              <button className="photo-viewer__browse-btn" onClick={handleOpenFile}>
-                Browse Files
-              </button>
+              <>
+                <button className="photo-viewer__browse-btn" onClick={handleOpenFolder}>
+                  Open Folder
+                </button>
+                <button className="photo-viewer__browse-btn photo-viewer__browse-btn--secondary" onClick={handleOpenFiles}>
+                  Add Files
+                </button>
+              </>
             )}
           </div>
         )}
 
         {isInTauri && (
           <div className="photo-viewer__sidebar-footer">
-            📁 Real File System
+            📁 {images.length} images
           </div>
         )}
       </div>

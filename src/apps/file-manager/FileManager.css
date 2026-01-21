@@ -422,3 +422,32 @@
   line-height: 1.3;
   max-height: 2.6em;
 }
+
+/* Drag preview */
+.file-manager__drag-preview {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 9999;
+}
+
+/* Draggable item cursor */
+.file-manager__grid-item[draggable="true"],
+.file-manager__list-item[draggable="true"] {
+  cursor: grab;
+}
+
+.file-manager__grid-item[draggable="true"]:active,
+.file-manager__list-item[draggable="true"]:active {
+  cursor: grabbing;
+}
