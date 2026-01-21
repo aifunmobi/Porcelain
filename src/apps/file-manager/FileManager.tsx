@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFileSystemStore } from '../../stores/fileSystemStore';
+import { useDragStore } from '../../stores/dragStore';
 import { Icon } from '../../components/Icons';
 import type { AppProps, FileNode, ViewMode } from '../../types';
 import {
@@ -300,6 +301,9 @@ export const FileManager: React.FC<AppProps> = () => {
     return isInTauri ? (file as RealFileEntry).path : (file as FileNode).id;
   };
 
+  // Get drag store
+  const { startDrag, endDrag } = useDragStore();
+
   // Handle drag start for dragging files to desktop
   const handleDragStart = useCallback((e: React.DragEvent, file: FileNode | RealFileEntry) => {
     // CRITICAL: Stop propagation to prevent Rnd from interfering
@@ -314,19 +318,20 @@ export const FileManager: React.FC<AppProps> = () => {
       name: file.name,
       path: isInTauri ? (file as RealFileEntry).path : (file as FileNode).path,
       isDirectory: isDir,
-      source: 'porcelain-file-manager',  // Add source identifier
+      source: 'porcelain-file-manager',
     };
+
+    // Use shared drag store (works across components)
+    startDrag(transferData);
 
     const jsonData = JSON.stringify(transferData);
     console.log('[FileManager] dragStart - setting data:', jsonData);
 
-    // Set multiple data types for better compatibility
+    // Also set dataTransfer for native drag (backup)
     try {
       e.dataTransfer.setData('application/x-porcelain-file', jsonData);
-      e.dataTransfer.setData('text/plain', jsonData); // Fallback
+      e.dataTransfer.setData('text/plain', jsonData);
       e.dataTransfer.effectAllowed = 'all';
-
-      console.log('[FileManager] dragStart - data set successfully');
     } catch (err) {
       console.error('[FileManager] dragStart - error setting data:', err);
     }
@@ -345,7 +350,12 @@ export const FileManager: React.FC<AppProps> = () => {
         document.body.removeChild(dragPreview);
       }
     }, 100);
-  }, [isInTauri]);
+  }, [isInTauri, startDrag]);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    endDrag();
+  }, [endDrag]);
 
   // Sidebar items
   const getSidebarItems = () => {
@@ -559,6 +569,7 @@ export const FileManager: React.FC<AppProps> = () => {
                     onDoubleClick={() => handleNavigate(file)}
                     draggable="true"
                     onDragStart={(e) => handleDragStart(e, file)}
+                    onDragEnd={handleDragEnd}
                     onMouseDown={(e) => {
                       // Prevent Rnd from capturing this for window dragging
                       e.stopPropagation();
@@ -615,6 +626,7 @@ export const FileManager: React.FC<AppProps> = () => {
                     onDoubleClick={() => handleNavigate(file)}
                     draggable="true"
                     onDragStart={(e) => handleDragStart(e, file)}
+                    onDragEnd={handleDragEnd}
                     onMouseDown={(e) => {
                       // Prevent Rnd from capturing this for window dragging
                       e.stopPropagation();

@@ -2,6 +2,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useWindowStore } from '../../stores/windowStore';
+import { useDragStore } from '../../stores/dragStore';
 import { appRegistry } from '../../apps/registry';
 import { Icon } from '../../components/Icons';
 import type { DesktopIcon } from '../../types';
@@ -50,19 +51,20 @@ const getFileIcon = (filename: string): string => {
 
 // Grid snapping for icon positions with boundary clamping
 const GRID_SIZE = 90;
+const MIN_X = 20;
+const MIN_Y = 20;
+
 const snapToGrid = (x: number, y: number) => {
   // Snap to grid
-  let snappedX = Math.round(x / GRID_SIZE) * GRID_SIZE + 20;
-  let snappedY = Math.round(y / GRID_SIZE) * GRID_SIZE + 20;
+  let snappedX = Math.round(x / GRID_SIZE) * GRID_SIZE + MIN_X;
+  let snappedY = Math.round(y / GRID_SIZE) * GRID_SIZE + MIN_Y;
 
   // Clamp to valid boundaries (keep icons visible)
-  const minX = 20;
-  const minY = 20;
-  const maxX = window.innerWidth - 100;  // Leave room for icon width
-  const maxY = window.innerHeight - 150; // Leave room for icon height + taskbar
+  const maxX = Math.max(MIN_X, window.innerWidth - 100);  // Leave room for icon width
+  const maxY = Math.max(MIN_Y, window.innerHeight - 150); // Leave room for icon height + taskbar
 
-  snappedX = Math.max(minX, Math.min(maxX, snappedX));
-  snappedY = Math.max(minY, Math.min(maxY, snappedY));
+  snappedX = Math.max(MIN_X, Math.min(maxX, snappedX));
+  snappedY = Math.max(MIN_Y, Math.min(maxY, snappedY));
 
   return { x: snappedX, y: snappedY };
 };
@@ -77,6 +79,7 @@ export const Desktop: React.FC = () => {
     removeDesktopIcon
   } = useSettingsStore();
   const { openWindow } = useWindowStore();
+  const { isDragging } = useDragStore();
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; iconId?: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -95,14 +98,55 @@ export const Desktop: React.FC = () => {
     checkTauri();
   }, []);
 
+  // Helper function to add icon from file data
+  const addIconFromData = useCallback((fileData: { name: string; path: string; isDirectory: boolean }, dropX: number, dropY: number) => {
+    const snapped = snapToGrid(dropX, dropY);
+
+    // Check if there's already an icon at this position
+    const existingIcon = desktopIcons.find(
+      icon => icon.position.x === snapped.x && icon.position.y === snapped.y
+    );
+
+    if (existingIcon) {
+      snapped.y += GRID_SIZE;
+    }
+
+    // Determine if it's an image for thumbnail
+    let thumbnail: string | undefined;
+    if (tauriReady && convertFileSrc && isImageFile(fileData.name)) {
+      try {
+        thumbnail = convertFileSrc(fileData.path);
+      } catch (err) {
+        console.error('Error creating thumbnail URL:', err);
+      }
+    }
+
+    const newIcon: DesktopIcon = {
+      id: `desktop-file-${Date.now()}`,
+      name: fileData.name,
+      icon: fileData.isDirectory ? 'folder' : getFileIcon(fileData.name),
+      position: snapped,
+      isFile: !fileData.isDirectory,
+      filePath: fileData.path,
+      thumbnail,
+    };
+
+    console.log('[Desktop] adding icon:', newIcon);
+    addDesktopIcon(newIcon);
+  }, [desktopIcons, addDesktopIcon, tauriReady]);
+
   // Global drag and drop event handlers (document level to catch drops from windows)
   useEffect(() => {
     const handleGlobalDragOver = (e: DragEvent) => {
-      // Only handle porcelain file drags
-      if (e.dataTransfer?.types.includes('application/x-porcelain-file') ||
-          e.dataTransfer?.types.includes('text/plain')) {
-        e.preventDefault();
+      // Always allow drag over to enable drops
+      e.preventDefault();
+      if (e.dataTransfer) {
         e.dataTransfer.dropEffect = 'copy';
+      }
+
+      // Check if we're dragging from file manager
+      const dragStoreData = useDragStore.getState();
+      if (dragStoreData.isDragging) {
         setIsDragOver(true);
       }
     };
@@ -117,15 +161,34 @@ export const Desktop: React.FC = () => {
 
     const handleGlobalDrop = (e: DragEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       setIsDragOver(false);
 
-      console.log('[Desktop Global] drop event');
-      console.log('[Desktop Global] types:', e.dataTransfer?.types);
+      const dropX = e.clientX;
+      const dropY = e.clientY - 28; // Adjust for menu bar
 
-      // Try to get porcelain file data
-      let porcelainData = e.dataTransfer?.getData('application/x-porcelain-file') || '';
-      if (!porcelainData) {
-        porcelainData = e.dataTransfer?.getData('text/plain') || '';
+      console.log('[Desktop Global] drop event at:', dropX, dropY);
+
+      // First, check the drag store (zustand state - most reliable)
+      const dragStoreState = useDragStore.getState();
+      console.log('[Desktop Global] dragStore state:', dragStoreState);
+
+      if (dragStoreState.dragData && dragStoreState.dragData.source === 'porcelain-file-manager') {
+        addIconFromData(dragStoreState.dragData, dropX, dropY);
+        dragStoreState.endDrag();
+        return;
+      }
+
+      // Fallback: Try to get data from dataTransfer
+      console.log('[Desktop Global] dataTransfer types:', e.dataTransfer?.types);
+      let porcelainData = '';
+      try {
+        porcelainData = e.dataTransfer?.getData('application/x-porcelain-file') || '';
+        if (!porcelainData) {
+          porcelainData = e.dataTransfer?.getData('text/plain') || '';
+        }
+      } catch (err) {
+        console.log('[Desktop Global] error reading dataTransfer:', err);
       }
 
       console.log('[Desktop Global] porcelainData:', porcelainData);
@@ -133,50 +196,34 @@ export const Desktop: React.FC = () => {
       if (porcelainData) {
         try {
           const fileData = JSON.parse(porcelainData);
-          console.log('[Desktop Global] parsed fileData:', fileData);
-
           if (fileData.name && fileData.path !== undefined && fileData.source === 'porcelain-file-manager') {
-            const dropX = e.clientX;
-            const dropY = e.clientY - 28; // Adjust for menu bar
-
-            const snapped = snapToGrid(dropX, dropY);
-
-            // Check if there's already an icon at this position
-            const existingIcon = desktopIcons.find(
-              icon => icon.position.x === snapped.x && icon.position.y === snapped.y
-            );
-
-            if (existingIcon) {
-              // Offset to next available position
-              snapped.y += GRID_SIZE;
-            }
-
-            // Determine if it's an image for thumbnail
-            let thumbnail: string | undefined;
-            if (tauriReady && convertFileSrc && isImageFile(fileData.name)) {
-              try {
-                thumbnail = convertFileSrc(fileData.path);
-              } catch (err) {
-                console.error('Error creating thumbnail URL:', err);
-              }
-            }
-
-            const newIcon: DesktopIcon = {
-              id: `desktop-file-${Date.now()}`,
-              name: fileData.name,
-              icon: fileData.isDirectory ? 'folder' : getFileIcon(fileData.name),
-              position: snapped,
-              isFile: !fileData.isDirectory,
-              filePath: fileData.path,
-              thumbnail,
-            };
-
-            console.log('[Desktop Global] adding icon:', newIcon);
-            addDesktopIcon(newIcon);
+            addIconFromData(fileData, dropX, dropY);
           }
         } catch (err) {
-          console.log('[Desktop Global] Not valid JSON:', err);
+          console.log('[Desktop Global] Not valid JSON');
         }
+      }
+    };
+
+    // Also listen for mouseup as a backup for when drag events don't fire properly
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      const dragStoreState = useDragStore.getState();
+      if (dragStoreState.isDragging && dragStoreState.dragData) {
+        console.log('[Desktop Global] mouseup while dragging:', dragStoreState.dragData);
+
+        const dropX = e.clientX;
+        const dropY = e.clientY - 28;
+
+        // Check if mouse is over the desktop area (not over a window)
+        const target = e.target as HTMLElement;
+        const isOverDesktop = target.closest('.desktop') && !target.closest('.window');
+
+        if (isOverDesktop && dragStoreState.dragData.source === 'porcelain-file-manager') {
+          addIconFromData(dragStoreState.dragData, dropX, dropY);
+        }
+
+        dragStoreState.endDrag();
+        setIsDragOver(false);
       }
     };
 
@@ -184,13 +231,15 @@ export const Desktop: React.FC = () => {
     document.addEventListener('dragover', handleGlobalDragOver);
     document.addEventListener('dragleave', handleGlobalDragLeave);
     document.addEventListener('drop', handleGlobalDrop);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
 
     return () => {
       document.removeEventListener('dragover', handleGlobalDragOver);
       document.removeEventListener('dragleave', handleGlobalDragLeave);
       document.removeEventListener('drop', handleGlobalDrop);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [desktopIcons, addDesktopIcon, tauriReady]);
+  }, [addIconFromData]);
 
   const getWallpaperStyle = () => {
     if (wallpaperType === 'color') {
@@ -510,7 +559,7 @@ export const Desktop: React.FC = () => {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {isDragOver && (
+      {(isDragOver || isDragging) && (
         <div className="desktop__drop-indicator">
           <Icon name="plus" size={32} />
           <span>Drop files here</span>
@@ -531,6 +580,12 @@ export const Desktop: React.FC = () => {
             onContextMenu={(e) => handleContextMenu(e, icon.id)}
             drag
             dragMomentum={false}
+            dragConstraints={{
+              left: MIN_X - icon.position.x,
+              right: window.innerWidth - 100 - icon.position.x,
+              top: MIN_Y - icon.position.y,
+              bottom: window.innerHeight - 150 - icon.position.y,
+            }}
             onDragStart={() => setSelectedIcon(icon.id)}
             onDragEnd={(_, info) => {
               const newPos = snapToGrid(
@@ -635,7 +690,7 @@ export const Desktop: React.FC = () => {
                 </div>
               </>
             ) : (
-              // Desktop context menu
+              // Desktop context menu (right-click on empty desktop)
               <>
                 <div
                   className="desktop__context-item"
@@ -645,12 +700,15 @@ export const Desktop: React.FC = () => {
                 </div>
                 <div
                   className={`desktop__context-item ${!clipboard ? 'desktop__context-item--disabled' : ''}`}
-                  onClick={clipboard ? handlePaste : undefined}
+                  onClick={() => {
+                    if (clipboard) {
+                      handlePaste();
+                    }
+                  }}
                 >
-                  Paste
+                  Paste {clipboard ? '' : '(empty)'}
                 </div>
                 <div className="desktop__context-divider" />
-                <div className="desktop__context-item desktop__context-item--disabled">Get Info</div>
                 <div
                   className="desktop__context-item"
                   onClick={() => {
@@ -662,12 +720,8 @@ export const Desktop: React.FC = () => {
                   Change Desktop Background...
                 </div>
                 <div className="desktop__context-divider" />
-                <div className="desktop__context-item desktop__context-item--disabled">Use Stacks</div>
                 <div className="desktop__context-item desktop__context-item--disabled">Sort By</div>
                 <div className="desktop__context-item desktop__context-item--disabled">Clean Up</div>
-                <div className="desktop__context-item desktop__context-item--disabled">Clean Up By</div>
-                <div className="desktop__context-divider" />
-                <div className="desktop__context-item desktop__context-item--disabled">Show View Options</div>
               </>
             )}
           </motion.div>
