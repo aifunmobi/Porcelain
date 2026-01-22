@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserSettings, DesktopIcon } from '../types';
-
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
 interface SettingsState extends UserSettings {
@@ -134,6 +133,20 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'porcelain-settings',
+      version: 1.5, // Increment this when defaults change
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as SettingsState;
+        // If version is old, reset desktop icons and pinned apps to include new apps
+        if (version < 1.5) {
+          console.log('[Settings] Migrating from version', version, 'to 1.5');
+          return {
+            ...state,
+            desktopIcons: defaultSettings.desktopIcons,
+            pinnedApps: defaultSettings.pinnedApps,
+          };
+        }
+        return state;
+      },
     }
   )
 );
