@@ -33,14 +33,45 @@ export const Camera: React.FC<AppProps> = () => {
           audio: false,
         });
         console.log('[Camera] Camera access granted, stream:', mediaStream);
+        const videoTracks = mediaStream.getVideoTracks();
+        console.log('[Camera] Video tracks:', videoTracks);
+        if (videoTracks.length > 0) {
+          console.log('[Camera] Track settings:', videoTracks[0].getSettings());
+        }
         currentStream = mediaStream;
         setStream(mediaStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          // Ensure video plays
-          videoRef.current.play().catch(e => console.error('[Camera] Video play error:', e));
-        }
         setHasPermission(true);
+
+        // Use setTimeout to ensure the video element is rendered
+        setTimeout(() => {
+          if (videoRef.current) {
+            const video = videoRef.current;
+            console.log('[Camera] Video element found:', video);
+            video.srcObject = mediaStream;
+
+            video.onloadedmetadata = () => {
+              console.log('[Camera] Video metadata loaded, dimensions:', video.videoWidth, 'x', video.videoHeight);
+            };
+
+            video.oncanplay = () => {
+              console.log('[Camera] Video can play');
+              video.play()
+                .then(() => console.log('[Camera] Video playing'))
+                .catch(e => console.error('[Camera] Video play error:', e));
+            };
+
+            video.onerror = (e) => {
+              console.error('[Camera] Video element error:', e);
+            };
+
+            // Try to play immediately as well
+            video.play()
+              .then(() => console.log('[Camera] Immediate play succeeded'))
+              .catch(e => console.log('[Camera] Immediate play failed (expected):', e.message));
+          } else {
+            console.error('[Camera] Video ref is null after setState');
+          }
+        }, 100);
       } catch (err) {
         console.error('[Camera] Camera access error:', err);
         const error = err as Error;
