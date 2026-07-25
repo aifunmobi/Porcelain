@@ -1,10 +1,10 @@
 ---
 id: L-005
 title: Bring Files up to Finder grade
-status: building
+status: review
 attempts: 1
 branch: "loop/L-005-files-finder-grade"
-claimed_at: "2026-07-25T22:21:13Z"
+claimed_at: ""
 depends: L-004
 ---
 
@@ -68,3 +68,34 @@ Work in `src/apps/file-manager/`, `src/stores/fileSystemStore.ts` and `src/servi
 13. Confirm a clean console throughout.
 
 ## Notes
+
+### Build 1 (2026-07-25)
+
+**Spec conflict — Enter.** Scope 5 asks for "inline rename (Enter on selection)"
+while scope 7 and the acceptance criteria ask for "Enter opens". Both cannot bind
+the same key. Enter opens, since that is the behaviour the acceptance criteria
+check; rename is on F2, the Rename toolbar button, and the context menu. Say so
+if you want it the other way round.
+
+**Verified in browser mode** (virtual filesystem, `npm run dev`): build clean;
+sidebar sections navigate and their collapse state survives a reload; all three
+view modes render and switch by toolbar and ⌘1/2/3; list headers sort and
+reverse; column view shows independent levels plus a preview pane; ⌘I reports
+correct size/dates/path; ⌘⇧N / F2 / ⌘D / ⌘⌫ / ⌘C / ⌘V work, including paste into
+a different folder; ⌘A selects all; Enter opens; type-ahead jumps; search filters
+the folder and "Search Here" finds a match in a subfolder; status bar counts and
+sums the selection; console clean throughout.
+
+**Not verified here** — needs the Tauri build, since browser mode cannot reach
+them: the real-filesystem path, image thumbnails, and drag-drop between Files and
+the desktop. The code paths are preserved but unexercised.
+
+**Trash semantics.** "Move to Trash" moves the item into a trash folder
+(`~/.porcelain-trash` real, `/Trash` virtual) and records it in the Trash app's
+store — it never deletes, so the item can come back.
+
+**Three bugs fixed underneath** (each pre-existing, all exposed by this work):
+renaming/moving a folder never re-pathed its descendants; copying a folder
+renamed every descendant to "<name> copy"; and selected-state styling lost to
+L-004's `.window__body button:not(.pcl-bare)` rule, which had left the active
+view-mode button visually identical to the inactive ones since that phase.
