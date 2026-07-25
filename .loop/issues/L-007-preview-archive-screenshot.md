@@ -1,10 +1,10 @@
 ---
 id: L-007
 title: Add Preview, Archive Utility and Screenshot
-status: backlog
-attempts: 0
-branch: ""
-claimed_at: ""
+status: building
+attempts: 1
+branch: "loop/L-007-preview-archive-screenshot"
+claimed_at: "2026-07-25T23:45:10Z"
 depends: L-004
 ---
 
