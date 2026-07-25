@@ -89,6 +89,21 @@ export const clearHighlights = () => {
   registry?.delete('pcl-find-active');
 };
 
+const BLOCK_SELECTOR = 'div,p,h1,h2,h3,h4,h5,h6,li,blockquote,pre';
+
+/**
+ * HTML -> plain text, one line per leaf block. `innerText` cannot be used here:
+ * it renders `<div><br></div>` — how an empty line is represented — as two
+ * newlines, so every plain/rich toggle would grow the document by a blank line.
+ */
+export const htmlToText = (root: HTMLElement): string => {
+  const blocks = [...root.querySelectorAll(BLOCK_SELECTOR)].filter(
+    (b) => !b.querySelector(BLOCK_SELECTOR)
+  );
+  if (!blocks.length) return root.textContent ?? '';
+  return blocks.map((b) => b.textContent ?? '').join('\n');
+};
+
 /** Plain text -> HTML, one block per line, so a mode switch keeps the shape. */
 export const textToHtml = (text: string): string => {
   const escape = (s: string) =>

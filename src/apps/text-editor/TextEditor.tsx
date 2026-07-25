@@ -19,6 +19,7 @@ import {
   paintHighlights,
   clearHighlights,
   textToHtml,
+  htmlToText,
   wrapHtmlDocument,
   unwrapHtmlDocument,
 } from './richText';
@@ -59,6 +60,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   const [replacement, setReplacement] = useState('');
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [matchTotal, setMatchTotal] = useState(0);
+  /** Bumped whenever rich content mutates, so find can recount — the DOM is not React state. */
+  const [docVersion, setDocVersion] = useState(0);
   const [matchIndex, setMatchIndex] = useState(0);
 
   const {
@@ -119,7 +122,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   );
 
   const refreshStats = useCallback(() => {
-    const text = mode === 'rich' ? richRef.current?.innerText ?? '' : plainText;
+    const text =
+      mode === 'rich' && richRef.current ? htmlToText(richRef.current) : plainText;
     setStats(countStats(text));
   }, [mode, plainText]);
 
@@ -293,7 +297,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
     const { ranges } = richRanges();
     setMatchTotal(ranges.length);
     paintHighlights(ranges, matchIndex);
-  }, [findOpen, query, caseSensitive, mode, plainMatches, richRanges, matchIndex, plainText]);
+  }, [findOpen, query, caseSensitive, mode, plainMatches, richRanges, matchIndex, plainText, docVersion]);
 
   useEffect(() => () => clearHighlights(), []);
 
@@ -353,8 +357,9 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
     window.requestAnimationFrame(() => {
       markDirty();
       refreshStats();
+      setDocVersion((v) => v + 1);
     });
-  }, [mode, matchTotal, matchIndex, plainMatches, replacement, richRanges, markDirty, refreshStats]);
+  }, [mode, matchTotal, matchIndex, plainMatches, plainText, replacement, richRanges, markDirty, refreshStats]);
 
   const replaceAll = useCallback(() => {
     if (mode === 'plain') {
@@ -379,8 +384,9 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
     window.requestAnimationFrame(() => {
       markDirty();
       refreshStats();
+      setDocVersion((v) => v + 1);
     });
-  }, [mode, plainMatches, replacement, richRanges, markDirty, refreshStats]);
+  }, [mode, plainMatches, plainText, replacement, richRanges, markDirty, refreshStats]);
 
   /* --------------------------------------------------------- formatting */
 
@@ -398,6 +404,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       document.execCommand(command, false, value);
       markDirty();
       refreshStats();
+      setDocVersion((v) => v + 1);
     },
     [markDirty, refreshStats]
   );
@@ -431,7 +438,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       if (next === mode) return;
       const apply = () => {
         if (next === 'plain') {
-          const text = richRef.current?.innerText ?? '';
+          const text = richRef.current ? htmlToText(richRef.current) : '';
           setPlainText(text);
           savedRef.current = text;
         } else {
@@ -710,6 +717,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
             onInput={() => {
               markDirty();
               refreshStats();
+              setDocVersion((v) => v + 1);
             }}
           />
           {mode === 'plain' && (
