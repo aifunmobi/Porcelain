@@ -36,6 +36,7 @@ function App() {
   const initializeFileSystem = useFileSystemStore((state) => state.initializeFileSystem);
   const brightness = useSettingsStore((state) => state.brightness);
   const theme = useSettingsStore((state) => state.theme);
+  const accentColor = useSettingsStore((state) => state.accentColor);
   const desktopIcons = useSettingsStore((state) => state.desktopIcons);
   const addDesktopIcon = useSettingsStore((state) => state.addDesktopIcon);
   const updateDesktopIcon = useSettingsStore((state) => state.updateDesktopIcon);
@@ -60,6 +61,15 @@ function App() {
     }
     // 'light' is the default, no class needed
   }, [theme]);
+
+  // Push the chosen accent into the token every consumer already reads.
+  // ponytail: hover/active derived with color-mix rather than a second picker.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--color-accent', accentColor);
+    root.style.setProperty('--color-accent-hover', `color-mix(in srgb, ${accentColor} 88%, black)`);
+    root.style.setProperty('--color-accent-active', `color-mix(in srgb, ${accentColor} 76%, black)`);
+  }, [accentColor]);
 
   // Global drag handlers to catch drops anywhere
   const handleDragOver = useCallback((e: React.DragEvent) => {
