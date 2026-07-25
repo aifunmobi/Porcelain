@@ -1,10 +1,10 @@
 ---
 id: L-006
 title: Bring Text Editor up to TextEdit grade
-status: building
+status: review
 attempts: 1
 branch: "loop/L-006-textedit-grade"
-claimed_at: "2026-07-25T23:06:18Z"
+claimed_at: ""
 depends: L-004
 ---
 
@@ -68,3 +68,51 @@ Work in `src/apps/text-editor/`.
 13. Confirm a clean console throughout.
 
 ## Notes
+
+### Build 1 (2026-07-25)
+
+**Verified in browser mode** (`npm run dev`): build clean and `package.json`
+identical to main. Counts checked by hand against `the quick brown fox` × 3 —
+12 words / 59 characters / 3 lines. Find on a term appearing 3× reported
+"1 of 3", next/previous cycled, replace hit only the active match, replace-all
+took all three, and the case toggle flipped `slow` between 3 matches and none.
+Every rich command produced the expected markup (`b/i/u/strike`, `h1`–`h3`,
+`ul`/`ol`, `blockquote`, all three alignments, and a link wrapping the
+selection). A rich document saved to `.html` reopened with its link intact.
+Editing then waiting ~3s rewrote the file and cleared the dirty dot. Ten plain
+edits undid and redid exactly. Typography and recents survived a reload, the
+recents list caps at ten, the wrap toggle switches the sheet to full width, and
+print media hides toolbar, status bar, menu bar and dock, leaving the page.
+Double-clicking `Welcome.txt` in Files opened it here with its content. Console
+clean throughout.
+
+**Four bugs found and fixed while testing, all mine from this build:**
+1. The dirty dot never lit in plain mode — `markDirty` read `plainText` from a
+   closure that lagged the keystroke. It now takes the new value directly.
+2. Counts read zero after opening a document: `loadInto` queued a
+   `requestAnimationFrame(refreshStats)` that captured the outgoing mode and
+   overwrote the correct figure. The effect already recomputes; the stale call
+   is gone.
+3. Shortcuts died as soon as focus left the editor subtree (after any dialog),
+   because the handler hung off the React tree. It is now a window listener
+   gated on `activeWindowId`, which also stops ⌘N from opening a second window.
+4. Adding a link inserted the URL instead of wrapping the selection — typing in
+   the dialog collapsed the range. The range is stashed on open and restored
+   before `createLink`.
+
+**Undo in plain mode needed a real history.** A controlled `<textarea>` cannot
+use the browser's native undo: React re-applies its state and the two stacks
+desync. Plain mode keeps a 200-entry snapshot stack; rich mode still uses
+`execCommand`'s own stack.
+
+**Autosave needs a path.** An untitled document shows the dirty dot but is not
+written anywhere until the first save — inventing a file on the user's behalf
+seemed worse than waiting. Say so if you want an `Untitled.txt` created eagerly.
+
+**Prompts are in-app, never `window.prompt`/`confirm`.** Browser modals freeze
+the whole OS shell, so Save As, the link URL, Open, and the discard/close
+warnings are all rendered inside the window.
+
+**Not verified here** — needs the Tauri build: the real-filesystem read/write
+path and the native print dialog (print was checked by emulating print media,
+which exercises the same stylesheet without opening a blocking dialog).
