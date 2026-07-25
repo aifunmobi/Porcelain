@@ -1,0 +1,151 @@
+/* Porcelain OS - the shared control vocabulary inside app windows (L-004)
+ *
+ * One set of controls across all fifteen apps, so that a button in Calendar
+ * and a button in Settings are the same physical object. Apps override
+ * individual rules where a control genuinely differs; they should not
+ * reinvent depth.
+ *
+ * Everything here is scoped to .window__body so the shell (L-003) is
+ * untouched and the style gallery stays independent.
+ */
+
+/* --- buttons: raised paper --------------------------------------------- */
+
+.window__body button:not(.pcl-bare) {
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  text-shadow: var(--text-emboss-engraved);
+  box-shadow: var(--emboss-raise-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .window__body button:not(.pcl-bare) {
+    transition:
+      box-shadow 120ms var(--ease-out),
+      transform 120ms var(--ease-out);
+  }
+}
+
+.window__body button:not(.pcl-bare):hover {
+  box-shadow: var(--emboss-raise-2);
+}
+
+.window__body button:not(.pcl-bare):active {
+  box-shadow: var(--emboss-press-1);
+  transform: translate(1px, 1px);
+}
+
+.window__body button:not(.pcl-bare):disabled {
+  box-shadow: none;
+  opacity: 0.45;
+  transform: none;
+}
+
+.window__body button:not(.pcl-bare):focus-visible {
+  outline: none;
+  box-shadow: var(--emboss-press-1), 0 0 0 2px var(--color-accent);
+}
+
+/* primary reads as deeper stock, not a filled accent slab */
+.window__body button.is-primary {
+  background-color: var(--paper-1);
+  color: var(--ink-strong);
+  font-weight: var(--font-semibold);
+  box-shadow: var(--emboss-raise-2);
+}
+
+/* --- inputs: pressed wells --------------------------------------------- */
+
+.window__body input:not([type='range']):not([type='checkbox']):not([type='radio']),
+.window__body textarea,
+.window__body select {
+  background-color: var(--paper-3);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink-strong);
+  box-shadow: var(--emboss-press-1);
+  padding: var(--space-1-5) var(--space-2-5);
+}
+
+.window__body input::placeholder,
+.window__body textarea::placeholder {
+  color: var(--ink-soft);
+}
+
+.window__body input:focus,
+.window__body textarea:focus,
+.window__body select:focus {
+  outline: none;
+  box-shadow: var(--emboss-press-2), 0 0 0 2px var(--color-accent);
+}
+
+/* --- range sliders: a groove with a raised thumb ------------------------ */
+
+.window__body input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--paper-4);
+  box-shadow: var(--emboss-press-1);
+  padding: 0;
+  border: none;
+}
+
+.window__body input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-raise-2);
+  cursor: pointer;
+}
+
+/* --- scroll bars: a slim raised bar in a groove ------------------------- */
+
+.window__body ::-webkit-scrollbar-track {
+  background-color: var(--paper-2);
+}
+
+.window__body ::-webkit-scrollbar-thumb {
+  background-color: var(--paper-0);
+  border: 2px solid var(--paper-2);
+  box-shadow: var(--emboss-raise-1);
+}
+
+/* --- surfaces ----------------------------------------------------------- */
+
+/* toolbars and footers: a strip of paper with an engraved edge */
+.window__body [class*='__toolbar'],
+.window__body [class*='__header'],
+.window__body [class*='__footer'],
+.window__body [class*='__statusbar'],
+.window__body [class*='__status-bar'] {
+  background-color: var(--paper-1);
+  border-color: var(--edge-hairline);
+}
+
+/* sidebars step down a tone rather than changing border colour */
+.window__body [class*='__sidebar'] {
+  background-color: var(--paper-2);
+  border-right: 1px solid var(--edge-shadow);
+  box-shadow: inset -1px 0 0 var(--edge-highlight);
+}
+
+/* list rows are ruled paper; the selected row is pressed in */
+.window__body [class*='__item'],
+.window__body [class*='__row'] {
+  border-radius: var(--radius-sm);
+}
+
+.window__body [class*='__item--active'],
+.window__body [class*='__item--selected'],
+.window__body [class*='__row--selected'] {
+  box-shadow: var(--emboss-press-1);
+  color: var(--ink-strong);
+}

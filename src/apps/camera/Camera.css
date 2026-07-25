@@ -1,3 +1,11 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
+
+/* colour-allowlist: this app renders media (or a terminal canvas) against a
+ * near-black mat by design; those literals are intentional and are the only
+ * ones permitted in this file. */
 /* Camera App Styles - Porcelain OS */
 
 .camera {
@@ -23,13 +31,13 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-porcelain-400);
+  color: var(--paper-4);
   text-align: center;
 }
 
 .camera__error-hint {
   font-size: var(--text-xs);
-  color: var(--color-porcelain-500);
+  color: var(--ink-soft);
 }
 
 .camera__video {
@@ -117,7 +125,7 @@
   height: 100%;
   border-radius: var(--radius-full);
   background: white;
-  border: 3px solid #333;
+  border: 3px solid var(--ink-strong);
 }
 
 .camera__gallery {
@@ -128,7 +136,7 @@
 .camera__gallery-header {
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
-  color: var(--color-porcelain-400);
+  color: var(--paper-4);
 }
 
 .camera__gallery-grid {

@@ -1,8 +1,17 @@
-/* Terminal App Styles - Porcelain OS */
+/* Restyled to the letterpress material (L-004).
+ *
+ * The terminal is the one surface that is not paper: a slate plate set into
+ * the sheet, dark in both themes, framed by a deep pressed well. Its colours
+ * come from the --terminal-* tokens so there are still no literals here.
+ */
 
 .terminal {
   height: 100%;
-  background: #1e1c19;
+  margin: var(--space-2);
+  border-radius: var(--radius-md);
+  background-color: var(--terminal-canvas);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-press-2);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   overflow: hidden;
@@ -13,7 +22,7 @@
   height: 100%;
   padding: var(--space-3);
   overflow-y: auto;
-  color: #e8e4df;
+  color: var(--terminal-ink);
 }
 
 .terminal__line {
@@ -24,19 +33,20 @@
 }
 
 .terminal__line--input {
-  color: #9cb89c;
+  color: var(--terminal-ink);
+  font-weight: var(--font-medium);
 }
 
 .terminal__line--output {
-  color: #e8e4df;
+  color: var(--terminal-ink-dim);
 }
 
 .terminal__line--error {
-  color: #c9a8a8;
+  color: var(--color-error);
 }
 
 .terminal__line--success {
-  color: #7fb87f;
+  color: var(--color-success);
 }
 
 .terminal__input-line {
@@ -46,23 +56,34 @@
 }
 
 .terminal__prompt {
-  color: #a8b5c4;
+  color: var(--color-accent);
   white-space: nowrap;
 }
 
+/* the prompt input is part of the canvas, not a paper well - it has to beat
+ * the shared control vocabulary, hence the .window__body prefix */
+.window__body .terminal__input,
 .terminal__input {
   flex: 1;
   background: transparent;
   border: none;
-  color: #e8e4df;
+  border-radius: 0;
+  padding: 0;
+  color: var(--terminal-ink);
   font-family: inherit;
   font-size: inherit;
-  caret-color: #a8b5c4;
+  caret-color: var(--color-accent);
+  outline: none;
+  box-shadow: none;
+}
+
+.window__body .terminal__input:focus {
+  box-shadow: none;
   outline: none;
 }
 
 .terminal__input::selection {
-  background: rgba(168, 181, 196, 0.3);
+  background: var(--color-info-light);
 }
 
 /* Scrollbar */
@@ -70,15 +91,13 @@
   width: 8px;
 }
 
-.terminal__output::-webkit-scrollbar-track {
-  background: #2a2723;
+.window__body .terminal__output::-webkit-scrollbar-track {
+  background-color: var(--terminal-canvas);
 }
 
-.terminal__output::-webkit-scrollbar-thumb {
-  background: #4a453d;
+.window__body .terminal__output::-webkit-scrollbar-thumb {
+  background-color: var(--terminal-ink-dim);
+  border: 2px solid var(--terminal-canvas);
   border-radius: var(--radius-full);
-}
-
-.terminal__output::-webkit-scrollbar-thumb:hover {
-  background: #5a554d;
+  box-shadow: none;
 }

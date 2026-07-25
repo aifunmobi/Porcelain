@@ -1,21 +1,25 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
 /* Calculator Styles - Porcelain OS */
 
 .calculator {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
 }
 
 .calculator__display {
   padding: var(--space-4);
-  background: var(--color-porcelain-50);
+  background: var(--paper-0);
   text-align: right;
 }
 
 .calculator__history {
   font-size: var(--text-sm);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   height: 20px;
   margin-bottom: var(--space-1);
 }
@@ -23,7 +27,7 @@
 .calculator__value {
   font-size: var(--text-4xl);
   font-weight: var(--font-light);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -54,21 +58,21 @@
 }
 
 .calculator__key--number {
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
+  background: var(--paper-0);
+  color: var(--ink-strong);
 }
 
 .calculator__key--number:hover {
-  background: var(--color-porcelain-50);
+  background: var(--paper-0);
 }
 
 .calculator__key--function {
-  background: var(--color-porcelain-200);
-  color: var(--color-text-secondary);
+  background: var(--paper-2);
+  color: var(--ink);
 }
 
 .calculator__key--function:hover {
-  background: var(--color-porcelain-300);
+  background: var(--paper-3);
 }
 
 .calculator__key--operator {

@@ -1,10 +1,14 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
 /* Trash App Styles - Porcelain OS */
 
 .trash {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--color-surface-elevated);
+  background: var(--paper-0);
 }
 
 .trash__toolbar {
@@ -12,8 +16,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3);
-  background: var(--color-porcelain-50);
-  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--paper-0);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .trash__title {
@@ -22,12 +26,12 @@
   gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
 }
 
 .trash__count {
   font-weight: var(--font-normal);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
 }
 
 .trash__empty-btn {
@@ -40,7 +44,7 @@
 }
 
 .trash__empty-btn:hover:not(:disabled) {
-  background: #c53030;
+  background: var(--color-error);
 }
 
 .trash__empty-btn:disabled {
@@ -55,7 +59,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
 }
 
 .trash__items {
@@ -75,7 +79,7 @@
 }
 
 .trash__item:hover {
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
 }
 
 .trash__item--selected {
@@ -84,7 +88,7 @@
 }
 
 .trash__item--selected .trash__item-date {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--edge-highlight);
 }
 
 .trash__item-icon {
@@ -118,16 +122,16 @@
 
 .trash__item-date {
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
 }
 
 /* Context Menu */
 .trash__context-menu {
   position: fixed;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--paper-0);
   backdrop-filter: blur(20px);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--emboss-raise-2);
   min-width: 160px;
   padding: 4px 0;
   z-index: 1000;
@@ -140,7 +144,7 @@
   width: 100%;
   padding: 8px 12px;
   font-size: 13px;
-  color: #1d1d1f;
+  color: var(--ink-strong);
   background: none;
   border: none;
   text-align: left;
@@ -149,7 +153,7 @@
 }
 
 .trash__context-menu-item:hover {
-  background: #007AFF;
+  background: var(--color-accent);
   color: white;
 }
 
@@ -159,6 +163,6 @@
 
 .trash__context-menu-divider {
   height: 1px;
-  background: var(--color-border-subtle);
+  background: var(--edge-hairline);
   margin: 4px 8px;
 }

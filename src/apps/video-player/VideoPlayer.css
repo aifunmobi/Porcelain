@@ -1,3 +1,11 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
+
+/* colour-allowlist: this app renders media (or a terminal canvas) against a
+ * near-black mat by design; those literals are intentional and are the only
+ * ones permitted in this file. */
 /* Video Player Styles - Porcelain OS */
 
 .video-player {
@@ -20,7 +28,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  color: var(--color-porcelain-500);
+  color: var(--ink-soft);
 }
 
 .video-player__placeholder p {
@@ -32,7 +40,7 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
-  background: var(--color-porcelain-800);
+  background: var(--ink-strong);
   color: white;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -40,7 +48,7 @@
 }
 
 .video-player__load-btn:hover {
-  background: var(--color-porcelain-700);
+  background: var(--ink);
 }
 
 .video-player__controls {
@@ -154,7 +162,7 @@
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--edge-highlight);
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -166,7 +174,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--edge-highlight);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
@@ -187,7 +195,7 @@
   gap: var(--space-2);
   padding: var(--space-2);
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--edge-highlight);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }

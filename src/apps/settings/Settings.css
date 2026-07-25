@@ -1,16 +1,20 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
 /* Settings App Styles - Porcelain OS */
 
 .settings {
   display: flex;
   height: 100%;
-  background: var(--color-surface-elevated);
+  background: var(--paper-0);
 }
 
 .settings__sidebar {
   width: 200px;
   padding: var(--space-3);
-  background: var(--color-porcelain-50);
-  border-right: 1px solid var(--color-border-subtle);
+  background: var(--paper-0);
+  border-right: 1px solid var(--edge-hairline);
 }
 
 .settings__nav-item {
@@ -20,14 +24,14 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--ink);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .settings__nav-item:hover {
-  background: var(--color-porcelain-100);
-  color: var(--color-text-primary);
+  background: var(--paper-1);
+  color: var(--ink-strong);
 }
 
 .settings__nav-item--active {
@@ -49,7 +53,7 @@
 .settings__panel-title {
   font-size: var(--text-xl);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: var(--space-4);
 }
 
@@ -60,7 +64,7 @@
 .settings__section-title {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-text-secondary);
+  color: var(--ink);
   margin-bottom: var(--space-3);
 }
 
@@ -69,7 +73,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .settings__label {
@@ -77,12 +81,12 @@
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-sm);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
 }
 
 .settings__info {
   font-size: var(--text-sm);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   line-height: var(--leading-relaxed);
 }
 
@@ -97,7 +101,7 @@
   width: 200px;
   height: 6px;
   appearance: none;
-  background: var(--color-porcelain-200);
+  background: var(--paper-2);
   border-radius: var(--radius-full);
   outline: none;
 }
@@ -119,7 +123,7 @@
 
 .settings__slider-value {
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--ink);
   min-width: 40px;
 }
 
@@ -127,7 +131,7 @@
 .settings__toggle {
   width: 48px;
   height: 28px;
-  background: var(--color-porcelain-300);
+  background: var(--paper-3);
   border-radius: var(--radius-full);
   padding: 2px;
   cursor: pointer;
@@ -185,7 +189,7 @@
   left: 0;
   right: 0;
   padding: var(--space-1) var(--space-2);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--emboss-ambient);
   color: white;
   font-size: var(--text-xs);
   text-align: center;
@@ -211,12 +215,12 @@
 }
 
 .settings__theme-option:hover {
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
 }
 
 .settings__theme-option--active {
   border-color: var(--color-accent);
-  background: var(--color-porcelain-50);
+  background: var(--paper-0);
 }
 
 .settings__theme-preview {
@@ -229,7 +233,7 @@
 }
 
 .settings__theme-preview--light {
-  background: linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%);
+  background: linear-gradient(135deg, var(--paper-1) 0%, var(--paper-2) 50%, var(--paper-3) 100%);
 }
 
 .settings__theme-preview--light::before {
@@ -239,12 +243,12 @@
   left: 4px;
   right: 4px;
   height: 6px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--paper-0);
   border-radius: 2px;
 }
 
 .settings__theme-preview--dark {
-  background: linear-gradient(135deg, #1a1917 0%, #242320 50%, #2e2d29 100%);
+  background: linear-gradient(135deg, var(--paper-4) 0%, var(--paper-4) 50%, var(--paper-3) 100%);
 }
 
 .settings__theme-preview--dark::before {
@@ -254,14 +258,14 @@
   left: 4px;
   right: 4px;
   height: 6px;
-  background: rgba(50, 48, 44, 0.9);
+  background: var(--paper-4);
   border-radius: 2px;
 }
 
 .settings__theme-preview--auto {
   background: linear-gradient(135deg,
-    #f5f3ef 0%, #ebe8e2 25%,
-    #242320 75%, #2e2d29 100%
+    var(--paper-1) 0%, var(--paper-2) 25%,
+    var(--paper-4) 75%, var(--paper-3) 100%
   );
 }
 
@@ -272,17 +276,17 @@
   left: 4px;
   right: 4px;
   height: 6px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(50, 48, 44, 0.9) 100%);
+  background: linear-gradient(90deg, var(--paper-0) 0%, var(--paper-4) 100%);
   border-radius: 2px;
 }
 
 .settings__theme-option span {
   font-size: var(--text-xs);
-  color: var(--color-text-secondary);
+  color: var(--ink);
 }
 
 .settings__theme-option--active span {
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   font-weight: var(--font-medium);
 }
 
@@ -307,7 +311,7 @@
 }
 
 .settings__accent-color--active {
-  border-color: var(--color-text-primary);
+  border-color: var(--ink-strong);
 }
 
 /* About Panel */
@@ -321,21 +325,21 @@
   font-size: var(--text-2xl);
   font-weight: var(--font-semibold);
   text-align: center;
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: var(--space-1);
 }
 
 .settings__about-version {
   font-size: var(--text-sm);
   text-align: center;
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   margin-bottom: var(--space-3);
 }
 
 .settings__about-description {
   font-size: var(--text-sm);
   text-align: center;
-  color: var(--color-text-secondary);
+  color: var(--ink);
   line-height: var(--leading-relaxed);
 }
 
@@ -343,7 +347,7 @@
 .settings__reset-button {
   margin-top: var(--space-3);
   padding: var(--space-2) var(--space-4);
-  background: var(--color-error, #c9a8a8);
+  background: var(--color-error, var(--color-error));
   color: white;
   border: none;
   border-radius: var(--radius-md);
@@ -354,7 +358,7 @@
 }
 
 .settings__reset-button:hover {
-  background: #b89898;
+  background: var(--color-error);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }

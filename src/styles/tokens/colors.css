@@ -56,6 +56,12 @@
   --paper-3: #e6e0d6;
   --paper-4: #d9d2c6;
 
+  /* Terminal canvas: a slate plate set into the paper. Dark in BOTH themes -
+   * a terminal is a different material, not a lighter sheet. */
+  --terminal-canvas: #2a2621;
+  --terminal-ink: #ded7c9;
+  --terminal-ink-dim: #9a9184;
+
   /* Ink - the colour of marks pressed into the stock */
   --ink-strong: #38332b;
   --ink: #5c564d;
@@ -119,6 +125,11 @@
   --paper-3: #191b20;
   --paper-4: #141619;
 
+  /* Terminal canvas on the slate theme */
+  --terminal-canvas: #14161a;
+  --terminal-ink: #c9d2de;
+  --terminal-ink-dim: #7e8794;
+
   /* Ink - on dark stock the marks are light */
   --ink-strong: #e4e7ec;
   --ink: #b6bcc6;
@@ -174,5 +185,22 @@
     /* Icon Colors */
     --color-icon-primary: var(--color-porcelain-700);
     --color-icon-secondary: var(--color-porcelain-600);
+
+    /* Paper Ramp - dark stock, matching .dark */
+    --paper-0: #272b31;
+    --paper-1: #22252b;
+    --paper-2: #1d2025;
+    --paper-3: #191b20;
+    --paper-4: #141619;
+
+    /* Terminal canvas on the slate theme */
+    --terminal-canvas: #14161a;
+    --terminal-ink: #c9d2de;
+    --terminal-ink-dim: #7e8794;
+
+    /* Ink - on dark stock the marks are light */
+    --ink-strong: #e4e7ec;
+    --ink: #b6bcc6;
+    --ink-soft: #868d99;
   }
 }

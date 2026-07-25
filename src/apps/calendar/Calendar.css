@@ -1,10 +1,14 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
 /* Calendar App Styles - Porcelain OS */
 
 .calendar-app {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--color-surface-elevated);
+  background: var(--paper-0);
 }
 
 .calendar-app__header {
@@ -12,8 +16,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  background: var(--color-porcelain-50);
-  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--paper-0);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .calendar-app__nav {
@@ -29,20 +33,20 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  background: var(--color-porcelain-100);
-  color: var(--color-text-secondary);
+  background: var(--paper-1);
+  color: var(--ink);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .calendar-app__nav-btn:hover {
-  background: var(--color-porcelain-200);
-  color: var(--color-text-primary);
+  background: var(--paper-2);
+  color: var(--ink-strong);
 }
 
 .calendar-app__title {
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   min-width: 180px;
   text-align: center;
 }
@@ -84,7 +88,7 @@
   text-align: center;
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   padding: var(--space-2);
 }
 
@@ -107,7 +111,7 @@
 }
 
 .calendar-app__day:hover:not(.calendar-app__day--empty) {
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
 }
 
 .calendar-app__day--empty {
@@ -120,7 +124,7 @@
 }
 
 .calendar-app__day--selected {
-  background: rgba(168, 181, 196, 0.2);
+  background: var(--color-info-light);
 }
 
 .calendar-app__day-number {
@@ -131,7 +135,7 @@
   justify-content: center;
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
 }
 
 .calendar-app__day-dots {
@@ -148,8 +152,8 @@
 
 .calendar-app__sidebar {
   width: 200px;
-  border-left: 1px solid var(--color-border-subtle);
-  background: var(--color-porcelain-50);
+  border-left: 1px solid var(--edge-hairline);
+  background: var(--paper-0);
   display: flex;
   flex-direction: column;
 }
@@ -159,13 +163,13 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .calendar-app__sidebar-header h3 {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
 }
 
 .calendar-app__add-btn {
@@ -192,7 +196,7 @@
 
 .calendar-app__no-events {
   text-align: center;
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   font-size: var(--text-sm);
   padding: var(--space-4);
 }
@@ -210,13 +214,13 @@
 .calendar-app__event-title {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: var(--space-1);
 }
 
 .calendar-app__event-time {
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
 }
 
 .calendar-app__event-delete {
@@ -224,7 +228,7 @@
   top: var(--space-2);
   right: var(--space-2);
   opacity: 0;
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
@@ -243,7 +247,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--emboss-ambient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,7 +255,7 @@
 }
 
 .calendar-app__modal {
-  background: var(--color-surface-elevated);
+  background: var(--paper-0);
   border-radius: var(--radius-xl);
   padding: var(--space-4);
   width: 300px;
@@ -261,7 +265,7 @@
 .calendar-app__modal h3 {
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: var(--space-3);
 }
 
@@ -269,7 +273,7 @@
   width: 100%;
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-inset);
   margin-bottom: var(--space-3);
@@ -286,13 +290,13 @@
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  background: var(--color-porcelain-100);
-  color: var(--color-text-secondary);
+  background: var(--paper-1);
+  color: var(--ink);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .calendar-app__modal-btn:hover {
-  background: var(--color-porcelain-200);
+  background: var(--paper-2);
 }
 
 .calendar-app__modal-btn--primary {

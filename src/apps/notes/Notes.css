@@ -1,22 +1,26 @@
+/* Restyled to the letterpress material (L-004).
+ * Colours come from the paper/ink ramps, depth from the emboss tokens or the
+ * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
+ */
 /* Notes App Styles - Porcelain OS */
 
 .notes {
   display: flex;
   height: 100%;
-  background: var(--color-surface-elevated);
+  background: var(--paper-0);
 }
 
 .notes__sidebar {
   width: 240px;
-  background: var(--color-porcelain-50);
-  border-right: 1px solid var(--color-border-subtle);
+  background: var(--paper-0);
+  border-right: 1px solid var(--edge-hairline);
   display: flex;
   flex-direction: column;
 }
 
 .notes__sidebar-header {
   padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .notes__new-btn {
@@ -47,27 +51,27 @@
 
 .notes__item {
   padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out);
 }
 
 .notes__item:hover {
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
 }
 
 .notes__item--active {
-  background: rgba(168, 181, 196, 0.2);
+  background: var(--color-info-light);
 }
 
 .notes__item--active:hover {
-  background: rgba(168, 181, 196, 0.3);
+  background: var(--color-info-light);
 }
 
 .notes__item-title {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: var(--space-1);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -76,7 +80,7 @@
 
 .notes__item-preview {
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -85,7 +89,7 @@
 
 .notes__item-date {
   font-size: var(--text-2xs);
-  color: var(--color-text-disabled);
+  color: var(--ink-soft);
 }
 
 .notes__editor {
@@ -100,19 +104,19 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .notes__title-input {
   flex: 1;
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   background: transparent;
 }
 
 .notes__title-input::placeholder {
-  color: var(--color-text-disabled);
+  color: var(--ink-soft);
 }
 
 .notes__delete-btn {
@@ -122,7 +126,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
@@ -134,8 +138,8 @@
 .notes__editor-meta {
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
-  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .notes__content {
@@ -143,13 +147,13 @@
   padding: var(--space-3);
   font-size: var(--text-sm);
   line-height: var(--leading-relaxed);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   background: transparent;
   resize: none;
 }
 
 .notes__content::placeholder {
-  color: var(--color-text-disabled);
+  color: var(--ink-soft);
 }
 
 .notes__empty {
@@ -159,5 +163,5 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
 }

@@ -6,6 +6,7 @@
 @import './tokens/spacing.css';
 @import './tokens/animations.css';
 @import './primitives.css';
+@import './app-controls.css';
 
 /* Reset and Base Styles */
 *, *::before, *::after {
