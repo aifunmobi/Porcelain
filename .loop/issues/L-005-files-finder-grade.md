@@ -1,10 +1,10 @@
 ---
 id: L-005
 title: Bring Files up to Finder grade
-status: review
+status: reviewing
 attempts: 1
 branch: "loop/L-005-files-finder-grade"
-claimed_at: ""
+claimed_at: "2026-07-25T22:45:05Z"
 depends: L-004
 ---
 
