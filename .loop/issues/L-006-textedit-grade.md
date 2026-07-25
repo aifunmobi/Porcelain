@@ -1,10 +1,10 @@
 ---
 id: L-006
 title: Bring Text Editor up to TextEdit grade
-status: reviewing
-attempts: 1
+status: merged
+attempts: 0
 branch: "loop/L-006-textedit-grade"
-claimed_at: "2026-07-25T23:36:07Z"
+claimed_at: ""
 depends: L-004
 ---
 
@@ -36,21 +36,21 @@ Work in `src/apps/text-editor/`.
 - No restyling of app chrome — L-004 already did that. The page sheet is new and uses existing primitives.
 
 ## Acceptance criteria
-- [ ] `npm run build` completes with no errors.
-- [ ] `package.json` dependencies are unchanged from before this issue.
-- [ ] Rich mode applies bold, italic, underline, strikethrough, H1-H3, both list types, blockquote, all three alignments and a link — by toolbar and by keyboard where a shortcut is listed.
-- [ ] Toggling to plain-text mode and back behaves predictably and warns before discarding formatting.
-- [ ] Cmd+F opens find; the match count is correct; next/previous cycle through matches; replace and replace-all work; the case-sensitive toggle changes the results.
-- [ ] Word, character and line counts update live and are correct for a known test string.
-- [ ] Editing then waiting 3 seconds writes the file without a manual save; the dirty dot appears while unsaved and clears after a save.
-- [ ] New, Open, Save and Save As all work for `.txt`, `.md` and `.html`; a rich document saved as `.html` reopens with its formatting intact.
-- [ ] Recent documents lists the last 10 files and survives a reload.
-- [ ] Font family, size and line spacing apply and persist.
-- [ ] The document renders as a centred paper sheet by default; the wrap toggle switches to full width.
-- [ ] Cmd+P opens a print preview containing the document only — no toolbar, no window chrome.
-- [ ] Undo and redo work in both modes.
-- [ ] Double-clicking a `.txt` file in Files opens it here with its content.
-- [ ] No console errors during any of the above.
+- [x] `npm run build` completes with no errors.
+- [x] `package.json` dependencies are unchanged from before this issue.
+- [x] Rich mode applies bold, italic, underline, strikethrough, H1-H3, both list types, blockquote, all three alignments and a link — by toolbar and by keyboard where a shortcut is listed.
+- [x] Toggling to plain-text mode and back behaves predictably and warns before discarding formatting.
+- [x] Cmd+F opens find; the match count is correct; next/previous cycle through matches; replace and replace-all work; the case-sensitive toggle changes the results.
+- [x] Word, character and line counts update live and are correct for a known test string.
+- [x] Editing then waiting 3 seconds writes the file without a manual save; the dirty dot appears while unsaved and clears after a save.
+- [x] New, Open, Save and Save As all work for `.txt`, `.md` and `.html`; a rich document saved as `.html` reopens with its formatting intact.
+- [x] Recent documents lists the last 10 files and survives a reload.
+- [x] Font family, size and line spacing apply and persist.
+- [x] The document renders as a centred paper sheet by default; the wrap toggle switches to full width.
+- [x] Cmd+P opens a print preview containing the document only — no toolbar, no window chrome.
+- [x] Undo and redo work in both modes.
+- [x] Double-clicking a `.txt` file in Files opens it here with its content.
+- [x] No console errors during any of the above.
 
 ## Test plan
 1. `npm run build` — must exit 0. Diff `package.json` to confirm dependencies are untouched.
@@ -116,3 +116,29 @@ warnings are all rendered inside the window.
 **Not verified here** — needs the Tauri build: the real-filesystem read/write
 path and the native print dialog (print was checked by emulating print media,
 which exercises the same stylesheet without opening a blocking dialog).
+
+### Review 1 (2026-07-25) — merged
+
+Every criterion driven in a browser against the branch. Two defects were found
+and fixed before merging:
+
+1. **The mode toggle was not reversible.** Plain -> rich -> plain grew the
+   document by one blank line per cycle, and the rich line count read one too
+   high. Both came from `innerText`, which renders `<div><br></div>` — how an
+   empty line is represented — as two newlines. Conversion and counting now walk
+   leaf block elements. Verified stable over three consecutive round trips.
+2. **The rich find count went stale after a replace.** Replace-all left the
+   strip reading "1 of 3" with nothing left to find, because the contenteditable
+   DOM is not React state and nothing the recount effect watched had changed.
+   Rich edits now bump a document version the effect depends on: 3 -> 2 -> none.
+
+Covered here that the build pass had missed: formatting by keyboard (⌘B/⌘I/⌘U,
+not just the toolbar), `.txt` and `.md` save and reopen, find and replace in
+rich mode, and the plain/rich round trip. Rich replace preserves surrounding
+markup — replacing inside `<b>beta</b>` left the `<b>` intact, and matches were
+found across an `h1`, a bold `div` and an `li`.
+
+Still unexercised, and not reachable from a browser: the Tauri real-filesystem
+read/write path and the native print dialog. Print was checked by emulating
+print media, which applies the same stylesheet — toolbar, status bar, menu bar
+and dock all drop out, leaving only the page.
