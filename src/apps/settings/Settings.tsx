@@ -14,6 +14,33 @@ const wallpapers = [
   { id: 'gradient-4', type: 'gradient' as const, value: 'linear-gradient(180deg, #a8b5c4 0%, #8291a3 100%)', name: 'Sky' },
   { id: 'gradient-5', type: 'gradient' as const, value: 'linear-gradient(135deg, #d4c4a8 0%, #c4b498 100%)', name: 'Sand' },
   { id: 'gradient-6', type: 'gradient' as const, value: 'linear-gradient(135deg, #9cb89c 0%, #8ca88c 100%)', name: 'Sage' },
+  // Abstract black-and-white patterns taken from BMW kidney-grille geometry.
+  // Drawn in CSS so they stay crisp at any size and ship no binary assets.
+  {
+    id: 'grille-1',
+    type: 'gradient' as const,
+    name: 'Kidney',
+    value:
+      'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.5) 100%),' +
+      'repeating-linear-gradient(90deg, #0d0d0d 0px, #0d0d0d 12px, #6e6e6e 12px, #9c9c9c 14px, #0d0d0d 16px)',
+  },
+  {
+    id: 'grille-2',
+    type: 'gradient' as const,
+    name: 'Mesh',
+    value:
+      'repeating-linear-gradient(45deg, transparent 0 7px, rgba(212,212,212,0.5) 7px 8px),' +
+      'repeating-linear-gradient(-45deg, transparent 0 7px, rgba(212,212,212,0.5) 7px 8px),' +
+      'linear-gradient(160deg, #272727 0%, #0b0b0b 100%)',
+  },
+  {
+    id: 'grille-3',
+    type: 'gradient' as const,
+    name: 'Louvre',
+    value:
+      'linear-gradient(105deg, rgba(0,0,0,0.10) 0%, transparent 45%, rgba(0,0,0,0.14) 100%),' +
+      'repeating-linear-gradient(0deg, #ffffff 0px, #ffffff 9px, #1a1a1a 9px, #1a1a1a 11px)',
+  },
   { id: 'color-1', type: 'color' as const, value: '#f5f3ef', name: 'White' },
   { id: 'color-2', type: 'color' as const, value: '#ebe8e2', name: 'Ivory' },
   { id: 'color-3', type: 'color' as const, value: '#ddd9d0', name: 'Linen' },
