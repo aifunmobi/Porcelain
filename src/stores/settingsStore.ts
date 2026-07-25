@@ -25,8 +25,17 @@ interface SettingsState extends UserSettings {
   resetSettings: () => void;
 }
 
+/* The default desk is expressed in paper tokens, not literal hex, so it
+ * follows the theme instead of staying cream in dark mode. */
+export const DEFAULT_WALLPAPER =
+  'linear-gradient(160deg, var(--paper-1) 0%, var(--paper-2) 55%, var(--paper-3) 100%)';
+
+const LEGACY_WALLPAPERS = [
+  'linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%)',
+];
+
 const defaultSettings: UserSettings & { theme: ThemeMode } = {
-  wallpaper: 'linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%)',
+  wallpaper: DEFAULT_WALLPAPER,
   wallpaperType: 'gradient',
   volume: 75,
   brightness: 100,
@@ -133,7 +142,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'porcelain-settings',
-      version: 1.5, // Increment this when defaults change
+      version: 2, // Increment this when defaults change
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as SettingsState;
         // If version is old, reset desktop icons and pinned apps to include new apps
@@ -144,6 +153,12 @@ export const useSettingsStore = create<SettingsState>()(
             desktopIcons: defaultSettings.desktopIcons,
             pinnedApps: defaultSettings.pinnedApps,
           };
+        }
+        // 2.0: the stock desk gradient became token-based so it follows the
+        // theme. Anyone still on the old hardcoded cream gets moved across;
+        // a deliberately chosen wallpaper is left alone.
+        if (version < 2 && LEGACY_WALLPAPERS.includes(state.wallpaper)) {
+          return { ...state, wallpaper: DEFAULT_WALLPAPER, wallpaperType: 'gradient' as const };
         }
         return state;
       },

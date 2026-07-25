@@ -1,4 +1,9 @@
-/* DragOverlay - Full screen overlay for drag operations */
+/* DragOverlay - Porcelain OS
+ *
+ * A dragged item is a sheet lifted clean off the surface: exaggerated cast
+ * shadow, tilted very slightly, so it reads as held rather than slid.
+ */
+
 .drag-overlay {
   position: fixed;
   top: 0;
@@ -9,7 +14,6 @@
   pointer-events: none;
 }
 
-/* Drop zone indicator in the center */
 .drag-overlay__drop-zone {
   position: absolute;
   top: 50%;
@@ -18,53 +22,60 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-6, 24px) var(--space-8, 32px);
-  border: 2px dashed var(--color-accent, #007AFF);
-  border-radius: var(--radius-lg, 12px);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  color: var(--color-accent, #007AFF);
-  font-size: var(--text-sm, 14px);
-  font-weight: 500;
-  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.15));
-  animation: dropZonePulse 1.5s ease-in-out infinite;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-8);
+  border: 1px dashed var(--edge-hairline);
+  border-radius: var(--radius-lg);
+  background-color: var(--paper-0);
+  color: var(--ink-soft);
+  text-shadow: var(--text-emboss-engraved);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  box-shadow: var(--emboss-raise-3);
 }
 
-@keyframes dropZonePulse {
+@media (prefers-reduced-motion: no-preference) {
+  .drag-overlay__drop-zone {
+    animation: dropZoneBreathe 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes dropZoneBreathe {
   0%, 100% {
-    opacity: 0.9;
-    transform: translate(-50%, -50%) scale(1);
+    box-shadow: var(--emboss-raise-2);
   }
   50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.02);
+    box-shadow: var(--emboss-raise-3);
   }
 }
 
 .drag-overlay__drop-zone--active {
-  border-color: #34c759;
-  color: #34c759;
-  background: rgba(52, 199, 89, 0.1);
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
-/* Dragged item preview */
+/* the lifted tile */
 .drag-overlay__preview {
   position: absolute;
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
-  background: var(--color-surface-elevated, #fff);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.15));
-  font-size: var(--text-sm, 14px);
-  color: var(--color-text-primary, #1d1d1f);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 1px 0 var(--edge-highlight),
+    0 6px 12px var(--emboss-dark-1),
+    0 20px 40px var(--emboss-ambient);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  text-shadow: var(--text-emboss-engraved);
   white-space: nowrap;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform: translate(-50%, -120%);
+  transform: translate(-50%, -120%) rotate(-1.5deg);
   pointer-events: none;
 }
 

@@ -92,7 +92,7 @@ export const Dock: React.FC = () => {
                   title={app.name}
                 >
                   <div className="dock__icon">
-                    <Icon name={app.icon} size={32} color="var(--color-porcelain-600)" />
+                    <Icon name={app.icon} size={42} mode="tile" />
                   </div>
                 </button>
                 {isRunning && <div className="dock__indicator" />}

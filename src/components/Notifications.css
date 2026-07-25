@@ -15,11 +15,13 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: var(--paper-0);
   border-radius: var(--radius-lg);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    inset 0 1px 0 var(--edge-highlight),
+    0 2px 5px var(--emboss-dark-1),
+    0 14px 32px var(--emboss-ambient);
+  border: 1px solid var(--edge-hairline);
   min-width: 300px;
   max-width: 400px;
   pointer-events: auto;
@@ -32,7 +34,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-md);
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
   color: var(--color-accent);
   flex-shrink: 0;
 }
@@ -45,13 +47,13 @@
 .toast__title {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: 2px;
 }
 
 .toast__message {
   font-size: var(--text-xs);
-  color: var(--color-text-secondary);
+  color: var(--ink);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -67,15 +69,15 @@
   width: 20px;
   height: 20px;
   border-radius: var(--radius-sm);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
   flex-shrink: 0;
 }
 
 .toast__close:hover {
-  background: var(--color-porcelain-200);
-  color: var(--color-text-primary);
+  box-shadow: var(--emboss-press-1);
+  color: var(--ink-strong);
 }
 
 /* Notification Center */
@@ -94,11 +96,13 @@
   right: 8px;
   width: 360px;
   max-height: calc(100vh - 120px);
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: var(--paper-0);
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    inset 0 1px 0 var(--edge-highlight),
+    0 4px 10px var(--emboss-dark-1),
+    0 26px 60px var(--emboss-ambient);
+  border: 1px solid var(--edge-hairline);
   display: flex;
   flex-direction: column;
   z-index: 10001;
@@ -110,13 +114,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
 }
 
 .notification-center__title {
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -149,14 +153,14 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .notification-center__action:hover {
-  background: var(--color-porcelain-200);
-  color: var(--color-text-primary);
+  box-shadow: var(--emboss-press-1);
+  color: var(--ink-strong);
 }
 
 .notification-center__action--danger:hover {
@@ -167,7 +171,7 @@
 /* Do Not Disturb Toggle */
 .notification-center__dnd {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--edge-hairline);
   background: var(--color-porcelain-50);
 }
 
@@ -176,7 +180,7 @@
   align-items: center;
   gap: 12px;
   font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -188,7 +192,7 @@
   position: relative;
   width: 36px;
   height: 20px;
-  background: var(--color-porcelain-300);
+  background: var(--paper-3);
   border-radius: 10px;
   transition: background var(--duration-normal) var(--ease-out);
 }
@@ -227,7 +231,7 @@
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   gap: 12px;
 }
 
@@ -249,7 +253,7 @@
 }
 
 .notification-item:hover {
-  background: var(--color-porcelain-100);
+  background: var(--paper-1);
 }
 
 .notification-item--unread {
@@ -275,8 +279,8 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-md);
-  background: var(--color-porcelain-200);
-  color: var(--color-text-secondary);
+  background: var(--paper-2);
+  color: var(--ink);
   flex-shrink: 0;
 }
 
@@ -288,7 +292,7 @@
 .notification-item__title {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  color: var(--color-text-primary);
+  color: var(--ink-strong);
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -297,7 +301,7 @@
 
 .notification-item__message {
   font-size: var(--text-xs);
-  color: var(--color-text-secondary);
+  color: var(--ink);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -308,7 +312,7 @@
 
 .notification-item__time {
   font-size: 10px;
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   margin-top: 4px;
 }
 
@@ -319,7 +323,7 @@
   width: 20px;
   height: 20px;
   border-radius: var(--radius-sm);
-  color: var(--color-text-tertiary);
+  color: var(--ink-soft);
   opacity: 0;
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
@@ -331,8 +335,8 @@
 }
 
 .notification-item__remove:hover {
-  background: var(--color-porcelain-300);
-  color: var(--color-text-primary);
+  background: var(--paper-3);
+  color: var(--ink-strong);
 }
 
 /* Notification Bell */
@@ -344,14 +348,14 @@
   padding: var(--space-1);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: var(--ink);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .notification-bell:hover,
 .notification-bell--active {
-  background: var(--color-porcelain-200);
-  color: var(--color-text-primary);
+  box-shadow: var(--emboss-press-1);
+  color: var(--ink-strong);
 }
 
 .notification-bell__badge {
@@ -370,4 +374,104 @@
   align-items: center;
   justify-content: center;
   border: 1.5px solid white;
+}
+
+/* --- letterpress overrides (L-003) --------------------------------------- */
+
+.toast {
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  box-shadow:
+    inset 0 1px 0 var(--edge-highlight),
+    0 2px 5px var(--emboss-dark-1),
+    0 14px 32px var(--emboss-ambient);
+  position: relative;
+  overflow: hidden;
+}
+
+/* severity is an engraved accent bar down the left edge, not a colour wash */
+.toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-info);
+  box-shadow: var(--emboss-deboss-1);
+}
+
+.toast--success::before { background: var(--color-success); }
+.toast--warning::before { background: var(--color-warning); }
+.toast--error::before { background: var(--color-error); }
+
+.toast__icon {
+  background-color: var(--paper-1);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-raise-1);
+  color: var(--ink);
+}
+
+.toast__title {
+  color: var(--ink-strong);
+  text-shadow: var(--text-emboss-engraved);
+}
+
+.toast__message {
+  color: var(--ink);
+}
+
+.toast__close:hover {
+  box-shadow: var(--emboss-press-1);
+}
+
+.notification-center {
+  background-color: var(--paper-0);
+}
+
+.notification-center__header {
+  background-color: var(--paper-1);
+  box-shadow: inset 0 -1px 0 var(--edge-highlight);
+  border-bottom: 1px solid var(--edge-shadow);
+}
+
+.notification-item {
+  border-top: 1px solid var(--edge-highlight);
+  border-bottom: 1px solid var(--edge-shadow);
+}
+
+.notification-item:hover {
+  box-shadow: var(--emboss-press-1);
+}
+
+.notification-item__icon {
+  background-color: var(--paper-1);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-raise-1);
+  color: var(--ink);
+}
+
+.notification-bell:hover,
+.notification-bell--active {
+  box-shadow: var(--emboss-press-1);
+}
+
+.notification-center__action {
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-raise-1);
+  color: var(--ink);
+}
+
+.notification-center__action:hover {
+  box-shadow: var(--emboss-raise-2);
+}
+
+.notification-center__action:active {
+  box-shadow: var(--emboss-press-1);
+  transform: translate(1px, 1px);
+}
+
+.notification-center__dnd-toggle {
+  box-shadow: var(--emboss-press-1);
 }

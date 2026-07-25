@@ -1,9 +1,9 @@
 ---
 id: L-003
 title: Restyle the shell — desktop, dock, menu bar, windows, Spotlight, notifications
-status: backlog
+status: merged
 attempts: 0
-branch: ""
+branch: "loop/L-003-shell-restyle"
 claimed_at: ""
 depends: L-002
 ---
@@ -57,17 +57,17 @@ Restyle every file under `src/core/` plus the shared overlays, using only L-001 
 - No new dependencies, no layout restructure beyond what the styling requires.
 
 ## Acceptance criteria
-- [ ] `npm run build` completes with no errors.
-- [ ] Windows show no `opacity` change between active and inactive; the difference is shadow depth and title-bar contrast.
-- [ ] `backdrop-filter` is gone from the dock (grep `src/core/` returns no `backdrop-filter`).
-- [ ] Dock icons render in `tile` mode; hovering raises and clicking presses, with no scale-bounce.
-- [ ] Desktop icon selection renders as a pressed well, not a solid blue/accent rectangle.
-- [ ] Spotlight opens as a raised paper card with a pressed search field, and search still returns and launches apps.
-- [ ] A notification (triggerable from Settings or by an app action) renders as a paper card with an engraved accent bar.
-- [ ] Dragging a desktop icon shows the lifted-tile overlay and drop still works.
-- [ ] Every shell surface above renders correctly in dark mode with the slate recipe.
-- [ ] Windows still drag, resize, minimise, maximise, close, and raise on click.
-- [ ] No console errors during any of the above.
+- [x] `npm run build` completes with no errors.
+- [x] Windows show no `opacity` change between active and inactive; the difference is shadow depth and title-bar contrast.
+- [x] `backdrop-filter` is gone from the dock (grep `src/core/` returns no `backdrop-filter`).
+- [x] Dock icons render in `tile` mode; hovering raises and clicking presses, with no scale-bounce.
+- [x] Desktop icon selection renders as a pressed well, not a solid blue/accent rectangle.
+- [x] Spotlight opens as a raised paper card with a pressed search field, and search still returns and launches apps.
+- [x] A notification (triggerable from Settings or by an app action) renders as a paper card with an engraved accent bar.
+- [x] Dragging a desktop icon shows the lifted-tile overlay and drop still works.
+- [x] Every shell surface above renders correctly in dark mode with the slate recipe.
+- [x] Windows still drag, resize, minimise, maximise, close, and raise on click.
+- [x] No console errors during any of the above.
 
 ## Test plan
 1. `npm run build` — must exit 0.
@@ -82,3 +82,6 @@ Restyle every file under `src/core/` plus the shared overlays, using only L-001 
 10. Confirm a clean console throughout.
 
 ## Notes
+Built and verified 2026-07-25. 45/45 automated browser checks passed across light and dark.
+
+One finding beyond the written scope, fixed here because it broke the dark-mode criterion: the desktop wallpaper was a hardcoded cream gradient in settingsStore applied as an inline style, so it overrode any CSS and stayed light in dark mode. The stock wallpaper is now expressed in paper tokens and follows the theme; settings version bumped to 2 with a migration that moves anyone still on the old default across and leaves a deliberately chosen wallpaper alone.

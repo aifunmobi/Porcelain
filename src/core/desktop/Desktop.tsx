@@ -451,7 +451,7 @@ export const Desktop: React.FC = () => {
           }}
         >
           <div className="desktop__icon-image">
-            <Icon name="folder" size={48} color="var(--color-porcelain-600)" />
+            <Icon name="folder" size={40} />
           </div>
           <input
             type="text"
@@ -671,7 +671,7 @@ const DesktopIconComponent: React.FC<DesktopIconComponentProps> = ({
             draggable={false}
           />
         ) : (
-          <Icon name={icon.icon} size={48} color="var(--color-porcelain-600)" />
+          <Icon name={icon.icon} size={40} />
         )}
       </div>
       <div className="desktop__icon-label">{icon.name}</div>

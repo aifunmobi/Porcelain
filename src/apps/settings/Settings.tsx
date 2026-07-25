@@ -8,7 +8,7 @@ import './Settings.css';
 type SettingsPanel = 'wallpaper' | 'sound' | 'display' | 'dock' | 'datetime' | 'about';
 
 const wallpapers = [
-  { id: 'gradient-1', type: 'gradient' as const, value: 'linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%)', name: 'Porcelain' },
+  { id: 'gradient-1', type: 'gradient' as const, value: 'linear-gradient(160deg, var(--paper-1) 0%, var(--paper-2) 55%, var(--paper-3) 100%)', name: 'Porcelain' },
   { id: 'gradient-2', type: 'gradient' as const, value: 'linear-gradient(135deg, #e8e4df 0%, #d4cfc8 50%, #c0bab2 100%)', name: 'Stone' },
   { id: 'gradient-3', type: 'gradient' as const, value: 'linear-gradient(135deg, #f0ebe5 0%, #e2dcd4 50%, #d4cec6 100%)', name: 'Cream' },
   { id: 'gradient-4', type: 'gradient' as const, value: 'linear-gradient(180deg, #a8b5c4 0%, #8291a3 100%)', name: 'Sky' },

@@ -218,7 +218,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({ isOpen, onClose }) => {
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <div className="spotlight__result-icon">
-                      <Icon name={result.icon} size={24} />
+                      <Icon name={result.icon} size={36} mode="tile" />
                     </div>
                     <div className="spotlight__result-info">
                       <div className="spotlight__result-name">{result.name}</div>
