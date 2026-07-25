@@ -1,0 +1,147 @@
+/* Porcelain OS - Letterpress Emboss Tokens
+ *
+ * The single source of truth for the material. Everything in the OS that
+ * looks raised, pressed or engraved derives from the variables in this file.
+ *
+ * One light source, always: light falls from the top-left, so highlights sit
+ * on the top-left edge of a form and shadows fall to the bottom-right. Nothing
+ * downstream is allowed to invent its own light direction.
+ *
+ * Light mode is white paper: strong specular highlight, warm soft shadow.
+ * Dark mode ("debossed slate") is a different material, not an inversion:
+ * dark stock barely catches light, so the highlight is weak and cool while the
+ * shadow is deep. See the .dark block at the bottom.
+ */
+
+:root {
+  /* ---- Light source -------------------------------------------------- */
+  /* Conceptual direction of the light. Offsets below are hand-tuned to match. */
+  --emboss-angle: 135deg;
+  --emboss-offset: 1px;
+
+  /* ---- Material colours (light mode: white paper) --------------------- */
+  --emboss-light-1: rgba(255, 255, 255, 0.95);
+  --emboss-light-2: rgba(255, 255, 255, 0.72);
+  --emboss-dark-1: rgba(74, 66, 55, 0.16);
+  --emboss-dark-2: rgba(74, 66, 55, 0.28);
+  --emboss-ambient: rgba(74, 66, 55, 0.10);
+
+  /* ---- Edges ---------------------------------------------------------- */
+  --edge-hairline: rgba(74, 66, 55, 0.14);
+  --edge-highlight: rgba(255, 255, 255, 0.88);
+  --edge-shadow: rgba(74, 66, 55, 0.07);
+
+  /* ---- Raised: the form sits above the sheet -------------------------- */
+  --emboss-raise-1:
+    inset 0 1px 0 var(--edge-highlight),
+    inset 0 -1px 0 var(--edge-shadow),
+    1px 1px 2px var(--emboss-dark-1),
+    -1px -1px 2px var(--emboss-light-1);
+
+  --emboss-raise-2:
+    inset 0 1px 0 var(--edge-highlight),
+    inset 0 -1px 0 var(--edge-shadow),
+    2px 2px 4px var(--emboss-dark-1),
+    -2px -2px 4px var(--emboss-light-1);
+
+  --emboss-raise-3:
+    inset 0 1px 0 var(--edge-highlight),
+    inset 0 -1px 0 var(--edge-shadow),
+    3px 3px 7px var(--emboss-dark-1),
+    -3px -3px 7px var(--emboss-light-1),
+    0 6px 14px var(--emboss-ambient);
+
+  /* ---- Pressed: the form is pushed into the sheet --------------------- */
+  --emboss-press-1:
+    inset 1px 1px 2px var(--emboss-dark-2),
+    inset -1px -1px 2px var(--emboss-light-2);
+
+  --emboss-press-2:
+    inset 2px 2px 5px var(--emboss-dark-2),
+    inset -2px -2px 5px var(--emboss-light-2);
+
+  /* ---- Debossed: struck into the sheet, with a lifted lower lip -------
+   * Distinct from "pressed": a deboss reads as a shape stamped into paper,
+   * so it carries an outer highlight on the side away from the light.
+   */
+  --emboss-deboss-1:
+    inset 1px 1px 1.5px var(--emboss-dark-2),
+    inset -1px -1px 1px var(--emboss-light-1),
+    0 1px 0 var(--edge-highlight);
+
+  --emboss-deboss-2:
+    inset 2px 2px 3px var(--emboss-dark-2),
+    inset -1px -1px 2px var(--emboss-light-1),
+    0 1px 0 var(--edge-highlight);
+
+  /* ---- Embossed text --------------------------------------------------- */
+  --text-emboss-raised:
+    -0.5px -0.5px 0 rgba(255, 255, 255, 0.9),
+    0.5px 0.5px 1px rgba(74, 66, 55, 0.35);
+
+  --text-emboss-engraved:
+    0 1px 0 rgba(255, 255, 255, 0.9),
+    0 -0.5px 0 rgba(74, 66, 55, 0.18);
+
+  /* ---- Paper grain -----------------------------------------------------
+   * Defined exactly once. Applied via the .p-paper primitive, never inlined
+   * per component.
+   */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  --paper-grain-opacity: 0.30;
+  --paper-grain-blend: multiply;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark mode: "debossed slate".
+ * A different stock, not an inverted sheet. Slate reflects very little, so the
+ * highlight drops from 0.95 to 0.09 alpha and shifts cool; the shadow deepens
+ * to near-black. Forms read as engraved rather than lit.
+ * ------------------------------------------------------------------------ */
+.dark {
+  --emboss-light-1: rgba(186, 204, 228, 0.09);
+  --emboss-light-2: rgba(186, 204, 228, 0.05);
+  --emboss-dark-1: rgba(0, 0, 0, 0.50);
+  --emboss-dark-2: rgba(0, 0, 0, 0.66);
+  --emboss-ambient: rgba(0, 0, 0, 0.45);
+
+  --edge-hairline: rgba(0, 0, 0, 0.55);
+  --edge-highlight: rgba(186, 204, 228, 0.07);
+  --edge-shadow: rgba(0, 0, 0, 0.38);
+
+  --text-emboss-raised:
+    0 -0.5px 0 rgba(186, 204, 228, 0.10),
+    0 1px 1px rgba(0, 0, 0, 0.65);
+
+  --text-emboss-engraved:
+    0 1px 0 rgba(186, 204, 228, 0.06),
+    0 -1px 1px rgba(0, 0, 0, 0.55);
+
+  --paper-grain-opacity: 0.16;
+  --paper-grain-blend: soft-light;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-auto {
+    --emboss-light-1: rgba(186, 204, 228, 0.09);
+    --emboss-light-2: rgba(186, 204, 228, 0.05);
+    --emboss-dark-1: rgba(0, 0, 0, 0.50);
+    --emboss-dark-2: rgba(0, 0, 0, 0.66);
+    --emboss-ambient: rgba(0, 0, 0, 0.45);
+
+    --edge-hairline: rgba(0, 0, 0, 0.55);
+    --edge-highlight: rgba(186, 204, 228, 0.07);
+    --edge-shadow: rgba(0, 0, 0, 0.38);
+
+    --text-emboss-raised:
+      0 -0.5px 0 rgba(186, 204, 228, 0.10),
+      0 1px 1px rgba(0, 0, 0, 0.65);
+
+    --text-emboss-engraved:
+      0 1px 0 rgba(186, 204, 228, 0.06),
+      0 -1px 1px rgba(0, 0, 0, 0.55);
+
+    --paper-grain-opacity: 0.16;
+    --paper-grain-blend: soft-light;
+  }
+}

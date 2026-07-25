@@ -1,11 +1,11 @@
 // Porcelain OS Version
 // Increment by 0.1 for minor updates, 1.0 for major versions
-export const VERSION = '1.5';
+export const VERSION = '2.0';
 export const FULL_VERSION = `${VERSION}.0`;
 
 // Build information
-export const BUILD_DATE = '2026-01-21';
-export const BUILD_TIME = '17:30:00';
+export const BUILD_DATE = '2026-07-25';
+export const BUILD_TIME = '21:00:00';
 export const BUILD_TIMESTAMP = `${BUILD_DATE} ${BUILD_TIME}`;
 
 // Get formatted version info

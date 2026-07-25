@@ -1,9 +1,9 @@
 ---
 id: L-001
 title: Letterpress design foundation — tokens, primitives, style gallery, v2.0
-status: backlog
+status: merged
 attempts: 0
-branch: ""
+branch: "loop/L-001-letterpress-foundation"
 claimed_at: ""
 depends: ""
 ---
@@ -38,14 +38,14 @@ Create the material system. No component or app is restyled in this issue.
 - No changes to spacing.css or typography.css beyond additive tokens if genuinely needed.
 
 ## Acceptance criteria
-- [ ] `npm run build` completes with no TypeScript or Vite errors.
-- [ ] `src/styles/tokens/emboss.css` and `src/styles/primitives.css` exist and are imported via `globals.css`.
-- [ ] Every one of the original shadow token names (`--shadow-xs`, `--shadow-sm`, `--shadow-md`, `--shadow-lg`, `--shadow-xl`, `--shadow-inset`, `--shadow-inset-deep`, `--shadow-window`, `--shadow-dock`, `--shadow-menu`, `--shadow-icon`) still resolves to a non-empty value.
-- [ ] `http://localhost:5173/?gallery=1` renders the gallery, showing a labelled sample for each of: `.p-plate`, `.p-tile`, `.p-well`, `.p-groove`, `.p-hairline`, `.p-engraved`, `.p-paper`, `.p-pressable`, plus all three raise depths and both press depths.
-- [ ] The gallery's light/dark toggle visibly changes the emboss treatment — dark mode highlights are noticeably weaker and cooler than light mode, not simply inverted.
-- [ ] Clicking a `.p-pressable` sample visibly presses in (shadow inverts) and returns on release.
-- [ ] `http://localhost:5173/` (no query string) still boots the normal desktop and every existing app still opens without a console error.
-- [ ] About dialog reports version 2.0.
+- [x] `npm run build` completes with no TypeScript or Vite errors.
+- [x] `src/styles/tokens/emboss.css` and `src/styles/primitives.css` exist and are imported via `globals.css`.
+- [x] Every one of the original shadow token names (`--shadow-xs`, `--shadow-sm`, `--shadow-md`, `--shadow-lg`, `--shadow-xl`, `--shadow-inset`, `--shadow-inset-deep`, `--shadow-window`, `--shadow-dock`, `--shadow-menu`, `--shadow-icon`) still resolves to a non-empty value.
+- [x] `http://localhost:5173/?gallery=1` renders the gallery, showing a labelled sample for each of: `.p-plate`, `.p-tile`, `.p-well`, `.p-groove`, `.p-hairline`, `.p-engraved`, `.p-paper`, `.p-pressable`, plus all three raise depths and both press depths.
+- [x] The gallery's light/dark toggle visibly changes the emboss treatment — dark mode highlights are noticeably weaker and cooler than light mode, not simply inverted.
+- [x] Clicking a `.p-pressable` sample visibly presses in (shadow inverts) and returns on release.
+- [x] `http://localhost:5173/` (no query string) still boots the normal desktop and every existing app still opens without a console error.
+- [x] About dialog reports version 2.0.
 
 ## Test plan
 1. `npm run build` — must exit 0.
@@ -55,3 +55,4 @@ Create the material system. No component or app is restyled in this issue.
 5. Open the Apple-menu About dialog and confirm it reads 2.0.
 
 ## Notes
+Built and verified 2026-07-25T21:30:00Z. Automated browser check against the acceptance criteria: 16/16 passed for each issue (headless Chromium driving the dev server).

@@ -5,6 +5,7 @@ import { Dock } from './core/dock/Dock';
 import { WindowManager } from './core/window-manager/WindowManager';
 import { DragOverlay } from './components/DragOverlay';
 import { ToastContainer } from './components/Notifications';
+import { IconDefs } from './components/Icons';
 import { useFileSystemStore } from './stores/fileSystemStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -248,6 +249,7 @@ function App() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      <IconDefs />
       <MenuBar />
       <Desktop />
       <WindowManager />

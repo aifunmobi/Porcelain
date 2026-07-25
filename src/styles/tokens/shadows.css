@@ -1,52 +1,44 @@
-/* Porcelain OS - Shadow Design Tokens (Neumorphism-inspired) */
+/* Porcelain OS - Shadow Design Tokens
+ *
+ * Every token here is now derived from the letterpress material defined in
+ * emboss.css. The names are unchanged so existing components keep working;
+ * what they resolve to is the new material. Because these are var()
+ * indirections, they re-resolve automatically under .dark / .theme-auto.
+ *
+ * Do not add literal shadow values to this file. Add a depth to emboss.css
+ * and alias it here.
+ */
+
 :root {
-  /* Soft Porcelain Shadows - Dual shadow for extruded effect */
-  --shadow-xs:
-    1px 1px 2px rgba(0, 0, 0, 0.03),
-    -1px -1px 2px rgba(255, 255, 255, 0.7);
+  /* Raised surfaces */
+  --shadow-xs: var(--emboss-raise-1);
+  --shadow-sm: var(--emboss-raise-1);
+  --shadow-md: var(--emboss-raise-2);
+  --shadow-lg: var(--emboss-raise-3);
+  --shadow-xl: var(--emboss-raise-3), 0 12px 28px var(--emboss-ambient);
 
-  --shadow-sm:
-    2px 2px 4px rgba(0, 0, 0, 0.04),
-    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  /* Pressed / inset surfaces */
+  --shadow-inset: var(--emboss-press-1);
+  --shadow-inset-deep: var(--emboss-press-2);
 
-  --shadow-md:
-    4px 4px 8px rgba(0, 0, 0, 0.06),
-    -4px -4px 8px rgba(255, 255, 255, 0.8);
-
-  --shadow-lg:
-    8px 8px 16px rgba(0, 0, 0, 0.08),
-    -8px -8px 16px rgba(255, 255, 255, 0.9);
-
-  --shadow-xl:
-    12px 12px 24px rgba(0, 0, 0, 0.1),
-    -12px -12px 24px rgba(255, 255, 255, 0.9);
-
-  /* Inset shadow for pressed/input states */
-  --shadow-inset:
-    inset 2px 2px 4px rgba(0, 0, 0, 0.05),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.7);
-
-  --shadow-inset-deep:
-    inset 4px 4px 8px rgba(0, 0, 0, 0.08),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.8);
-
-  /* Window shadow */
+  /* A lifted sheet of paper floating over the desktop */
   --shadow-window:
-    0 16px 48px rgba(0, 0, 0, 0.12),
-    0 4px 16px rgba(0, 0, 0, 0.08);
+    inset 0 1px 0 var(--edge-highlight),
+    0 2px 6px var(--emboss-dark-1),
+    0 18px 40px var(--emboss-ambient);
 
-  /* Dock shadow */
+  /* The dock plank: sits on the desktop, lit from above */
   --shadow-dock:
-    0 -4px 24px rgba(0, 0, 0, 0.08),
-    0 0 1px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 var(--edge-highlight),
+    0 2px 4px var(--emboss-dark-1),
+    0 10px 24px var(--emboss-ambient);
 
-  /* Menu shadow */
+  /* Menus and popovers: a sheet held just above the surface */
   --shadow-menu:
-    0 8px 32px rgba(0, 0, 0, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 var(--edge-highlight),
+    0 2px 5px var(--emboss-dark-1),
+    0 14px 32px var(--emboss-ambient);
 
-  /* Icon shadow */
-  --shadow-icon:
-    2px 2px 4px rgba(0, 0, 0, 0.08),
-    -1px -1px 3px rgba(255, 255, 255, 0.9);
+  /* Small raised marks - icons, chips, indicators */
+  --shadow-icon: var(--emboss-raise-1);
 }

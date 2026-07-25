@@ -1,0 +1,226 @@
+/* Style Gallery - dev-only. Not shipped UI. */
+
+.gallery {
+  min-height: 100vh;
+  padding: var(--space-8);
+  background-color: var(--paper-2);
+  color: var(--ink);
+  overflow-y: auto;
+  user-select: text;
+}
+
+.gallery__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.gallery__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink-strong);
+}
+
+.gallery__sub {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  margin-top: var(--space-1);
+  max-width: 60ch;
+}
+
+.gallery__toggle {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+}
+
+.gallery__section {
+  margin-bottom: var(--space-10);
+}
+
+.gallery__heading {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-2);
+}
+
+.gallery__section hr {
+  margin-bottom: var(--space-5);
+}
+
+.gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-5);
+}
+
+.gallery__sample {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.gallery__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--paper-2);
+}
+
+.gallery__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--ink);
+}
+
+.gallery__note {
+  font-size: var(--text-2xs);
+  color: var(--ink-soft);
+}
+
+.gallery__block {
+  width: 100%;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background-color: var(--paper-1);
+}
+
+.gallery__block--sunk {
+  background-color: var(--paper-3);
+}
+
+.gallery__block--grain {
+  height: 72px;
+}
+
+.gallery__swatch {
+  width: 100%;
+  height: 56px;
+  border-radius: var(--radius-md);
+}
+
+.gallery__tile {
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+}
+
+.gallery__groovebox {
+  width: 100%;
+}
+
+.gallery__type {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.gallery__button {
+  padding: var(--space-2-5) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+.gallery__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
+.gallery__chip {
+  padding: var(--space-1-5) var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.gallery__input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1-5) var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.gallery__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+  padding: var(--space-3);
+}
+
+.gallery__table td {
+  padding: var(--space-1) var(--space-2);
+  vertical-align: top;
+}
+
+.gallery__table code {
+  font-family: var(--font-mono);
+  color: var(--ink-strong);
+}
+
+.gallery__table .ok {
+  color: var(--color-success);
+  font-weight: var(--font-medium);
+}
+
+.gallery__table .bad {
+  color: var(--color-error);
+  font-weight: var(--font-bold);
+}
+
+.gallery__value {
+  font-family: var(--font-mono);
+  color: var(--ink-soft);
+  font-size: var(--text-2xs);
+  max-width: 60ch;
+}
+
+/* the composed control set needs the full row to read properly */
+.gallery__sample[data-sample='toolbar'] {
+  grid-column: 1 / -1;
+}
+
+/* icon sheet */
+.gallery__icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.gallery__iconcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background-color: var(--paper-1);
+  border: 1px solid var(--edge-hairline);
+}
+
+.gallery__iconrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  color: var(--ink);
+}
+
+.gallery__scalerow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}

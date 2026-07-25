@@ -46,6 +46,20 @@
   /* Icon Colors */
   --color-icon-primary: var(--color-porcelain-600);
   --color-icon-secondary: var(--color-porcelain-400);
+
+  /* Paper Ramp - the letterpress stock.
+   * paper-0 is a lifted sheet (highest), paper-4 the bottom of a pressed well.
+   * Warm neutrals: this is cotton paper, not grey card. */
+  --paper-0: #fbf9f5;
+  --paper-1: #f5f2ec;
+  --paper-2: #efeae2;
+  --paper-3: #e6e0d6;
+  --paper-4: #d9d2c6;
+
+  /* Ink - the colour of marks pressed into the stock */
+  --ink-strong: #38332b;
+  --ink: #5c564d;
+  --ink-soft: #857d70;
 }
 
 /* Dark Mode Theme */
@@ -96,6 +110,19 @@
   /* Icon Colors */
   --color-icon-primary: var(--color-porcelain-700);
   --color-icon-secondary: var(--color-porcelain-600);
+
+  /* Paper Ramp - dark stock. Cooler than the light ramp on purpose:
+   * slate, not dimmed paper. */
+  --paper-0: #272b31;
+  --paper-1: #22252b;
+  --paper-2: #1d2025;
+  --paper-3: #191b20;
+  --paper-4: #141619;
+
+  /* Ink - on dark stock the marks are light */
+  --ink-strong: #e4e7ec;
+  --ink: #b6bcc6;
+  --ink-soft: #868d99;
 }
 
 /* Respect user's system preference */

@@ -1,0 +1,82 @@
+/* Porcelain OS - Embossed icon system (L-002)
+ *
+ * The emboss is an SVG filter, referenced from CSS rather than from an
+ * attribute so the theme class can swap the light and dark recipe without any
+ * JavaScript. Filter geometry is expressed in the icon's own 24-unit
+ * coordinate space, so the emboss scales with the icon instead of being a
+ * fixed pixel offset that dissolves at 16px and clips at 64px.
+ */
+
+.pcl-icon {
+  display: block;
+  flex: none;
+  filter: url(#pcl-emboss);
+}
+
+.dark .pcl-icon,
+.theme-auto .pcl-icon {
+  filter: url(#pcl-emboss-dark);
+}
+
+@media (prefers-color-scheme: light) {
+  .theme-auto .pcl-icon {
+    filter: url(#pcl-emboss);
+  }
+}
+
+/* The hidden defs host. Mounted once, from App. */
+.pcl-icon-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tile mode - the app-icon form: a raised paper tile with the glyph struck
+ * into its face. Material comes from the L-001 primitives.
+ * ------------------------------------------------------------------------ */
+.pcl-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-raise-2);
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+
+/* the face catches the light along its top-left edge */
+.pcl-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    var(--edge-highlight) 0%,
+    transparent 45%,
+    var(--edge-shadow) 100%
+  );
+  pointer-events: none;
+}
+
+.pcl-tile .pcl-icon {
+  position: relative;
+  filter: url(#pcl-deboss);
+}
+
+.dark .pcl-tile .pcl-icon,
+.theme-auto .pcl-tile .pcl-icon {
+  filter: url(#pcl-deboss-dark);
+}
+
+@media (prefers-color-scheme: light) {
+  .theme-auto .pcl-tile .pcl-icon {
+    filter: url(#pcl-deboss);
+  }
+}

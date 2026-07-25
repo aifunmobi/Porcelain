@@ -1,0 +1,181 @@
+/* Porcelain OS - Letterpress Primitives
+ *
+ * Reusable material classes built only from the tokens in emboss.css and the
+ * paper ramp in colors.css. Components should reach for these rather than
+ * writing their own shadows. If a component needs a shadow that is not here,
+ * the right fix is a new primitive, not a literal box-shadow.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Depth utilities - raw material, no other opinions
+ * ------------------------------------------------------------------------ */
+.p-raise-1 { box-shadow: var(--emboss-raise-1); }
+.p-raise-2 { box-shadow: var(--emboss-raise-2); }
+.p-raise-3 { box-shadow: var(--emboss-raise-3); }
+.p-press-1 { box-shadow: var(--emboss-press-1); }
+.p-press-2 { box-shadow: var(--emboss-press-2); }
+.p-deboss-1 { box-shadow: var(--emboss-deboss-1); }
+.p-deboss-2 { box-shadow: var(--emboss-deboss-2); }
+
+/* ---------------------------------------------------------------------------
+ * .p-plate - a raised panel of paper. Windows, cards, menus, popovers.
+ * ------------------------------------------------------------------------ */
+.p-plate {
+  background-color: var(--paper-1);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--emboss-raise-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * .p-tile - a raised rounded square. App icons, dock items, desktop icons.
+ * ------------------------------------------------------------------------ */
+.p-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--emboss-raise-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * .p-well - a pressed area. Inputs, text areas, list bodies, selected rows.
+ * ------------------------------------------------------------------------ */
+.p-well {
+  background-color: var(--paper-3);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--emboss-press-1);
+}
+
+.p-well--deep {
+  background-color: var(--paper-4);
+  box-shadow: var(--emboss-press-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * .p-groove - an engraved 1px divider. Replaces border-based separators.
+ * Add .p-groove--vertical for a column separator.
+ * ------------------------------------------------------------------------ */
+.p-groove {
+  border: 0;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(
+    to bottom,
+    var(--edge-shadow) 0,
+    var(--edge-shadow) 1px,
+    var(--edge-highlight) 1px,
+    var(--edge-highlight) 2px
+  );
+}
+
+.p-groove--vertical {
+  height: auto;
+  width: 2px;
+  align-self: stretch;
+  background: linear-gradient(
+    to right,
+    var(--edge-shadow) 0,
+    var(--edge-shadow) 1px,
+    var(--edge-highlight) 1px,
+    var(--edge-highlight) 2px
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * .p-hairline - a crisp material edge. Use instead of a border colour.
+ * ------------------------------------------------------------------------ */
+.p-hairline {
+  border: 1px solid var(--edge-hairline);
+}
+
+.p-hairline-top { border-top: 1px solid var(--edge-hairline); }
+.p-hairline-bottom { border-bottom: 1px solid var(--edge-hairline); }
+
+/* ---------------------------------------------------------------------------
+ * .p-engraved / .p-embossed - type struck into or raised out of the sheet
+ * ------------------------------------------------------------------------ */
+.p-engraved {
+  color: var(--ink);
+  text-shadow: var(--text-emboss-engraved);
+}
+
+.p-embossed {
+  color: var(--ink);
+  text-shadow: var(--text-emboss-raised);
+}
+
+/* ---------------------------------------------------------------------------
+ * .p-paper - applies the shared grain. The grain lives in one place
+ * (--paper-grain in emboss.css) and is composited here.
+ * ------------------------------------------------------------------------ */
+.p-paper {
+  position: relative;
+  background-color: var(--paper-1);
+}
+
+.p-paper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--paper-grain);
+  background-repeat: repeat;
+  opacity: var(--paper-grain-opacity);
+  mix-blend-mode: var(--paper-grain-blend);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * .p-pressable - the one press interaction in the OS.
+ * Rest: raised. Hover: exactly one depth more. Active: pressed in, and the
+ * content shifts 1px toward the light source so the whole form moves.
+ * ------------------------------------------------------------------------ */
+.p-pressable {
+  background-color: var(--paper-0);
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--emboss-raise-2);
+}
+
+.p-pressable:hover {
+  box-shadow: var(--emboss-raise-3);
+}
+
+.p-pressable:active {
+  box-shadow: var(--emboss-press-1);
+  transform: translate(1px, 1px);
+}
+
+.p-pressable:disabled,
+.p-pressable[aria-disabled='true'] {
+  box-shadow: var(--emboss-raise-1);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Focus is engraved, never a browser ring */
+.p-pressable:focus-visible,
+.p-well:focus-visible,
+.p-well:focus-within {
+  outline: none;
+  box-shadow: var(--emboss-press-1), 0 0 0 2px var(--color-accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion - every primitive transition is opt-in on user preference
+ * ------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: no-preference) {
+  .p-pressable,
+  .p-tile,
+  .p-plate,
+  .p-well {
+    transition:
+      box-shadow 120ms var(--ease-out, ease-out),
+      transform 120ms var(--ease-out, ease-out),
+      background-color 120ms var(--ease-out, ease-out);
+  }
+}

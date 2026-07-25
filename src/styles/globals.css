@@ -1,9 +1,11 @@
 /* Porcelain OS - Global Styles */
 @import './tokens/colors.css';
+@import './tokens/emboss.css';
 @import './tokens/shadows.css';
 @import './tokens/typography.css';
 @import './tokens/spacing.css';
 @import './tokens/animations.css';
+@import './primitives.css';
 
 /* Reset and Base Styles */
 *, *::before, *::after {
