@@ -44,9 +44,14 @@ export const MenuBar: React.FC = () => {
 
   // Menu actions
   const closeActiveWindow = useCallback(() => {
-    if (activeWindowId) {
-      closeWindow(activeWindowId);
-    }
+    if (!activeWindowId) return;
+    // Same veto the close button offers, so ⌘W cannot skip an unsaved prompt.
+    const request = new CustomEvent('porcelain-window-close', {
+      detail: { windowId: activeWindowId },
+      cancelable: true,
+    });
+    if (!window.dispatchEvent(request)) return;
+    closeWindow(activeWindowId);
   }, [activeWindowId, closeWindow]);
 
   const minimizeActiveWindow = useCallback(() => {

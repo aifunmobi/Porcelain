@@ -219,13 +219,13 @@ export const Desktop: React.FC = () => {
         return;
       }
 
-      // For text files, open text editor
+      // For text files, open text editor on the file itself
       const textExtensions = ['txt', 'md', 'json', 'js', 'ts', 'css', 'html', 'xml', 'yaml', 'yml'];
       const ext = fileName.toLowerCase().split('.').pop() || '';
       if (textExtensions.includes(ext)) {
         const textEditorApp = appRegistry['text-editor'];
         if (textEditorApp) {
-          openWindow(textEditorApp);
+          openWindow(textEditorApp, icon.filePath ? { filePath: icon.filePath } : undefined);
         }
         return;
       }

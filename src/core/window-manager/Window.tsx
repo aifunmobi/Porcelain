@@ -25,6 +25,13 @@ export const Window: React.FC<WindowProps> = ({ window: win, children }) => {
   const isActive = activeWindowId === win.id;
 
   const handleClose = useCallback(() => {
+    // An app with unsaved work can veto this and run its own prompt, then close
+    // the window itself once the user has answered.
+    const request = new CustomEvent('porcelain-window-close', {
+      detail: { windowId: win.id },
+      cancelable: true,
+    });
+    if (!window.dispatchEvent(request)) return;
     closeWindow(win.id);
   }, [closeWindow, win.id]);
 

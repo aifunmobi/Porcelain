@@ -16,9 +16,11 @@ import {
   fileExists,
   isImageFile,
   getFileExtension,
-} from '../../services/tauriFs';
-import { useFileSystemStore } from '../../stores/fileSystemStore';
-import type { FileNode } from '../../types';
+  readFileText,
+  writeTextFile,
+} from './tauriFs';
+import { useFileSystemStore } from '../stores/fileSystemStore';
+import type { FileNode } from '../types';
 
 export interface FsItem {
   /** Stable key: the real path, or the virtual node id. */
@@ -57,6 +59,10 @@ export interface FsBackend {
   open: (item: FsItem) => Promise<void>;
   thumb: (item: FsItem) => string | undefined;
   searchDeep: (path: string, query: string) => Promise<FsItem[]>;
+  /** Read a file's text. Rejects if it is missing or unreadable. */
+  readText: (path: string) => Promise<string>;
+  /** Write text, creating the file if it does not exist yet. */
+  writeText: (path: string, content: string) => Promise<void>;
 }
 
 /* ------------------------------------------------------------------ paths */
@@ -236,6 +242,10 @@ const realBackend = async (): Promise<FsBackend> => {
       });
       return hits;
     },
+
+    readText: (path) => readFileText(path),
+
+    writeText: (path, content) => writeTextFile(path, content),
   };
 };
 
@@ -370,6 +380,27 @@ const virtualBackend = (): FsBackend => {
       };
       visit(path, 0);
       return hits;
+    },
+
+    readText: async (path) => {
+      const node = nodeAt(path);
+      if (!node || node.type === 'folder') throw new Error(`No such file: ${path}`);
+      return typeof node.content === 'string' ? node.content : '';
+    },
+
+    writeText: async (path, content) => {
+      const store = fsStore();
+      const existing = nodeAt(path);
+      if (existing) {
+        store.updateFileContent(existing.id, content);
+        return;
+      }
+      const parent = nodeAt(parentPath(path));
+      if (!parent) throw new Error(`No such folder: ${parentPath(path)}`);
+      const ext = getFileExtension(path);
+      const mime =
+        ext === 'html' ? 'text/html' : ext === 'md' ? 'text/markdown' : 'text/plain';
+      store.createFile(basename(path), parent.id, content, mime);
     },
   };
 };

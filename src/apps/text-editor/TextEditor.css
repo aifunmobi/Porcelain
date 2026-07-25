@@ -2,145 +2,351 @@
  * Colours come from the paper/ink ramps, depth from the emboss tokens or the
  * .p-* primitives. Do not reintroduce literal hex or box-shadow values here.
  */
-/* Text Editor Styles - Porcelain OS */
+/* Text Editor Styles - Porcelain OS
+ * The writing surface is a sheet of paper sitting on the app background. */
 
 .text-editor {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--paper-0);
+  background: var(--paper-2);
 }
+
+/* --- toolbar ---------------------------------------------------------- */
 
 .text-editor__toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-1);
   padding: var(--space-2) var(--space-3);
   background: var(--paper-0);
   border-bottom: 1px solid var(--edge-hairline);
 }
 
-.text-editor__toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
 .text-editor__btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 var(--space-1-5);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  background: transparent;
+  border-radius: var(--radius-md);
   color: var(--ink);
-  transition: all var(--duration-fast) var(--ease-out);
+  font-size: var(--text-xs);
 }
 
-.text-editor__btn:hover:not(:disabled) {
-  background: var(--paper-2);
+/* Qualified so it outranks the shared `.window__body button` control. */
+.window__body .text-editor__btn--active {
+  background-color: var(--paper-2);
   color: var(--ink-strong);
+  box-shadow: var(--emboss-press-1);
 }
 
-.text-editor__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.text-editor__btn--active {
-  background: var(--color-accent);
-  color: white;
-}
-
-.text-editor__btn--active:hover {
-  background: var(--color-accent-hover);
-  color: white;
+.text-editor__btn-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  line-height: 1;
 }
 
 .text-editor__separator {
   width: 1px;
-  height: 20px;
+  height: 18px;
   background: var(--edge-hairline);
-  margin: 0 var(--space-2);
+  margin: 0 var(--space-1);
+}
+
+.text-editor__modes {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.text-editor__select {
+  height: 26px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-1);
 }
 
 .text-editor__font-size {
   font-size: var(--text-xs);
   color: var(--ink-soft);
-  min-width: 35px;
+  min-width: 34px;
   text-align: center;
 }
 
 .text-editor__file-name {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: var(--text-sm);
   color: var(--ink);
 }
 
 .text-editor__modified {
   color: var(--color-accent);
-  margin-right: 2px;
+  font-size: 10px;
 }
 
-.text-editor__content {
-  flex: 1;
+/* --- find strip -------------------------------------------------------- */
+
+.text-editor__find {
   display: flex;
-  min-height: 0;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--paper-1);
+  border-bottom: 1px solid var(--edge-hairline);
+  box-shadow: var(--emboss-press-1);
+}
+
+.text-editor__find-input {
+  height: 24px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2);
+  min-width: 0;
+  flex: 0 1 160px;
+}
+
+.text-editor__find-count {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  min-width: 72px;
+  text-align: center;
+}
+
+/* Find highlights, painted without touching the document. */
+::highlight(pcl-find) {
+  background-color: var(--color-warning, #e6d9a8);
+  color: var(--ink-strong);
+}
+
+::highlight(pcl-find-active) {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* --- the page ---------------------------------------------------------- */
+
+.text-editor__surface {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  justify-content: center;
+}
+
+.text-editor__page {
+  width: 100%;
+  max-width: 46rem;
+  min-height: 100%;
+  padding: var(--space-8) var(--space-7);
+  background: var(--paper-0);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--emboss-raise-3, var(--shadow-lg));
+  color: var(--ink-strong);
+}
+
+/* Wrap to window: the sheet gives up its margins and fills the app. */
+.text-editor__page--full {
+  max-width: none;
+  padding: var(--space-4);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.text-editor__rich,
+.text-editor__plain {
+  outline: none;
+  width: 100%;
+  min-height: 20rem;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  resize: none;
+  display: block;
+}
+
+.text-editor__plain {
+  white-space: pre-wrap;
   overflow: hidden;
 }
 
-.text-editor__line-numbers {
-  background: var(--paper-0);
-  border-right: 1px solid var(--edge-hairline);
-  padding: var(--space-3) var(--space-2);
+.text-editor__rich h1 { font-size: 1.9em; margin: 0.6em 0 0.3em; }
+.text-editor__rich h2 { font-size: 1.5em; margin: 0.6em 0 0.3em; }
+.text-editor__rich h3 { font-size: 1.2em; margin: 0.6em 0 0.3em; }
+.text-editor__rich p  { margin: 0 0 0.7em; }
+.text-editor__rich ul,
+.text-editor__rich ol { margin: 0 0 0.7em 1.4em; }
+
+.text-editor__rich blockquote {
+  margin: 0 0 0.7em;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--paper-3);
+  color: var(--ink);
+  font-style: italic;
+}
+
+.text-editor__rich a { color: var(--color-accent); text-decoration: underline; }
+
+/* --- recents / empty state --------------------------------------------- */
+
+.text-editor__recents {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--edge-hairline);
+}
+
+.text-editor__recents-title {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
   color: var(--ink-soft);
-  text-align: right;
-  user-select: none;
-  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
-  overflow-y: hidden;
-  min-width: 40px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-2);
 }
 
-.text-editor__line-number {
-  line-height: 1.5;
-  height: 1.5em;
-}
-
-.text-editor__textarea {
-  flex: 1;
-  padding: var(--space-3);
-  border: none;
-  background: white;
+.text-editor__recent,
+.text-editor__open-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   color: var(--ink-strong);
-  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
-  line-height: 1.5;
-  resize: none;
-  overflow: auto;
+  text-align: left;
+  cursor: pointer;
 }
 
-.text-editor__textarea:focus {
-  outline: none;
+.text-editor__recent:hover,
+.text-editor__open-item:hover {
+  background: var(--paper-1);
 }
 
-.text-editor__textarea::placeholder {
+.text-editor__recent-path {
+  font-size: var(--text-xs);
   color: var(--ink-soft);
+  margin-left: auto;
 }
+
+/* --- status bar --------------------------------------------------------- */
 
 .text-editor__statusbar {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-1-5) var(--space-3);
-  background: var(--paper-0);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border-top: 1px solid var(--edge-hairline);
+  background: var(--paper-0);
   font-size: var(--text-xs);
   color: var(--ink-soft);
 }
+
+.text-editor__status-msg { color: var(--color-success, var(--ink)); }
 
 .text-editor__path {
   margin-left: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 300px;
+  max-width: 40%;
+}
+
+/* --- in-app dialogs (never window.prompt) ------------------------------- */
+
+.text-editor__dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 50;
+}
+
+.text-editor__dialog {
+  min-width: 320px;
+  max-width: 90%;
+  padding: var(--space-4);
+  background: var(--paper-0);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--emboss-raise-3, var(--shadow-lg));
+}
+
+.text-editor__dialog-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--ink-strong);
+  margin-bottom: var(--space-3);
+}
+
+.text-editor__dialog-input {
+  width: 100%;
+  height: 30px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2);
+}
+
+.text-editor__dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.text-editor__dialog-actions button {
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.text-editor__open-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.text-editor__open-empty {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  padding: var(--space-3);
+}
+
+/* --- print: the document alone ------------------------------------------ */
+
+@media print {
+  /* Hide the whole shell, then bring back just the sheet. */
+  body * { visibility: hidden !important; }
+
+  .text-editor__page,
+  .text-editor__page * { visibility: visible !important; }
+
+  .text-editor__toolbar,
+  .text-editor__find,
+  .text-editor__statusbar,
+  .text-editor__recents,
+  .text-editor__dialog-backdrop { display: none !important; }
+
+  .text-editor__page {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: white;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  @page { margin: 20mm; }
 }

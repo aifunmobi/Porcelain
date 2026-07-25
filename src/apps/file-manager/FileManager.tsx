@@ -5,9 +5,10 @@ import { useFileBrowserStore } from '../../stores/fileBrowserStore';
 import type { ClipboardEntry, SortState } from '../../stores/fileBrowserStore';
 import { Icon } from '../../components/Icons';
 import type { AppProps, SortBy, ViewMode } from '../../types';
-import { formatFileSize, getFileIcon, isImageFile } from '../../services/tauriFs';
-import { createBackend, basename, kindOf } from './fsAdapter';
-import type { FsBackend, FsItem } from './fsAdapter';
+import { formatFileSize, getFileIcon, isImageFile, getFileExtension } from '../../services/tauriFs';
+import { useWindowStore } from '../../stores/windowStore';
+import { createBackend, basename, kindOf } from '../../services/fsAdapter';
+import type { FsBackend, FsItem } from '../../services/fsAdapter';
 import './FileManager.css';
 
 /* ---------------------------------------------------------------- helpers */
@@ -56,6 +57,9 @@ const toClipboardEntry = (item: FsItem): ClipboardEntry => ({
   path: item.path,
   isDir: item.isDir,
 });
+
+/** Opened in the Text Editor rather than handed to the OS. */
+const EDITABLE_TEXT = ['txt', 'md', 'html', 'json', 'js', 'ts', 'tsx', 'css', 'xml', 'yaml', 'yml'];
 
 const COLUMNS: { by: SortBy; label: string; className: string }[] = [
   { by: 'name', label: 'Name', className: 'name' },
@@ -232,8 +236,17 @@ export const FileManager: React.FC<AppProps> = () => {
 
   const open = useCallback(
     (item: FsItem) => {
-      if (item.isDir) navigate(item.path);
-      else void backend?.open(item).catch(() => setError('Unable to open this file'));
+      if (item.isDir) return navigate(item.path);
+      if (EDITABLE_TEXT.includes(getFileExtension(item.name))) {
+        // The registry imports this component, so pull it in lazily to keep the
+        // module graph acyclic.
+        void import('../registry').then(({ appRegistry }) => {
+          const app = appRegistry['text-editor'];
+          if (app) useWindowStore.getState().openWindow(app, { filePath: item.path });
+        });
+        return;
+      }
+      void backend?.open(item).catch(() => setError('Unable to open this file'));
     },
     [backend, navigate]
   );
