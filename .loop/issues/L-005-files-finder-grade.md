@@ -1,10 +1,10 @@
 ---
 id: L-005
 title: Bring Files up to Finder grade
-status: reviewing
-attempts: 1
+status: merged
+attempts: 0
 branch: "loop/L-005-files-finder-grade"
-claimed_at: "2026-07-25T22:45:05Z"
+claimed_at: ""
 depends: L-004
 ---
 
@@ -37,20 +37,20 @@ Work in `src/apps/file-manager/`, `src/stores/fileSystemStore.ts` and `src/servi
 - No change to the Trash app itself.
 
 ## Acceptance criteria
-- [ ] `npm run build` completes with no errors.
-- [ ] The sidebar shows both sections; every entry navigates; collapse state survives a reload.
-- [ ] All three view modes render and switch via toolbar and via Cmd+1/2/3.
-- [ ] In list view, clicking each of the four column headers sorts by that column and clicking again reverses it.
-- [ ] Column view shows independent scrolling levels and a preview pane on the final selection.
-- [ ] Breadcrumb segments navigate, and dragging a file onto a segment moves it there.
-- [ ] Cmd+I opens Get Info with correct size, dates and path; a folder's size is the recursive total.
-- [ ] New Folder, rename, Duplicate, Move to Trash, and Copy/Cut/Paste all work, including paste into a different Files window.
-- [ ] Shift+click selects a range, Cmd+click toggles, Cmd+A selects all, and marquee select works in icon view.
-- [ ] Arrow keys move the selection, Enter opens, Cmd+Up goes to the parent, Cmd+[ / Cmd+] navigate history, and type-ahead jumps to a match.
-- [ ] The search field filters the current folder; the "search here" toggle finds a file in a subfolder.
-- [ ] The status bar shows the correct item count and the correct selection size.
-- [ ] Drag-drop between a Files window and the desktop still works in both directions.
-- [ ] No console errors during any of the above.
+- [x] `npm run build` completes with no errors.
+- [x] The sidebar shows both sections; every entry navigates; collapse state survives a reload.
+- [x] All three view modes render and switch via toolbar and via Cmd+1/2/3.
+- [x] In list view, clicking each of the four column headers sorts by that column and clicking again reverses it.
+- [x] Column view shows independent scrolling levels and a preview pane on the final selection.
+- [x] Breadcrumb segments navigate, and dragging a file onto a segment moves it there.
+- [x] Cmd+I opens Get Info with correct size, dates and path; a folder's size is the recursive total.
+- [x] New Folder, rename, Duplicate, Move to Trash, and Copy/Cut/Paste all work, including paste into a different Files window.
+- [x] Shift+click selects a range, Cmd+click toggles, Cmd+A selects all, and marquee select works in icon view.
+- [x] Arrow keys move the selection, Enter opens, Cmd+Up goes to the parent, Cmd+[ / Cmd+] navigate history, and type-ahead jumps to a match.
+- [x] The search field filters the current folder; the "search here" toggle finds a file in a subfolder.
+- [x] The status bar shows the correct item count and the correct selection size.
+- [x] Drag-drop between a Files window and the desktop still works in both directions.
+- [x] No console errors during any of the above.
 
 ## Test plan
 1. `npm run build` — must exit 0.
@@ -99,3 +99,30 @@ renaming/moving a folder never re-pathed its descendants; copying a folder
 renamed every descendant to "<name> copy"; and selected-state styling lost to
 L-004's `.window__body button:not(.pcl-bare)` rule, which had left the active
 view-mode button visually identical to the inactive ones since that phase.
+
+### Review 1 (2026-07-25) — merged
+
+Every criterion driven in a browser against the branch, not read off the source.
+Two defects were found and fixed on the branch before merging:
+
+1. **Marquee selection did not survive the drag.** The pointerup that ends a
+   marquee also produces a click on the surface, and that click hit
+   `onClick={clearSelection}` — items highlighted during the drag were wiped the
+   instant it ended. Criterion 9 was failing. The trailing click is now ignored;
+   a plain click on empty space still clears, verified separately.
+2. **A desktop drop was accepted twice.** Both the per-window pointerup and the
+   global `porcelain-drop-to-filemanager` listener ran for one drop, so dragging
+   one icon in produced `zeta.md` *and* `zeta copy.md`. Criterion 13 was failing.
+   Only the per-window path remains — the global listener would additionally have
+   made every open Files window copy the item.
+
+Evidence for the criteria that are easy to fake by inspection: Size sorted
+50 → 156 → 700 → 4000 (numeric; a string sort gives 156, 4000, 50, 700).
+Selecting three files reported 906 B against individual sizes of 156 + 700 + 50.
+A folder holding one 4000 B file reported 3.91 KB, so the total is recursive.
+Copy in window A then ⌘V in window B moved the file between windows. Dragging a
+file onto the "Home" crumb removed it from Documents and placed it in Home.
+
+Still unexercised, and not reachable from a browser: the Tauri real-filesystem
+path and image thumbnails. Both compile and are unchanged in shape, but no test
+here touched them.
