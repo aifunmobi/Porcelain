@@ -35,3 +35,6 @@ dist-ssr
 # Rust build output
 src-tauri/target
 src-tauri/gen/schemas
+
+# ruflo plugin local db
+ruvector.db
