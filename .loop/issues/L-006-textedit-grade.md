@@ -1,10 +1,10 @@
 ---
 id: L-006
 title: Bring Text Editor up to TextEdit grade
-status: backlog
-attempts: 0
-branch: ""
-claimed_at: ""
+status: building
+attempts: 1
+branch: "loop/L-006-textedit-grade"
+claimed_at: "2026-07-25T23:06:18Z"
 depends: L-004
 ---
 
