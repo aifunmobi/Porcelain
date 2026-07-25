@@ -103,6 +103,7 @@ export const FileManager: React.FC<AppProps> = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const inFlight = useRef<Set<string>>(new Set());
+  const marqueeDragged = useRef(false);
   const typeAhead = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
   const sortState: SortState = sort[path] ?? { by: 'name', order: 'asc' };
@@ -270,6 +271,12 @@ export const FileManager: React.FC<AppProps> = () => {
   );
 
   const clearSelection = useCallback(() => {
+    // Ending a marquee drag also fires a click on the surface; that click must
+    // not wipe the selection the drag just made.
+    if (marqueeDragged.current) {
+      marqueeDragged.current = false;
+      return;
+    }
     setSelected(new Set());
     setContextMenu(null);
   }, []);
@@ -507,25 +514,26 @@ export const FileManager: React.FC<AppProps> = () => {
     [backend, path, run]
   );
 
+  // DragOverlay clears the drag in a document capture listener, which runs before
+  // this bubble handler — so keep the last drag payload to read on drop.
+  const lastDrag = useRef(dragData);
+  if (dragData) lastDrag.current = dragData;
+
+  /* This per-window pointerup is the ONE path that accepts a desktop drop.
+   * DragOverlay also broadcasts `porcelain-drop-to-filemanager`, but listening to
+   * that as well copied the item twice, and being global it would have made every
+   * open Files window copy it. Landing on a window is what picks the target. */
   const handleRootPointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!isDropTarget || !dragData) return;
+      if (!isDropTarget || !lastDrag.current) return;
       e.stopPropagation();
-      const source = dragData.path;
+      const source = lastDrag.current.path;
+      lastDrag.current = null;
       endDrag();
       acceptDesktopDrop(source);
     },
-    [isDropTarget, dragData, endDrag, acceptDesktopDrop]
+    [isDropTarget, endDrag, acceptDesktopDrop]
   );
-
-  useEffect(() => {
-    const onDesktopDrop = (e: Event) => {
-      const detail = (e as CustomEvent<{ name: string; path: string }>).detail;
-      acceptDesktopDrop(detail.path);
-    };
-    window.addEventListener('porcelain-drop-to-filemanager', onDesktopDrop);
-    return () => window.removeEventListener('porcelain-drop-to-filemanager', onDesktopDrop);
-  }, [acceptDesktopDrop]);
 
   /** A breadcrumb segment is a drop target: dropping there moves the item in. */
   const handleCrumbPointerUp = useCallback(
@@ -554,6 +562,7 @@ export const FileManager: React.FC<AppProps> = () => {
       setMarquee({ x0: start.x, y0: start.y, x1: start.x, y1: start.y });
 
       const onMove = (move: PointerEvent) => {
+        marqueeDragged.current = true;
         setMarquee({ x0: start.x, y0: start.y, x1: move.clientX, y1: move.clientY });
         const box = {
           left: Math.min(start.x, move.clientX),
