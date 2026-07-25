@@ -18,7 +18,8 @@ interface FileSystemState {
   deleteFile: (id: string) => void;
   renameFile: (id: string, newName: string) => void;
   moveFile: (id: string, newParentId: string) => void;
-  copyFile: (id: string, newParentId: string) => string;
+  /** `newName` omitted keeps the " copy" suffix; pass one to place it verbatim. */
+  copyFile: (id: string, newParentId: string, newName?: string) => string;
   updateFileContent: (id: string, content: string) => void;
   getPathParts: (path: string) => string[];
   navigateToPath: (path: string) => void;
@@ -127,6 +128,20 @@ const createInitialFileSystem = (): Record<string, FileNode> => {
   };
 
   return files;
+};
+
+/**
+ * A folder's path is baked into every descendant, so moving or renaming one has
+ * to re-path the whole subtree — otherwise lookups by path orphan the children.
+ */
+const repath = (files: Record<string, FileNode>, id: string, newPath: string) => {
+  const node = files[id];
+  if (!node) return;
+  files[id] = { ...node, path: newPath };
+  node.children?.forEach((childId) => {
+    const child = files[childId];
+    if (child) repath(files, childId, `${newPath === '/' ? '' : newPath}/${child.name}`);
+  });
 };
 
 export const useFileSystemStore = create<FileSystemState>()(
@@ -262,17 +277,12 @@ export const useFileSystemStore = create<FileSystemState>()(
         const parent = get().files[file.parentId || 'root'];
         const newPath = `${parent?.path === '/' ? '' : parent?.path}/${newName}`;
 
-        set((state) => ({
-          files: {
-            ...state.files,
-            [id]: {
-              ...file,
-              name: newName,
-              path: newPath,
-              modifiedAt: new Date(),
-            },
-          },
-        }));
+        set((state) => {
+          const newFiles = { ...state.files };
+          newFiles[id] = { ...file, name: newName, modifiedAt: new Date() };
+          repath(newFiles, id, newPath);
+          return { files: newFiles };
+        });
       },
 
       moveFile: (id, newParentId) => {
@@ -287,8 +297,9 @@ export const useFileSystemStore = create<FileSystemState>()(
         set((state) => {
           const newFiles = { ...state.files };
 
-          // Update file
-          newFiles[id] = { ...file, parentId: newParentId, path: newPath, modifiedAt: now };
+          // Update file, carrying its subtree to the new path
+          newFiles[id] = { ...file, parentId: newParentId, modifiedAt: now };
+          repath(newFiles, id, newPath);
 
           // Remove from old parent
           if (oldParent) {
@@ -310,18 +321,22 @@ export const useFileSystemStore = create<FileSystemState>()(
         });
       },
 
-      copyFile: (id, newParentId) => {
+      copyFile: (id, newParentId, newName) => {
         const file = get().files[id];
         const newParent = get().files[newParentId];
         if (!file || !newParent) return '';
 
         if (file.type === 'folder') {
-          const newFolderId = get().createFolder(file.name + ' copy', newParentId);
-          file.children?.forEach((childId) => get().copyFile(childId, newFolderId));
+          const newFolderId = get().createFolder(newName ?? file.name + ' copy', newParentId);
+          // Descendants keep their own names — only the top of the copy is renamed.
+          file.children?.forEach((childId) => {
+            const child = get().files[childId];
+            if (child) get().copyFile(childId, newFolderId, child.name);
+          });
           return newFolderId;
         } else {
           return get().createFile(
-            file.name.replace(/(\.[^.]+)?$/, ' copy$1'),
+            newName ?? file.name.replace(/(\.[^.]+)?$/, ' copy$1'),
             newParentId,
             file.content as string,
             file.mimeType

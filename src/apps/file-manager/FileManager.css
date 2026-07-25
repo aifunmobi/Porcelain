@@ -83,11 +83,14 @@
   background: var(--paper-1);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-inset);
-  width: 180px;
+  /* Holds a scope toggle as well as the field, so it sizes to its content. */
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .file-manager__search input {
-  flex: 1;
+  flex: 1 1 70px;
+  min-width: 0;
   font-size: var(--text-sm);
   color: var(--ink-strong);
   background: transparent;
@@ -100,6 +103,7 @@
 .file-manager__view-modes {
   display: flex;
   gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .file-manager__view-btn {
@@ -119,10 +123,14 @@
   color: var(--ink);
 }
 
-.file-manager__view-btn.active {
-  background: var(--color-accent);
-  color: white;
-  box-shadow: var(--shadow-sm);
+/* The shared control in app-controls.css is `.window__body button:not(.pcl-bare)`,
+ * which outranks a lone `.active` class — so selected states are qualified to
+ * win, and read as pressed stock rather than a filled slab, per L-004. */
+.window__body .file-manager__view-btn.active,
+.window__body .file-manager__search-scope.active {
+  background-color: var(--paper-2);
+  color: var(--ink-strong);
+  box-shadow: var(--emboss-press-1);
 }
 
 .file-manager__main {
@@ -280,6 +288,7 @@
 
 .file-manager__list-header {
   display: flex;
+  gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--edge-hairline);
   font-size: var(--text-xs);
@@ -294,6 +303,7 @@
 
 .file-manager__list-item {
   display: flex;
+  gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--edge-hairline);
   cursor: pointer;
@@ -532,4 +542,203 @@
   height: 1px;
   background: var(--edge-hairline);
   margin: 4px 8px;
+}
+
+.file-manager__context-menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.file-manager__context-menu-item:disabled:hover {
+  background: none;
+  color: var(--ink-strong);
+}
+
+/* Collapsible sidebar sections */
+.file-manager__sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Sortable list headers */
+.file-manager__sort-btn {
+  gap: var(--space-1);
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.file-manager__sort-btn:hover {
+  color: var(--ink-strong);
+}
+
+.file-manager__list-col--kind {
+  width: 110px;
+  color: var(--ink);
+}
+
+/* Recursive search toggle */
+.file-manager__search-scope {
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+
+/* Column (Miller) view */
+.file-manager__columns {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.file-manager__column {
+  width: 200px;
+  flex-shrink: 0;
+  /* Each level scrolls on its own. */
+  overflow-y: auto;
+  border-right: 1px solid var(--edge-hairline);
+  padding: var(--space-1);
+}
+
+.file-manager__column-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--ink-strong);
+  cursor: pointer;
+}
+
+.file-manager__column-item span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-manager__column-item:hover {
+  background: var(--paper-1);
+}
+
+.file-manager__column-item.on-path {
+  background: var(--paper-2);
+}
+
+.file-manager__column-item.selected {
+  background: var(--color-accent);
+  color: white;
+}
+
+.file-manager__column-preview {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-3);
+  overflow-y: auto;
+  text-align: center;
+}
+
+.file-manager__preview-image {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.file-manager__preview-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--ink-strong);
+  word-break: break-all;
+}
+
+.file-manager__preview-meta {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+}
+
+/* Get Info panel */
+.file-manager__info {
+  width: 240px;
+  flex-shrink: 0;
+  padding: var(--space-3);
+  border-left: 1px solid var(--edge-hairline);
+  background: var(--paper-0);
+  overflow-y: auto;
+}
+
+.file-manager__info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-2);
+}
+
+.file-manager__info-header button {
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.file-manager__info-thumb {
+  width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-3);
+}
+
+.file-manager__info dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.file-manager__info dt {
+  color: var(--ink-soft);
+}
+
+.file-manager__info dd {
+  color: var(--ink-strong);
+  word-break: break-word;
+}
+
+.file-manager__info-path {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+}
+
+/* Marquee selection */
+.file-manager__marquee {
+  position: fixed;
+  border: 1px solid var(--color-accent);
+  background: var(--color-info-light);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 900;
+}
+
+.file-manager:focus {
+  outline: none;
 }
