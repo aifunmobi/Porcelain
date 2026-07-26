@@ -103,3 +103,16 @@ renders once a capture exists. Notes and Photo Viewer had their buttons
 confirmed present but not driven end to end. JPEG's white-flatten path for
 transparency is implemented and compiles but was only exercised through the 4×4
 test image, not inspected pixel by pixel.
+
+### Follow-up during build (2026-07-26)
+
+Screenshot no longer writes a capture silently. It opens the save sheet with a
+suggested name, PNG/JPEG, and the destination shown; cancelling keeps the shot
+on screen and copyable. Verified: after a capture the sheet is open, no
+automatic save happened, console clean.
+
+**Open, not addressed:** the Screenshot app's own UI does not follow the L-001 /
+L-002 icon and control vocabulary — reported by the user, not yet fixed. Its
+segmented Capture/Timer controls and shutter button were built ad hoc rather
+than from the shared primitives, and it should be reworked against the same
+guidelines the other apps follow. Worth doing before this issue merges.
