@@ -1,22 +1,29 @@
+import { lazy } from 'react';
 import type { AppDefinition } from '../types';
-import { FileManager } from './file-manager/FileManager';
-import { Settings } from './settings/Settings';
-import { Calculator } from './calculator/Calculator';
-import { Notes } from './notes/Notes';
-import { Calendar } from './calendar/Calendar';
-import { Clock } from './clock/Clock';
-import { Terminal } from './terminal/Terminal';
-import { MusicPlayer } from './music-player/MusicPlayer';
-import { VideoPlayer } from './video-player/VideoPlayer';
-import { Camera } from './camera/Camera';
-import { PhotoViewer } from './photo-viewer/PhotoViewer';
-import { Browser } from './browser/Browser';
-import { Weather } from './weather/Weather';
-import { Trash } from './trash/Trash';
-import { TextEditor } from './text-editor/TextEditor';
-import { Preview } from './preview/Preview';
-import { Archive } from './archive/Archive';
-import { Screenshot } from './screenshot/Screenshot';
+
+/* Each app is its own chunk. The shell — window manager, dock, menu bar — is
+ * all the desktop needs to paint; an app's code is fetched when its window
+ * first opens. Statically importing all eighteen put every app in the initial
+ * bundle, so the desktop waited on Camera and the archive codec to appear.
+ * WindowManager renders these inside a <Suspense> boundary. */
+const FileManager = lazy(() => import('./file-manager/FileManager').then((m) => ({ default: m.FileManager })));
+const Settings = lazy(() => import('./settings/Settings').then((m) => ({ default: m.Settings })));
+const Calculator = lazy(() => import('./calculator/Calculator').then((m) => ({ default: m.Calculator })));
+const Notes = lazy(() => import('./notes/Notes').then((m) => ({ default: m.Notes })));
+const Calendar = lazy(() => import('./calendar/Calendar').then((m) => ({ default: m.Calendar })));
+const Clock = lazy(() => import('./clock/Clock').then((m) => ({ default: m.Clock })));
+const Terminal = lazy(() => import('./terminal/Terminal').then((m) => ({ default: m.Terminal })));
+const MusicPlayer = lazy(() => import('./music-player/MusicPlayer').then((m) => ({ default: m.MusicPlayer })));
+const VideoPlayer = lazy(() => import('./video-player/VideoPlayer').then((m) => ({ default: m.VideoPlayer })));
+const Camera = lazy(() => import('./camera/Camera').then((m) => ({ default: m.Camera })));
+const PhotoViewer = lazy(() => import('./photo-viewer/PhotoViewer').then((m) => ({ default: m.PhotoViewer })));
+const Browser = lazy(() => import('./browser/Browser').then((m) => ({ default: m.Browser })));
+const Weather = lazy(() => import('./weather/Weather').then((m) => ({ default: m.Weather })));
+const Trash = lazy(() => import('./trash/Trash').then((m) => ({ default: m.Trash })));
+const TextEditor = lazy(() => import('./text-editor/TextEditor').then((m) => ({ default: m.TextEditor })));
+const Preview = lazy(() => import('./preview/Preview').then((m) => ({ default: m.Preview })));
+const Archive = lazy(() => import('./archive/Archive').then((m) => ({ default: m.Archive })));
+const Screenshot = lazy(() => import('./screenshot/Screenshot').then((m) => ({ default: m.Screenshot })));
 
 export const appRegistry: Record<string, AppDefinition> = {
   'file-manager': {

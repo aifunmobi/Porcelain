@@ -32,7 +32,8 @@ export interface AppDefinition {
   id: string;
   name: string;
   icon: string;
-  component: React.ComponentType<AppProps>;
+  /** Lazily loaded — WindowManager renders it inside a <Suspense> boundary. */
+  component: React.ComponentType<AppProps> | React.LazyExoticComponent<React.ComponentType<AppProps>>;
   defaultSize: Size;
   minSize: Size;
   maxSize?: Size;

@@ -1,6 +1,7 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Window } from './Window';
+import { AppBoundary } from './AppBoundary';
 import { useWindowStore } from '../../stores/windowStore';
 import { appRegistry } from '../../apps/registry';
 import './WindowManager.css';
@@ -36,7 +37,13 @@ export const WindowManager: React.FC = () => {
 
           return (
             <Window key={win.id} window={win}>
-              <AppComponent windowId={win.id} {...win.props} />
+              {/* Both per window, so one app's chunk — arriving late or not at
+                  all — never blanks another's, nor the desktop. */}
+              <AppBoundary appName={app.name}>
+                <Suspense fallback={<div className="window__loading" />}>
+                  <AppComponent windowId={win.id} {...win.props} />
+                </Suspense>
+              </AppBoundary>
             </Window>
           );
         })}
