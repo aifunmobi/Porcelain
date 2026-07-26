@@ -6,3 +6,4 @@
 - 2026-07-25 L-004 Restyle all 15 apps — merged. Try it: open any app; buttons are raised paper, inputs are pressed wells, Terminal is a slate plate. Both themes.
 - 2026-07-25 L-005 Bring Files up to Finder grade — merged. Try it: `npm run dev`, open Files — three views (⌘1/2/3), sortable list columns, Miller columns, ⌘I Get Info, and a Search Here toggle for subfolders.
 - 2026-07-25 L-006 Bring Text Editor up to TextEdit grade — merged. Try it: `npm run dev`, open Text Editor — Rich/Plain modes, ⌘F find and replace, autosave, recents, and a paper page (⌘P prints the page alone).
+- 2026-07-26 L-007 Add Preview, Archive Utility and Screenshot — merged. Try it: `npm run dev` — double-click an image or PDF in Files for Preview, right-click for Compress/Extract, and press ⌘⇧3 or ⌘⇧4 to capture the desktop.

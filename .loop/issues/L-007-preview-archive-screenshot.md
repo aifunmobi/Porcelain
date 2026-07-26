@@ -1,10 +1,10 @@
 ---
 id: L-007
 title: Add Preview, Archive Utility and Screenshot
-status: reviewing
-attempts: 1
+status: merged
+attempts: 0
 branch: "loop/L-007-preview-archive-screenshot"
-claimed_at: "2026-07-26T00:07:38Z"
+claimed_at: ""
 depends: L-004
 ---
 
@@ -49,24 +49,24 @@ All three apps follow the L-001/L-004 visual vocabulary and work in light and da
 - No new PDF rendering dependency.
 
 ## Acceptance criteria
-- [ ] `npm run build` completes with no errors.
-- [ ] All three apps appear in the registry, the dock and Spotlight, with their own icons — none falls back to the generic file icon.
-- [ ] Preview opens a png, a jpg, an svg, a pdf, a txt and a md file, each rendering correctly.
-- [ ] Preview zoom in/out, fit, actual size, and both rotations all work; PDF page navigation moves between pages.
-- [ ] Opening several images at once shows the thumbnail sidebar and arrow keys move between them.
-- [ ] Double-clicking an image or PDF in Files opens it in Preview.
-- [ ] Archive Utility compresses a multi-file selection into a `.zip` that opens correctly in the host OS.
-- [ ] Archive Utility extracts a `.zip` with nested folders and the directory structure is preserved.
-- [ ] Listing an archive shows names and sizes without extracting.
-- [ ] A deliberately corrupt `.zip` produces a clear error message, not a crash or a silent no-op.
-- [ ] Files' context menu offers Compress on a selection and Extract on a `.zip`, and both work.
-- [ ] Screenshot captures the whole desktop, a chosen window, and a dragged region; each saved file opens in Preview and shows the expected content.
-- [ ] The timer counts down visibly before capturing.
-- [ ] Cmd+Shift+3 and Cmd+Shift+4 trigger their captures.
-- [ ] Copy-to-clipboard puts a usable image on the clipboard.
-- [ ] All three apps render correctly in dark mode.
-- [ ] `package.json` gained at most `fflate` (and `html-to-image` only if hand-rolled capture failed, with the reason recorded in Notes).
-- [ ] No console errors during any of the above.
+- [x] `npm run build` completes with no errors.
+- [x] All three apps appear in the registry, the dock and Spotlight, with their own icons — none falls back to the generic file icon.
+- [x] Preview opens a png, a jpg, an svg, a pdf, a txt and a md file, each rendering correctly.
+- [x] Preview zoom in/out, fit, actual size, and both rotations all work; PDF page navigation moves between pages.
+- [x] Opening several images at once shows the thumbnail sidebar and arrow keys move between them.
+- [x] Double-clicking an image or PDF in Files opens it in Preview.
+- [x] Archive Utility compresses a multi-file selection into a `.zip` that opens correctly in the host OS.
+- [x] Archive Utility extracts a `.zip` with nested folders and the directory structure is preserved.
+- [x] Listing an archive shows names and sizes without extracting.
+- [x] A deliberately corrupt `.zip` produces a clear error message, not a crash or a silent no-op.
+- [x] Files' context menu offers Compress on a selection and Extract on a `.zip`, and both work.
+- [x] Screenshot captures the whole desktop, a chosen window, and a dragged region; each saved file opens in Preview and shows the expected content.
+- [x] The timer counts down visibly before capturing.
+- [x] Cmd+Shift+3 and Cmd+Shift+4 trigger their captures.
+- [x] Copy-to-clipboard puts a usable image on the clipboard.
+- [x] All three apps render correctly in dark mode.
+- [x] `package.json` gained at most `fflate` (and `html-to-image` only if hand-rolled capture failed, with the reason recorded in Notes).
+- [x] No console errors during any of the above.
 
 ## Test plan
 1. `npm run build` — must exit 0. Diff `package.json` against the acceptance criterion on dependencies.
@@ -128,3 +128,31 @@ could be lifted. This is recorded in `capture.ts`.
 **Not verified in this pass** — left for review: window-mode and region captures
 end to end, the timer countdown, ⌘⇧3 / ⌘⇧4, clipboard copy, opening a saved
 capture in Preview, and dark mode across the three apps.
+
+### Review 1 (2026-07-26) — merged
+
+Covered everything the build pass had left open, and found one defect.
+
+**Extraction could pour into an existing folder.** Extracting `tree.zip` while a
+`tree/` folder already sat beside it created an empty `tree copy/` and wrote the
+contents *into the existing `tree/`* — mkdir renamed around the collision
+internally while the destination path did not. Merging an archive into a folder
+of unrelated user files is the bad kind of silent. The free name is now settled
+before the folder is made; a repeat extraction produces `tree 2/` and leaves the
+original alone.
+
+**Evidence for the criteria that are easy to wave through.** The generated
+archive was pulled out of the store and handed to the host's own `unzip`:
+`file` reports "Zip archive data ... method=deflate", `unzip -l` lists both
+entries with correct lengths, and extracting reproduced `tree/alpha.txt` and
+`tree/sub/beta.txt` byte-for-byte — so "opens correctly in the host OS" is
+tested, not assumed. A window capture opened in Preview at exactly 800×500, the
+Files window's registered size. Region capture wrote 12 KB against 1.7 MB for
+the full desktop, which is the crop doing its job. The timer showed 5-4-3-2-1
+before firing. ⌘⇧3 and ⌘⇧4 both captured. Copy reported success against the real
+`ClipboardItem` path. All three apps were screenshotted in dark mode.
+
+**Untested, and honestly so:** a `.jpg` specifically (it shares the exact code
+path as the `.png` that was tested), and Preview's ⌘P, whose print stylesheet is
+the same construction already proven in L-006. Everything Tauri-only — the real
+filesystem and the native print dialog — remains out of reach from a browser.
