@@ -74,9 +74,13 @@ Three more apps, the largest issue in the set.
   `localStorage`. Files/Preview/Archive/Screenshot all sit behind it. Anything
   "real filesystem" cannot be tested at `localhost:5173`; it needs the app.
   This is also the single seam if the filesystem layer is ever moved to native.
-- **The app bundle is stale.** Built 20:58:51; main moved on at 21:05:23, so the
-  bundle lacks the context-menu fix. Rebuild with `npm run tauri:build`
-  (a few minutes) before judging native behaviour.
+- **The app bundle is current as of 2026-07-26 19:09** (`e41778d` + the Preview
+  html fix). Rebuilt and installed: `/Applications/porcelain-os.app` now matches
+  the build output, so Launchpad and the Desktop launcher open the same thing.
+  It embeds `index-D56czl6C.js` / `index-bancEJLF.css` — check those hashes
+  against `dist/assets/` to tell at a glance whether the bundle has gone stale
+  again. Rebuild with `npm run tauri:build` (~25s now that Rust is warm), then
+  re-copy to `/Applications` or the two drift apart silently.
 - **Worktree cwd trap.** `git worktree add` does not move the shell. Today one
   edit pass landed in the main tree by mistake. After creating a worktree, `cd`
   into it and confirm with `pwd` before editing.
