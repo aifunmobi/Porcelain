@@ -114,44 +114,4 @@
 }
 
 /* tooltip: a small raised paper label */
-.dock__tooltip {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--paper-0);
-  border: 1px solid var(--edge-hairline);
-  color: var(--ink);
-  text-shadow: var(--text-emboss-engraved);
-  padding: var(--space-1) var(--space-2-5);
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: var(--emboss-raise-2);
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  .dock__tooltip {
-    transition: opacity 120ms var(--ease-out);
-  }
-}
-
-.dock__tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-1px) rotate(45deg);
-  width: 7px;
-  height: 7px;
-  background-color: var(--paper-0);
-  border-right: 1px solid var(--edge-hairline);
-  border-bottom: 1px solid var(--edge-hairline);
-}
-
-.dock__item-wrapper:hover .dock__tooltip {
-  opacity: 1;
-}
