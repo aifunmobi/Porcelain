@@ -71,7 +71,7 @@ export const Notes: React.FC<AppProps> = () => {
     <div className="notes">
       <div className="notes__sidebar">
         <div className="notes__sidebar-header">
-          <button className="notes__new-btn" onClick={handleCreateNote}>
+          <button className="notes__new-btn is-primary" onClick={handleCreateNote}>
             <Icon name="plus" size={16} />
             New Note
           </button>
@@ -102,7 +102,7 @@ export const Notes: React.FC<AppProps> = () => {
                 onChange={handleTitleChange}
                 placeholder="Note title"
               />
-              <button className="notes__delete-btn" onClick={handleDeleteNote}>
+              <button className="notes__delete-btn is-danger" onClick={handleDeleteNote}>
                 <Icon name="trash" size={16} />
               </button>
             </div>

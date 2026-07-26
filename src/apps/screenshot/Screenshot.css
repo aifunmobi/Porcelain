@@ -38,17 +38,12 @@
 
 .screenshot__segment {
   padding: var(--space-1-5) var(--space-3);
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  color: var(--ink);
 }
 
-/* Qualified so it beats the shared `.window__body button` control. */
-.window__body .screenshot__segment--active {
-  background-color: var(--paper-2);
-  color: var(--ink-strong);
-  box-shadow: var(--emboss-press-1);
-}
+/* The selected segment uses the shared .is-selected variant — see
+ * app-controls.css. A local rule here loses to the base control on
+ * specificity, which is how this state was invisible for so long. */
 
 .screenshot__select {
   height: 30px;
@@ -63,10 +58,8 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--ink-strong);
 }
 
 .screenshot__error,

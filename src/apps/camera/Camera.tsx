@@ -172,20 +172,20 @@ export const Camera: React.FC<AppProps> = () => {
 
       <div className="camera__controls">
         <button
-          className="camera__control-btn"
+          className="camera__control-btn is-round"
           onClick={() => setIsMirrored(!isMirrored)}
           title="Mirror"
         >
           <Icon name="refresh" size={18} />
         </button>
         <button
-          className="camera__capture-btn"
+          className="camera__capture-btn is-round"
           onClick={handleCapture}
           disabled={!hasPermission || countdown !== null}
         >
           <div className="camera__capture-inner" />
         </button>
-        <button className="camera__control-btn" title="Settings">
+        <button className="camera__control-btn is-round" title="Settings">
           <Icon name="gear" size={18} />
         </button>
       </div>

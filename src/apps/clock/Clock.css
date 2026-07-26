@@ -22,22 +22,11 @@
 .clock-app__tab {
   flex: 1;
   padding: var(--space-2);
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  color: var(--ink);
-  background: transparent;
-  transition: all var(--duration-fast) var(--ease-out);
 }
 
-.clock-app__tab:hover {
-  background: var(--paper-1);
-}
-
-.clock-app__tab--active {
-  background: var(--color-accent);
-  color: white;
-}
+/* The selected tab uses the shared .is-selected variant (app-controls.css). */
 
 .clock-app__content {
   flex: 1;
@@ -245,28 +234,10 @@
   border-bottom: 1px solid var(--edge-hairline);
 }
 
-/* Buttons */
+/* Buttons — material comes from app-controls.css; only the metrics are local.
+ * Start/Resume carry .is-primary. */
 .clock-app__btn {
   padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  background: var(--paper-1);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.clock-app__btn:hover {
-  background: var(--paper-2);
-  color: var(--ink-strong);
-}
-
-.clock-app__btn--primary {
-  background: var(--color-accent);
-  color: white;
-}
-
-.clock-app__btn--primary:hover {
-  background: var(--color-accent-hover);
 }

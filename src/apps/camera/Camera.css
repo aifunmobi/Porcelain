@@ -83,49 +83,35 @@
   background: rgba(0, 0, 0, 0.8);
 }
 
+/* Camera chrome is dark, but the controls are still paper discs — the material
+ * does not change because the surface behind it does. Shape comes from
+ * .is-round in app-controls.css; only the metrics are local. */
 .camera__control-btn {
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.camera__control-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
 
 .camera__capture-btn {
   width: 72px;
   height: 72px;
-  border-radius: var(--radius-full);
-  background: white;
   padding: 4px;
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.camera__capture-btn:hover {
-  transform: scale(1.05);
-}
-
-.camera__capture-btn:active {
-  transform: scale(0.95);
 }
 
 .camera__capture-btn:disabled {
   opacity: 0.5;
 }
 
+/* The shutter's inner ring: a groove struck into the disc, not a white circle
+ * painted on top of it. */
 .camera__capture-inner {
   width: 100%;
   height: 100%;
   border-radius: var(--radius-full);
-  background: white;
-  border: 3px solid var(--ink-strong);
+  background: var(--paper-1);
+  box-shadow: var(--emboss-press-1);
 }
 
 .camera__gallery {

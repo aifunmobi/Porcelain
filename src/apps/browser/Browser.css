@@ -32,17 +32,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--ink);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.browser__nav-button:hover:not(:disabled) {
-  background: var(--paper-2);
-  color: var(--ink-strong);
 }
 
 .browser__nav-button:disabled {
@@ -94,18 +84,8 @@
 
 .browser__bookmark {
   padding: var(--space-1) var(--space-2);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
   font-size: var(--text-xs);
-  color: var(--ink);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.browser__bookmark:hover {
-  background: var(--paper-2);
-  color: var(--ink-strong);
 }
 
 /* Content */

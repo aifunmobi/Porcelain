@@ -25,16 +25,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  color: var(--ink);
 }
 
-/* Qualified so it beats the shared `.window__body button` control. */
-.window__body .preview__btn--active {
-  background-color: var(--paper-2);
-  color: var(--ink-strong);
-  box-shadow: var(--emboss-press-1);
-}
+/* Toggled buttons use the shared .is-selected variant (app-controls.css). */
 
 .preview__btn-label {
   font-size: var(--text-xs);

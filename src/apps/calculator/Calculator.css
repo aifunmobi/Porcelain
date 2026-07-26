@@ -47,14 +47,6 @@
   justify-content: center;
   font-size: var(--text-xl);
   font-weight: var(--font-medium);
-  border-radius: var(--radius-lg);
-  transition: all var(--duration-fast) var(--ease-out);
-  box-shadow: var(--shadow-sm);
-}
-
-.calculator__key:active {
-  box-shadow: var(--shadow-inset);
-  transform: scale(0.98);
 }
 
 .calculator__key--number {

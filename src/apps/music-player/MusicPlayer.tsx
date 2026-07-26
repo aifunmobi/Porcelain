@@ -305,34 +305,34 @@ export const MusicPlayer: React.FC<AppProps> = () => {
 
       <div className="music-player__controls">
         <button
-          className={`music-player__control-btn ${shuffle ? 'music-player__control-btn--active' : ''}`}
+          className={`music-player__control-btn is-round ${shuffle ? 'is-selected' : ''}`}
           onClick={() => setShuffle(!shuffle)}
         >
           <Icon name="refresh" size={16} />
         </button>
         <button
-          className="music-player__control-btn"
+          className="music-player__control-btn is-round"
           onClick={handlePrevious}
           disabled={!currentTrack}
         >
           <Icon name="skip-back" size={20} />
         </button>
         <button
-          className="music-player__play-btn"
+          className="music-player__play-btn is-round is-primary"
           onClick={handlePlay}
           disabled={!currentTrack}
         >
           <Icon name={isPlaying ? 'pause' : 'play'} size={24} />
         </button>
         <button
-          className="music-player__control-btn"
+          className="music-player__control-btn is-round"
           onClick={handleNext}
           disabled={!currentTrack}
         >
           <Icon name="skip-forward" size={20} />
         </button>
         <button
-          className={`music-player__control-btn ${repeat ? 'music-player__control-btn--active' : ''}`}
+          className={`music-player__control-btn is-round ${repeat ? 'is-selected' : ''}`}
           onClick={() => setRepeat(!repeat)}
         >
           <Icon name="refresh" size={16} />
@@ -404,7 +404,7 @@ export const MusicPlayer: React.FC<AppProps> = () => {
             <Icon name="music" size={32} color="var(--color-porcelain-300)" />
             <p>{isInTauri ? 'No music in Music folder' : 'No tracks available'}</p>
             {isInTauri && (
-              <button className="music-player__browse-btn" onClick={handleOpenFiles}>
+              <button className="music-player__browse-btn is-primary" onClick={handleOpenFiles}>
                 Browse Files
               </button>
             )}

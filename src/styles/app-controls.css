@@ -37,9 +37,11 @@
   transform: translate(1px, 1px);
 }
 
+/* Matches .p-pressable:disabled in primitives.css — an unavailable control is
+ * still a physical object, just not one you can push. */
 .window__body button:not(.pcl-bare):disabled {
-  box-shadow: none;
-  opacity: 0.45;
+  box-shadow: var(--emboss-raise-1);
+  opacity: 0.55;
   transform: none;
 }
 
@@ -48,12 +50,46 @@
   box-shadow: var(--emboss-press-1), 0 0 0 2px var(--color-accent);
 }
 
+/* --- variants ------------------------------------------------------------
+ * Every variant below carries three classes to the base control's two, so it
+ * wins on specificity alone. That matters: app stylesheets are bundled *after*
+ * this file, so anything relying on source order is decided by import order
+ * instead of by intent. An app that needs a toggled, destructive or round
+ * button reaches for these — it does not restate the material.
+ */
+
 /* primary reads as deeper stock, not a filled accent slab */
-.window__body button.is-primary {
+.window__body button.is-primary:not(.pcl-bare) {
   background-color: var(--paper-1);
   color: var(--ink-strong);
   font-weight: var(--font-semibold);
   box-shadow: var(--emboss-raise-2);
+}
+
+/* toggled on: the same button, held down. Hover must not lift it back out. */
+.window__body button.is-selected:not(.pcl-bare) {
+  background-color: var(--paper-2);
+  color: var(--ink-strong);
+  box-shadow: var(--emboss-press-1);
+}
+
+.window__body button.is-selected:not(.pcl-bare):hover {
+  box-shadow: var(--emboss-press-1);
+}
+
+/* destructive: the stock is tinted, not swapped for a red slab */
+.window__body button.is-danger:not(.pcl-bare) {
+  background-color: var(--color-error-light);
+}
+
+.window__body button.is-danger:not(.pcl-bare):hover {
+  background-color: var(--color-error);
+  color: var(--ink-strong);
+}
+
+/* shape is the one thing an app may vary: a shutter has to be round */
+.window__body button.is-round:not(.pcl-bare) {
+  border-radius: var(--radius-full);
 }
 
 /* --- inputs: pressed wells --------------------------------------------- */

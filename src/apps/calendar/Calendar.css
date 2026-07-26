@@ -32,15 +32,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--paper-1);
-  color: var(--ink);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.calendar-app__nav-btn:hover {
-  background: var(--paper-2);
-  color: var(--ink-strong);
 }
 
 .calendar-app__title {
@@ -53,16 +44,8 @@
 
 .calendar-app__today-btn {
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  background: var(--color-accent);
-  color: white;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.calendar-app__today-btn:hover {
-  background: var(--color-accent-hover);
 }
 
 .calendar-app__main {
@@ -178,14 +161,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--color-accent);
-  color: white;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.calendar-app__add-btn:hover {
-  background: var(--color-accent-hover);
 }
 
 .calendar-app__events {
@@ -228,16 +203,10 @@
   top: var(--space-2);
   right: var(--space-2);
   opacity: 0;
-  color: var(--ink-soft);
-  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .calendar-app__event:hover .calendar-app__event-delete {
   opacity: 1;
-}
-
-.calendar-app__event-delete:hover {
-  color: var(--color-error);
 }
 
 /* Modal */
@@ -287,23 +256,7 @@
 
 .calendar-app__modal-btn {
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
-  background: var(--paper-1);
-  color: var(--ink);
-  transition: all var(--duration-fast) var(--ease-out);
 }
 
-.calendar-app__modal-btn:hover {
-  background: var(--paper-2);
-}
-
-.calendar-app__modal-btn--primary {
-  background: var(--color-accent);
-  color: white;
-}
-
-.calendar-app__modal-btn--primary:hover {
-  background: var(--color-accent-hover);
-}

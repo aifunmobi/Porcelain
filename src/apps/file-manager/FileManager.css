@@ -31,16 +31,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--paper-1);
-  color: var(--ink);
-  box-shadow: var(--shadow-xs);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.file-manager__nav-btn:hover:not(:disabled) {
-  background: var(--paper-2);
-  color: var(--ink-strong);
 }
 
 .file-manager__nav-btn:disabled {
@@ -112,26 +102,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--paper-1);
-  color: var(--ink-soft);
-  transition: all var(--duration-fast) var(--ease-out);
 }
 
-.file-manager__view-btn:hover {
-  background: var(--paper-2);
-  color: var(--ink);
-}
-
-/* The shared control in app-controls.css is `.window__body button:not(.pcl-bare)`,
- * which outranks a lone `.active` class — so selected states are qualified to
- * win, and read as pressed stock rather than a filled slab, per L-004. */
-.window__body .file-manager__view-btn.active,
-.window__body .file-manager__search-scope.active {
-  background-color: var(--paper-2);
-  color: var(--ink-strong);
-  box-shadow: var(--emboss-press-1);
-}
+/* Selected view mode and search scope use the shared .is-selected variant
+ * (app-controls.css), which reads as pressed stock rather than a filled slab. */
 
 .file-manager__main {
   display: flex;
@@ -203,21 +177,6 @@
   gap: var(--space-1);
   padding: var(--space-1-5) var(--space-3);
   font-size: var(--text-sm);
-  color: var(--ink);
-  background: var(--paper-1);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xs);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.file-manager__action-btn:hover {
-  background: var(--paper-2);
-  color: var(--ink-strong);
-}
-
-.file-manager__action-btn--danger:hover {
-  background: var(--color-error);
-  color: white;
 }
 
 .file-manager__empty {
@@ -589,12 +548,9 @@
 .file-manager__search-scope {
   font-size: var(--text-xs);
   padding: 0 var(--space-1);
-  border-radius: var(--radius-sm);
-  color: var(--ink-soft);
   white-space: nowrap;
   cursor: pointer;
 }
-
 
 /* Column (Miller) view */
 .file-manager__columns {

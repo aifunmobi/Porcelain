@@ -63,7 +63,7 @@ export const Trash: React.FC<AppProps> = () => {
           <span className="trash__count">{items.length} item{items.length !== 1 ? 's' : ''}</span>
         </div>
         <button
-          className="trash__empty-btn"
+          className="trash__empty-btn is-danger"
           onClick={handleEmptyTrash}
           disabled={items.length === 0}
         >
@@ -112,7 +112,7 @@ export const Trash: React.FC<AppProps> = () => {
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="trash__context-menu-item"
+            className="pcl-bare trash__context-menu-item"
             onClick={() => handleRestore(contextMenu.item.id)}
           >
             <Icon name="refresh" size={14} />
@@ -120,7 +120,7 @@ export const Trash: React.FC<AppProps> = () => {
           </button>
           <div className="trash__context-menu-divider" />
           <button
-            className="trash__context-menu-item trash__context-menu-item--danger"
+            className="pcl-bare trash__context-menu-item trash__context-menu-item--danger"
             onClick={() => handleDelete(contextMenu.item.id)}
           >
             <Icon name="trash" size={14} />

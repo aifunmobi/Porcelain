@@ -237,7 +237,7 @@ export const Weather: React.FC<AppProps> = () => {
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search city..."
         />
-        <button type="submit" className="weather__search-button">
+        <button type="submit" className="weather__search-button is-primary">
           <Icon name="search" size={16} />
         </button>
       </form>

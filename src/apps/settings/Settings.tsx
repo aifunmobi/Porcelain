@@ -149,21 +149,21 @@ export const Settings: React.FC<AppProps> = () => {
               <h3 className="settings__section-title">Appearance</h3>
               <div className="settings__theme-selector">
                 <button
-                  className={`settings__theme-option ${theme === 'light' ? 'settings__theme-option--active' : ''}`}
+                  className={`settings__theme-option ${theme === 'light' ? 'is-selected' : ''}`}
                   onClick={() => setTheme('light')}
                 >
                   <div className="settings__theme-preview settings__theme-preview--light" />
                   <span>Light</span>
                 </button>
                 <button
-                  className={`settings__theme-option ${theme === 'dark' ? 'settings__theme-option--active' : ''}`}
+                  className={`settings__theme-option ${theme === 'dark' ? 'is-selected' : ''}`}
                   onClick={() => setTheme('dark')}
                 >
                   <div className="settings__theme-preview settings__theme-preview--dark" />
                   <span>Dark</span>
                 </button>
                 <button
-                  className={`settings__theme-option ${theme === 'auto' ? 'settings__theme-option--active' : ''}`}
+                  className={`settings__theme-option ${theme === 'auto' ? 'is-selected' : ''}`}
                   onClick={() => setTheme('auto')}
                 >
                   <div className="settings__theme-preview settings__theme-preview--auto" />
@@ -193,7 +193,7 @@ export const Settings: React.FC<AppProps> = () => {
                 {accentColors.map((color) => (
                   <button
                     key={color.id}
-                    className={`settings__accent-color ${accentColor === color.value ? 'settings__accent-color--active' : ''}`}
+                    className={`settings__accent-color is-round ${accentColor === color.value ? 'is-selected' : ''}`}
                     style={{ background: color.value }}
                     onClick={() => setAccentColor(color.value)}
                     title={color.name}
@@ -222,7 +222,7 @@ export const Settings: React.FC<AppProps> = () => {
               <div className="settings__row">
                 <label className="settings__label">Show seconds</label>
                 <button
-                  className={`settings__toggle ${showSeconds ? 'settings__toggle--on' : ''}`}
+                  className={`pcl-bare settings__toggle ${showSeconds ? 'settings__toggle--on' : ''}`}
                   onClick={() => setShowSeconds(!showSeconds)}
                 >
                   <span className="settings__toggle-handle" />
@@ -231,7 +231,7 @@ export const Settings: React.FC<AppProps> = () => {
               <div className="settings__row">
                 <label className="settings__label">Use 24-hour format</label>
                 <button
-                  className={`settings__toggle ${use24Hour ? 'settings__toggle--on' : ''}`}
+                  className={`pcl-bare settings__toggle ${use24Hour ? 'settings__toggle--on' : ''}`}
                   onClick={() => setUse24Hour(!use24Hour)}
                 >
                   <span className="settings__toggle-handle" />
@@ -258,7 +258,7 @@ export const Settings: React.FC<AppProps> = () => {
                 Reset all settings to their default values. This will restore the default wallpaper, dock apps, and all preferences.
               </p>
               <button
-                className="settings__reset-button"
+                className="settings__reset-button is-danger"
                 onClick={() => {
                   if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
                     resetSettings();

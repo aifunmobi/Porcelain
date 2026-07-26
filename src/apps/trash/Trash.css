@@ -37,14 +37,6 @@
 .trash__empty-btn {
   padding: var(--space-1-5) var(--space-3);
   font-size: var(--text-xs);
-  background: var(--color-danger);
-  color: white;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.trash__empty-btn:hover:not(:disabled) {
-  background: var(--color-error);
 }
 
 .trash__empty-btn:disabled {

@@ -193,7 +193,7 @@ export const VideoPlayer: React.FC<AppProps> = () => {
             <Icon name="video" size={64} color="var(--color-porcelain-400)" />
             <p>{isLoading ? 'Loading videos...' : 'No video loaded'}</p>
             {isInTauri && !isLoading && (
-              <button className="video-player__load-btn" onClick={handleOpenFile}>
+              <button className="video-player__load-btn is-primary" onClick={handleOpenFile}>
                 <Icon name="upload" size={16} />
                 Open Video
               </button>

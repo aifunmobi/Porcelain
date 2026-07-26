@@ -105,7 +105,7 @@ export const Calendar: React.FC<AppProps> = () => {
             <Icon name="chevron-right" size={16} />
           </button>
         </div>
-        <button className="calendar-app__today-btn" onClick={goToToday}>
+        <button className="calendar-app__today-btn is-primary" onClick={goToToday}>
           Today
         </button>
       </div>
@@ -151,7 +151,7 @@ export const Calendar: React.FC<AppProps> = () => {
               {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
             </h3>
             <button
-              className="calendar-app__add-btn"
+              className="calendar-app__add-btn is-primary"
               onClick={() => setShowEventModal(true)}
             >
               <Icon name="plus" size={16} />
@@ -174,7 +174,7 @@ export const Calendar: React.FC<AppProps> = () => {
                       : `${event.startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
                   </div>
                   <button
-                    className="calendar-app__event-delete"
+                    className="calendar-app__event-delete is-danger"
                     onClick={() => deleteEvent(event.id)}
                   >
                     <Icon name="trash" size={14} />
@@ -206,7 +206,7 @@ export const Calendar: React.FC<AppProps> = () => {
                 Cancel
               </button>
               <button
-                className="calendar-app__modal-btn calendar-app__modal-btn--primary"
+                className="calendar-app__modal-btn is-primary"
                 onClick={handleCreateEvent}
               >
                 Add Event

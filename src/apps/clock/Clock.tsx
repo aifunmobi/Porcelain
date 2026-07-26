@@ -96,19 +96,19 @@ export const Clock: React.FC<AppProps> = () => {
     <div className="clock-app">
       <div className="clock-app__tabs">
         <button
-          className={`clock-app__tab ${mode === 'clock' ? 'clock-app__tab--active' : ''}`}
+          className={`clock-app__tab ${mode === 'clock' ? 'is-selected' : ''}`}
           onClick={() => setMode('clock')}
         >
           Clock
         </button>
         <button
-          className={`clock-app__tab ${mode === 'timer' ? 'clock-app__tab--active' : ''}`}
+          className={`clock-app__tab ${mode === 'timer' ? 'is-selected' : ''}`}
           onClick={() => setMode('timer')}
         >
           Timer
         </button>
         <button
-          className={`clock-app__tab ${mode === 'stopwatch' ? 'clock-app__tab--active' : ''}`}
+          className={`clock-app__tab ${mode === 'stopwatch' ? 'is-selected' : ''}`}
           onClick={() => setMode('stopwatch')}
         >
           Stopwatch
@@ -180,7 +180,7 @@ export const Clock: React.FC<AppProps> = () => {
                     <span className="clock-app__timer-label">sec</span>
                   </div>
                 </div>
-                <button className="clock-app__btn clock-app__btn--primary" onClick={startTimer}>
+                <button className="clock-app__btn is-primary" onClick={startTimer}>
                   Start
                 </button>
               </div>
@@ -197,7 +197,7 @@ export const Clock: React.FC<AppProps> = () => {
                     </button>
                   ) : (
                     <button
-                      className="clock-app__btn clock-app__btn--primary"
+                      className="clock-app__btn is-primary"
                       onClick={() => setTimerRunning(true)}
                     >
                       Resume
@@ -234,7 +234,7 @@ export const Clock: React.FC<AppProps> = () => {
               ) : (
                 <>
                   <button
-                    className="clock-app__btn clock-app__btn--primary"
+                    className="clock-app__btn is-primary"
                     onClick={() => setStopwatchRunning(true)}
                   >
                     {stopwatchTime > 0 ? 'Resume' : 'Start'}

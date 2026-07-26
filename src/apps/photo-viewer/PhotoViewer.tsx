@@ -295,10 +295,10 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
             <p>{isInTauri ? 'No images found' : 'Sample images'}</p>
             {isInTauri && (
               <>
-                <button className="photo-viewer__browse-btn" onClick={handleOpenFolder}>
+                <button className="photo-viewer__browse-btn is-primary" onClick={handleOpenFolder}>
                   Open Folder
                 </button>
-                <button className="photo-viewer__browse-btn photo-viewer__browse-btn--secondary" onClick={handleOpenFiles}>
+                <button className="photo-viewer__browse-btn" onClick={handleOpenFiles}>
                   Add Files
                 </button>
               </>
@@ -336,7 +336,7 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
 
               {/* Navigation arrows */}
               <button
-                className="photo-viewer__nav-btn photo-viewer__nav-btn--prev"
+                className="photo-viewer__nav-btn is-round photo-viewer__nav-btn--prev"
                 onClick={handlePrevious}
                 disabled={
                   images.findIndex((img) => img.id === selectedImage.id) === 0
@@ -345,7 +345,7 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
                 <Icon name="chevron-left" size={24} />
               </button>
               <button
-                className="photo-viewer__nav-btn photo-viewer__nav-btn--next"
+                className="photo-viewer__nav-btn is-round photo-viewer__nav-btn--next"
                 onClick={handleNext}
                 disabled={
                   images.findIndex((img) => img.id === selectedImage.id) ===
@@ -416,7 +416,7 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="photo-viewer__context-menu-item"
+            className="pcl-bare photo-viewer__context-menu-item"
             onClick={() => handleCopy(contextMenu.image)}
             disabled={!contextMenu.image.path}
           >

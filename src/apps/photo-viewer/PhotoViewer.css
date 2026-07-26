@@ -46,24 +46,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  background: var(--paper-1);
-  color: var(--ink);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.photo-viewer__open-btn:hover {
-  background: var(--color-accent);
-  color: white;
-}
-
-.photo-viewer__browse-btn--secondary {
-  background: var(--paper-2);
-  color: var(--ink);
-}
-
-.photo-viewer__browse-btn--secondary:hover {
-  background: var(--paper-3);
 }
 
 .photo-viewer__thumbnails {
@@ -165,15 +147,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--paper-1);
-  color: var(--ink);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.photo-viewer__btn:hover {
-  background: var(--paper-2);
-  color: var(--ink-strong);
 }
 
 .photo-viewer__zoom-level {
@@ -243,14 +216,6 @@
   margin-top: var(--space-2);
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
-  background: var(--color-accent);
-  color: white;
-  border-radius: var(--radius-md);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.photo-viewer__browse-btn:hover {
-  background: var(--color-accent-hover);
 }
 
 .photo-viewer__loading-main {
@@ -272,31 +237,22 @@
 }
 
 /* Navigation buttons */
+/* Centred with a negative margin, not translateY: the shared control presses
+ * itself 1px toward the light on :active, and a transform here would be
+ * replaced by that one — sending the button to the top of the canvas mid-click. */
 .photo-viewer__nav-btn {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  margin-top: -24px;
   width: 48px;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--paper-0);
-  color: var(--ink);
-  box-shadow: var(--shadow-md);
-  transition: all var(--duration-fast) var(--ease-out);
   z-index: 10;
 }
 
-.photo-viewer__nav-btn:hover:not(:disabled) {
-  background: white;
-  color: var(--ink-strong);
-  box-shadow: var(--shadow-lg);
-}
-
 .photo-viewer__nav-btn:disabled {
-  opacity: 0.3;
   cursor: not-allowed;
 }
 

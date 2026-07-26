@@ -539,7 +539,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   ) => (
     <button
       key={title}
-      className={`text-editor__btn ${active ? 'text-editor__btn--active' : ''}`}
+      className={`text-editor__btn ${active ? 'is-selected' : ''}`}
       onClick={onClick}
       title={title}
       aria-label={title}
@@ -560,14 +560,14 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
 
         <div className="text-editor__modes">
           <button
-            className={`text-editor__btn ${mode === 'rich' ? 'text-editor__btn--active' : ''}`}
+            className={`text-editor__btn ${mode === 'rich' ? 'is-selected' : ''}`}
             onClick={() => switchMode('rich')}
             title="Rich text"
           >
             <span className="text-editor__btn-label">Rich</span>
           </button>
           <button
-            className={`text-editor__btn ${mode === 'plain' ? 'text-editor__btn--active' : ''}`}
+            className={`text-editor__btn ${mode === 'plain' ? 'is-selected' : ''}`}
             onClick={() => switchMode('plain')}
             title="Plain text"
           >
@@ -674,7 +674,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
             <Icon name="chevron-down" size={13} />
           </button>
           <button
-            className={`text-editor__btn ${caseSensitive ? 'text-editor__btn--active' : ''}`}
+            className={`text-editor__btn ${caseSensitive ? 'is-selected' : ''}`}
             onClick={() => {
               setCaseSensitive((on) => !on);
               setMatchIndex(0);

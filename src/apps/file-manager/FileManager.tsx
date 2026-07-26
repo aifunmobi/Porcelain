@@ -872,7 +872,7 @@ export const FileManager: React.FC<AppProps> = () => {
             onKeyDown={(e) => e.stopPropagation()}
           />
           <button
-            className={`file-manager__search-scope ${searchHere ? 'active' : ''}`}
+            className={`file-manager__search-scope ${searchHere ? 'is-selected' : ''}`}
             onClick={() => setSearchHere((on) => !on)}
             title="Search inside subfolders"
           >
@@ -890,7 +890,7 @@ export const FileManager: React.FC<AppProps> = () => {
           ).map(([mode, icon, title]) => (
             <button
               key={mode}
-              className={`file-manager__view-btn ${viewMode === mode ? 'active' : ''}`}
+              className={`file-manager__view-btn ${viewMode === mode ? 'is-selected' : ''}`}
               onClick={() => setViewMode(mode)}
               title={title}
             >
@@ -929,7 +929,7 @@ export const FileManager: React.FC<AppProps> = () => {
                   Get Info
                 </button>
                 <button
-                  className="file-manager__action-btn file-manager__action-btn--danger"
+                  className="file-manager__action-btn is-danger"
                   onClick={trashSelection}
                   title="⌘⌫"
                 >
@@ -1027,7 +1027,7 @@ export const FileManager: React.FC<AppProps> = () => {
           {contextMenu.item ? (
             <>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   open(contextMenu.item!);
                   setContextMenu(null);
@@ -1037,7 +1037,7 @@ export const FileManager: React.FC<AppProps> = () => {
                 Open
               </button>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   showInfo();
                   setContextMenu(null);
@@ -1047,7 +1047,7 @@ export const FileManager: React.FC<AppProps> = () => {
                 Get Info
               </button>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   void openWith('archive', {
                     compressPaths: (selectedItems.length ? selectedItems : [contextMenu.item!]).map(
@@ -1062,7 +1062,7 @@ export const FileManager: React.FC<AppProps> = () => {
               </button>
               {getFileExtension(contextMenu.item.name) === 'zip' && (
                 <button
-                  className="file-manager__context-menu-item"
+                  className="pcl-bare file-manager__context-menu-item"
                   onClick={() => {
                     void openWith('archive', { archivePath: contextMenu.item!.path });
                     setContextMenu(null);
@@ -1073,7 +1073,7 @@ export const FileManager: React.FC<AppProps> = () => {
                 </button>
               )}
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   copySelection('copy');
                   setContextMenu(null);
@@ -1083,7 +1083,7 @@ export const FileManager: React.FC<AppProps> = () => {
                 Copy
               </button>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   copySelection('cut');
                   setContextMenu(null);
@@ -1092,13 +1092,13 @@ export const FileManager: React.FC<AppProps> = () => {
                 Cut
               </button>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => startRename(contextMenu.item!)}
               >
                 Rename
               </button>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   duplicate();
                   setContextMenu(null);
@@ -1108,7 +1108,7 @@ export const FileManager: React.FC<AppProps> = () => {
               </button>
               <div className="file-manager__context-menu-divider" />
               <button
-                className="file-manager__context-menu-item file-manager__context-menu-item--danger"
+                className="pcl-bare file-manager__context-menu-item file-manager__context-menu-item--danger"
                 onClick={() => {
                   trashSelection();
                   setContextMenu(null);
@@ -1121,7 +1121,7 @@ export const FileManager: React.FC<AppProps> = () => {
           ) : (
             <>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   newFolder();
                   setContextMenu(null);
@@ -1131,7 +1131,7 @@ export const FileManager: React.FC<AppProps> = () => {
                 New Folder
               </button>
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 disabled={!clipboard}
                 onClick={() => {
                   paste();
@@ -1143,7 +1143,7 @@ export const FileManager: React.FC<AppProps> = () => {
               </button>
               <div className="file-manager__context-menu-divider" />
               <button
-                className="file-manager__context-menu-item"
+                className="pcl-bare file-manager__context-menu-item"
                 onClick={() => {
                   refresh();
                   setContextMenu(null);

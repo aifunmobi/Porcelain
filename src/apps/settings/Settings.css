@@ -127,12 +127,16 @@
   min-width: 40px;
 }
 
-/* Toggle */
+/* Toggle — a switch, not a button, so it opts out of the shared control with
+ * .pcl-bare: the track is a groove pressed into the sheet and the handle is a
+ * raised disc riding in it. */
 .settings__toggle {
   width: 48px;
   height: 28px;
   background: var(--paper-3);
+  border: 1px solid var(--edge-hairline);
   border-radius: var(--radius-full);
+  box-shadow: var(--emboss-press-1);
   padding: 2px;
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out);
@@ -144,11 +148,11 @@
 
 .settings__toggle-handle {
   display: block;
-  width: 24px;
-  height: 24px;
-  background: white;
+  width: 22px;
+  height: 22px;
+  background: var(--paper-0);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--emboss-raise-2);
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
@@ -207,21 +211,10 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
-  border-radius: var(--radius-md);
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: all var(--duration-fast) var(--ease-out);
-  background: transparent;
 }
 
-.settings__theme-option:hover {
-  background: var(--paper-1);
-}
-
-.settings__theme-option--active {
-  border-color: var(--color-accent);
-  background: var(--paper-0);
-}
+/* The chosen theme uses the shared .is-selected variant (app-controls.css). */
 
 .settings__theme-preview {
   width: 80px;
@@ -285,7 +278,7 @@
   color: var(--ink);
 }
 
-.settings__theme-option--active span {
+.settings__theme-option.is-selected span {
   color: var(--ink-strong);
   font-weight: var(--font-medium);
 }
@@ -299,20 +292,11 @@
 .settings__accent-color {
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-full);
   cursor: pointer;
-  border: 3px solid transparent;
-  box-shadow: var(--shadow-sm);
-  transition: all var(--duration-fast) var(--ease-out);
 }
 
-.settings__accent-color:hover {
-  transform: scale(1.1);
-}
-
-.settings__accent-color--active {
-  border-color: var(--ink-strong);
-}
+/* The chosen swatch presses into the sheet; its colour is an inline style, so
+ * .is-selected only contributes the depth. */
 
 /* About Panel */
 .settings__about-logo {
@@ -347,18 +331,7 @@
 .settings__reset-button {
   margin-top: var(--space-3);
   padding: var(--space-2) var(--space-4);
-  background: var(--color-error, var(--color-error));
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.settings__reset-button:hover {
-  background: var(--color-error);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
 }

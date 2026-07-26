@@ -19,13 +19,22 @@ root one level up (`ClaudeOS/`) has no package.json; everything lives here.
 
 ## Do these next, in this order
 
-### 1. Restyle the Screenshot app to the design system
-The user reported it directly: *"the screenshot UI not following icon looks and
-guideline"*. Its segmented Capture/Timer controls and the shutter button were
-built ad hoc instead of from the L-001/L-002 primitives every other app uses.
-Files: `src/apps/screenshot/Screenshot.tsx` + `.css`. Compare against
-`src/styles/app-controls.css` and how Files/Preview build their toolbars.
-**Do this before L-009 merges** — it is recorded in that issue's Notes.
+### 1. ~~Restyle the Screenshot app to the design system~~ — DONE (uncommitted)
+Root cause was not Screenshot-specific. `.window__body button:not(.pcl-bare)`
+in `app-controls.css` has specificity (0,2,1); every app's `.foo--active`
+override was (0,2,0) or lower and silently lost, so selected/primary/danger
+states across the whole OS were rendering as ordinary raised paper.
+
+`app-controls.css` now owns four variants — `.is-selected`, `.is-primary`,
+`.is-danger`, `.is-round` — each qualified with `:not(.pcl-bare)` so it carries
+three classes to the base control's two and wins on specificity alone, not on
+bundle order (app CSS is bundled *after* app-controls.css, so anything relying
+on source order is decided by import order rather than intent). The dead
+declarations in the app stylesheets were deleted. **Do not add a variant that
+ties on specificity.**
+
+Verified in-browser, light and dark: 82 enabled buttons across 17 apps resolve
+to 4 materials × 2 shapes, and disabled to a single signature.
 
 ### 2. Then review and merge L-009
 `/l-review` will pick it up (status is `review`). It covers Save/Save As across

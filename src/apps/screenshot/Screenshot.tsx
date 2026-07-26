@@ -232,7 +232,7 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
             {(['desktop', 'window', 'region'] as Mode[]).map((m) => (
               <button
                 key={m}
-                className={`screenshot__segment ${mode === m ? 'screenshot__segment--active' : ''}`}
+                className={`screenshot__segment ${mode === m ? 'is-selected' : ''}`}
                 onClick={() => setMode(m)}
               >
                 {m === 'desktop' ? 'Whole Desktop' : m === 'window' ? 'Window' : 'Region'}
@@ -247,7 +247,7 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
             {DELAYS.map((d) => (
               <button
                 key={d}
-                className={`screenshot__segment ${delay === d ? 'screenshot__segment--active' : ''}`}
+                className={`screenshot__segment ${delay === d ? 'is-selected' : ''}`}
                 onClick={() => setDelay(d)}
               >
                 {d === 0 ? 'None' : `${d}s`}
@@ -274,7 +274,7 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
           </div>
         )}
 
-        <button className="screenshot__shutter" onClick={capture}>
+        <button className="screenshot__shutter is-primary" onClick={capture}>
           <Icon name="screenshot" size={16} />
           {mode === 'region' ? 'Select Region' : 'Capture'}
         </button>

@@ -252,14 +252,14 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
           <Icon name="plus" size={14} />
         </button>
         <button
-          className={`preview__btn ${fit ? 'preview__btn--active' : ''}`}
+          className={`preview__btn ${fit ? 'is-selected' : ''}`}
           onClick={() => setFit(true)}
           title="Fit to window"
         >
           <span className="preview__btn-label">Fit</span>
         </button>
         <button
-          className={`preview__btn ${!fit && zoom === 1 ? 'preview__btn--active' : ''}`}
+          className={`preview__btn ${!fit && zoom === 1 ? 'is-selected' : ''}`}
           onClick={() => {
             setFit(false);
             setZoom(1);
