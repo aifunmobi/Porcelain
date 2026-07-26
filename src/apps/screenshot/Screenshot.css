@@ -1,0 +1,187 @@
+/* Screenshot — letterpress material (L-001/L-004). */
+
+.screenshot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--paper-1);
+}
+
+.screenshot__controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background: var(--paper-0);
+  border-bottom: 1px solid var(--edge-hairline);
+}
+
+.screenshot__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.screenshot__label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.screenshot__segments {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.screenshot__segment {
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+/* Qualified so it beats the shared `.window__body button` control. */
+.window__body .screenshot__segment--active {
+  background-color: var(--paper-2);
+  color: var(--ink-strong);
+  box-shadow: var(--emboss-press-1);
+}
+
+.screenshot__select {
+  height: 30px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  padding: 0 var(--space-2);
+}
+
+.screenshot__shutter {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--ink-strong);
+}
+
+.screenshot__error,
+.screenshot__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--edge-hairline);
+}
+
+.screenshot__error {
+  background: var(--color-error-light, var(--paper-2));
+  color: var(--color-error);
+}
+
+.screenshot__status {
+  background: var(--paper-0);
+  color: var(--ink);
+}
+
+.screenshot__result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  overflow: auto;
+}
+
+.screenshot__thumb {
+  max-width: 100%;
+  max-height: 60%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--emboss-raise-2, var(--shadow-md));
+  background: var(--paper-0);
+}
+
+.screenshot__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.screenshot__actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.screenshot__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* --- fullscreen overlays (portalled to <body>) -------------------------- */
+
+.screenshot__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  cursor: crosshair;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.screenshot__hint {
+  position: absolute;
+  top: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--paper-0);
+  color: var(--ink-strong);
+  font-size: var(--text-sm);
+  box-shadow: var(--emboss-raise-2, var(--shadow-md));
+}
+
+.screenshot__marquee {
+  position: absolute;
+  border: 1px solid var(--color-accent);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.18);
+}
+
+.screenshot__countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 9001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.screenshot__countdown span {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--paper-0);
+  color: var(--ink-strong);
+  font-size: 56px;
+  font-weight: var(--font-semibold);
+  box-shadow: var(--emboss-raise-3, var(--shadow-lg));
+}
