@@ -115,8 +115,13 @@ export const Archive: React.FC<ArchiveProps> = ({ compressPaths, archivePath }) 
     try {
       const data = await backend.readBinary(openArchive);
       const folder = backend.parent(openArchive);
-      const name = basename(openArchive).replace(/\.zip$/i, '');
-      // Same-named folder beside the archive, so nothing is overwritten.
+      const base = basename(openArchive).replace(/\.zip$/i, '');
+      // A new folder beside the archive. The free name has to be settled here,
+      // not left to mkdir: mkdir would quietly rename around a collision and the
+      // extraction would then pour into whatever folder already had that name.
+      const siblings = await backend.list(folder);
+      let name = base;
+      for (let n = 2; siblings.some((s) => s.name === name); n++) name = `${base} ${n}`;
       await backend.mkdir(folder, name);
       const destination = backend.join(folder, name);
       const written = await extractArchive(backend, data, destination, setProgress);
