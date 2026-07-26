@@ -6,7 +6,6 @@ import { createBackend } from '../../services/fsAdapter';
 import type { FsBackend } from '../../services/fsAdapter';
 import {
   rasterise,
-  canvasToPngBytes,
   copyCanvasToClipboard,
   screenshotName,
   type Rect,
@@ -63,27 +62,27 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
 
   /* ------------------------------------------------------------- capture */
 
+  const saver = useSaveAs(backend);
+
+  /**
+   * A capture is never written behind the user's back: the shot is held in the
+   * preview and the save sheet asks for a name, a format and a folder. Cancel
+   * keeps the capture on screen, still copyable.
+   */
   const persist = useCallback(
     async (canvas: HTMLCanvasElement) => {
       canvasRef.current = canvas;
-      const url = canvas.toDataURL('image/png');
-      if (!backend) {
-        setShot({ url });
-        return;
-      }
-      try {
-        const bytes = await canvasToPngBytes(canvas);
-        const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
-        const target = backend.join(pictures, screenshotName(new Date()));
-        await backend.writeBinary(target, bytes);
-        setShot({ url, path: target });
-        setStatus(`Saved to ${target}`);
-      } catch (err) {
-        setShot({ url });
-        setError(err instanceof Error ? err.message : 'The capture could not be saved.');
-      }
+      setShot({ url: canvas.toDataURL('image/png') });
+      if (!backend) return;
+      const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
+      saver.open({
+        initialName: screenshotName(new Date()),
+        folder: pictures,
+        formats: IMAGE_FORMATS,
+        produce: (format) => encodeImage(canvas, format),
+      });
     },
-    [backend]
+    [backend, saver]
   );
 
   const runCapture = useCallback(
@@ -214,8 +213,6 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
       setError(err instanceof Error ? err.message : 'Copying failed.');
     }
   }, []);
-
-  const saver = useSaveAs(backend);
 
   /** The automatic save always writes a PNG; this offers a choice of format. */
   const saveAs = useCallback(() => {
