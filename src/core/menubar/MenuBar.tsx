@@ -8,6 +8,7 @@ import { appRegistry } from '../../apps/registry';
 import { Icon } from '../../components/Icons';
 import { NotificationBell, NotificationCenter } from '../../components/Notifications';
 import { FULL_VERSION, BUILD_TIMESTAMP } from '../../version';
+import { runEditCommand, canRun, type EditCommand } from './editCommands';
 import './MenuBar.css';
 
 interface MenuItem {
@@ -21,6 +22,21 @@ interface MenuItem {
 interface MenuDefinition {
   [menuName: string]: MenuItem[];
 }
+
+/* The six standard edit commands act on the focused field, so they are the same
+ * item in every app's menu. Enablement is evaluated as the menu renders, which
+ * is why the menu must not take focus — see keepFocus below. */
+const editItem = (label: string, shortcut: string, command: EditCommand): MenuItem => ({
+  label,
+  shortcut,
+  action: () => void runEditCommand(command),
+  disabled: !canRun(command),
+});
+
+/* Keep focus in the app's text field while the menu is used. Without this the
+ * field loses its selection the moment the menu is clicked and every command
+ * becomes a no-op. */
+const keepFocus = (e: React.MouseEvent) => e.preventDefault();
 
 export const MenuBar: React.FC = () => {
   const {
@@ -106,13 +122,13 @@ export const MenuBar: React.FC = () => {
         { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow, disabled: !activeWindowId },
       ],
       Edit: [
-        { label: 'Undo', shortcut: '⌘Z', disabled: true },
-        { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+        editItem('Undo', '⌘Z', 'undo'),
+        editItem('Redo', '⇧⌘Z', 'redo'),
         { label: 'divider', divider: true },
-        { label: 'Cut', shortcut: '⌘X', disabled: true },
-        { label: 'Copy', shortcut: '⌘C', disabled: true },
-        { label: 'Paste', shortcut: '⌘V', disabled: true },
-        { label: 'Select All', shortcut: '⌘A', disabled: true },
+        editItem('Cut', '⌘X', 'cut'),
+        editItem('Copy', '⌘C', 'copy'),
+        editItem('Paste', '⌘V', 'paste'),
+        editItem('Select All', '⌘A', 'selectAll'),
       ],
       View: [
         { label: 'Enter Full Screen', shortcut: '⌃⌘F', action: zoomActiveWindow, disabled: !activeWindowId },
@@ -122,9 +138,6 @@ export const MenuBar: React.FC = () => {
         { label: 'Zoom', action: zoomActiveWindow, disabled: !activeWindowId },
         { label: 'divider', divider: true },
         { label: 'Bring All to Front', action: bringAllToFront },
-      ],
-      Help: [
-        { label: 'Porcelain OS Help', disabled: true },
       ],
     };
 
@@ -141,19 +154,18 @@ export const MenuBar: React.FC = () => {
           { label: 'Get Info', shortcut: '⌘I', disabled: true },
         ],
         Edit: [
-          { label: 'Undo', shortcut: '⌘Z', disabled: true },
-          { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+          editItem('Undo', '⌘Z', 'undo'),
+          editItem('Redo', '⇧⌘Z', 'redo'),
           { label: 'divider', divider: true },
-          { label: 'Cut', shortcut: '⌘X', disabled: true },
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
-          { label: 'Paste', shortcut: '⌘V', disabled: true },
-          { label: 'Select All', shortcut: '⌘A', disabled: true },
+          editItem('Cut', '⌘X', 'cut'),
+          editItem('Copy', '⌘C', 'copy'),
+          editItem('Paste', '⌘V', 'paste'),
+          editItem('Select All', '⌘A', 'selectAll'),
         ],
         View: [
           { label: 'as Icons', shortcut: '⌘1', disabled: true },
           { label: 'as List', shortcut: '⌘2', disabled: true },
-          { label: 'divider', divider: true },
-          { label: 'Show Path Bar', shortcut: '⌥⌘P', disabled: true },
+          
         ],
         Go: [
           { label: 'Back', shortcut: '⌘[', disabled: true },
@@ -171,43 +183,27 @@ export const MenuBar: React.FC = () => {
           { label: 'divider', divider: true },
           { label: 'Bring All to Front', action: bringAllToFront },
         ],
-        Help: [
-          { label: 'Files Help', disabled: true },
-        ],
       },
       'notes': {
         File: [
           { label: 'New Note', shortcut: '⌘N', disabled: true },
           { label: 'divider', divider: true },
-          { label: 'Export as PDF...', disabled: true },
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Undo', shortcut: '⌘Z', disabled: true },
-          { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+          editItem('Undo', '⌘Z', 'undo'),
+          editItem('Redo', '⇧⌘Z', 'redo'),
           { label: 'divider', divider: true },
-          { label: 'Cut', shortcut: '⌘X', disabled: true },
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
-          { label: 'Paste', shortcut: '⌘V', disabled: true },
-          { label: 'Select All', shortcut: '⌘A', disabled: true },
-          { label: 'divider', divider: true },
-          { label: 'Find', shortcut: '⌘F', disabled: true },
-        ],
-        Format: [
-          { label: 'Bold', shortcut: '⌘B', disabled: true },
-          { label: 'Italic', shortcut: '⌘I', disabled: true },
-          { label: 'Underline', shortcut: '⌘U', disabled: true },
-          { label: 'divider', divider: true },
-          { label: 'Bulleted List', disabled: true },
-          { label: 'Numbered List', disabled: true },
+          editItem('Cut', '⌘X', 'cut'),
+          editItem('Copy', '⌘C', 'copy'),
+          editItem('Paste', '⌘V', 'paste'),
+          editItem('Select All', '⌘A', 'selectAll'),
+          
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Notes Help', disabled: true },
         ],
       },
       'terminal': {
@@ -217,22 +213,15 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
-          { label: 'Paste', shortcut: '⌘V', disabled: true },
-          { label: 'Select All', shortcut: '⌘A', disabled: true },
+          editItem('Copy', '⌘C', 'copy'),
+          editItem('Paste', '⌘V', 'paste'),
+          editItem('Select All', '⌘A', 'selectAll'),
           { label: 'divider', divider: true },
           { label: 'Clear', shortcut: '⌘K', disabled: true },
-        ],
-        View: [
-          { label: 'Bigger', shortcut: '⌘+', disabled: true },
-          { label: 'Smaller', shortcut: '⌘-', disabled: true },
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Terminal Help', disabled: true },
         ],
       },
       'browser': {
@@ -242,14 +231,13 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Undo', shortcut: '⌘Z', disabled: true },
-          { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+          editItem('Undo', '⌘Z', 'undo'),
+          editItem('Redo', '⇧⌘Z', 'redo'),
           { label: 'divider', divider: true },
-          { label: 'Cut', shortcut: '⌘X', disabled: true },
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
-          { label: 'Paste', shortcut: '⌘V', disabled: true },
-          { label: 'divider', divider: true },
-          { label: 'Find...', shortcut: '⌘F', disabled: true },
+          editItem('Cut', '⌘X', 'cut'),
+          editItem('Copy', '⌘C', 'copy'),
+          editItem('Paste', '⌘V', 'paste'),
+          
         ],
         View: [
           { label: 'Reload Page', shortcut: '⌘R', disabled: true },
@@ -265,17 +253,9 @@ export const MenuBar: React.FC = () => {
           { label: 'divider', divider: true },
           { label: 'Home', disabled: true },
         ],
-        Bookmarks: [
-          { label: 'Add Bookmark...', shortcut: '⌘D', disabled: true },
-          { label: 'divider', divider: true },
-          { label: 'Show Bookmarks', shortcut: '⌥⌘B', disabled: true },
-        ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Browser Help', disabled: true },
         ],
       },
       'photo-viewer': {
@@ -285,7 +265,7 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
+          editItem('Copy', '⌘C', 'copy'),
         ],
         View: [
           { label: 'Zoom In', shortcut: '⌘+', disabled: true },
@@ -298,9 +278,6 @@ export const MenuBar: React.FC = () => {
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
         ],
-        Help: [
-          { label: 'Photos Help', disabled: true },
-        ],
       },
       'music-player': {
         File: [
@@ -309,7 +286,7 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
+          editItem('Copy', '⌘C', 'copy'),
         ],
         Controls: [
           { label: 'Play/Pause', shortcut: 'Space', disabled: true },
@@ -323,9 +300,6 @@ export const MenuBar: React.FC = () => {
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
         ],
-        Help: [
-          { label: 'Music Help', disabled: true },
-        ],
       },
       'video-player': {
         File: [
@@ -334,7 +308,7 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
+          editItem('Copy', '⌘C', 'copy'),
         ],
         Playback: [
           { label: 'Play/Pause', shortcut: 'Space', disabled: true },
@@ -349,24 +323,18 @@ export const MenuBar: React.FC = () => {
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
         ],
-        Help: [
-          { label: 'Video Help', disabled: true },
-        ],
       },
       'settings': {
         File: [
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Undo', shortcut: '⌘Z', disabled: true },
-          { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+          editItem('Undo', '⌘Z', 'undo'),
+          editItem('Redo', '⇧⌘Z', 'redo'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Settings Help', disabled: true },
         ],
       },
       'calculator': {
@@ -374,19 +342,12 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
-          { label: 'Paste', shortcut: '⌘V', disabled: true },
-        ],
-        View: [
-          { label: 'Basic', disabled: true },
-          { label: 'Scientific', disabled: true },
+          editItem('Copy', '⌘C', 'copy'),
+          editItem('Paste', '⌘V', 'paste'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Calculator Help', disabled: true },
         ],
       },
       'weather': {
@@ -398,9 +359,6 @@ export const MenuBar: React.FC = () => {
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Weather Help', disabled: true },
         ],
       },
       'text-editor': {
@@ -414,13 +372,13 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Undo', shortcut: '⌘Z', disabled: true },
-          { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+          editItem('Undo', '⌘Z', 'undo'),
+          editItem('Redo', '⇧⌘Z', 'redo'),
           { label: 'divider', divider: true },
-          { label: 'Cut', shortcut: '⌘X', disabled: true },
-          { label: 'Copy', shortcut: '⌘C', disabled: true },
-          { label: 'Paste', shortcut: '⌘V', disabled: true },
-          { label: 'Select All', shortcut: '⌘A', disabled: true },
+          editItem('Cut', '⌘X', 'cut'),
+          editItem('Copy', '⌘C', 'copy'),
+          editItem('Paste', '⌘V', 'paste'),
+          editItem('Select All', '⌘A', 'selectAll'),
           { label: 'divider', divider: true },
           { label: 'Find...', shortcut: '⌘F', disabled: true },
           { label: 'Find and Replace...', shortcut: '⌥⌘F', disabled: true },
@@ -430,14 +388,10 @@ export const MenuBar: React.FC = () => {
           { label: 'Smaller', shortcut: '⌘-', disabled: true },
           { label: 'divider', divider: true },
           { label: 'Toggle Word Wrap', disabled: true },
-          { label: 'Toggle Line Numbers', disabled: true },
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Text Editor Help', disabled: true },
         ],
       },
       'trash': {
@@ -445,14 +399,11 @@ export const MenuBar: React.FC = () => {
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
         Edit: [
-          { label: 'Select All', shortcut: '⌘A', disabled: true },
+          editItem('Select All', '⌘A', 'selectAll'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
           { label: 'Zoom', action: zoomActiveWindow },
-        ],
-        Help: [
-          { label: 'Trash Help', disabled: true },
         ],
       },
     };
@@ -647,6 +598,7 @@ export const MenuBar: React.FC = () => {
             <div key={menuName} className="menubar__menu-container">
               <button
                 className={`menubar__menu ${activeMenu === menuName ? 'menubar__menu--active' : ''}`}
+                onMouseDown={keepFocus}
                 onClick={(e) => handleMenuClick(menuName, e)}
                 onMouseEnter={() => handleMenuHover(menuName)}
               >
@@ -670,6 +622,7 @@ export const MenuBar: React.FC = () => {
                         <div
                           key={index}
                           className={`menubar__dropdown-item ${item.disabled ? 'menubar__dropdown-item--disabled' : ''}`}
+                          onMouseDown={keepFocus}
                           onClick={(e) => handleMenuItemClick(item, e)}
                         >
                           <span>{item.label}</span>
