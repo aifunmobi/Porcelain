@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { useDragStore } from '../../stores/dragStore';
 import { useTrashStore } from '../../stores/trashStore';
 import { useFileBrowserStore } from '../../stores/fileBrowserStore';
@@ -120,6 +120,30 @@ export const FileManager: React.FC<AppProps> = () => {
   const gridRef = useRef<HTMLDivElement>(null);
   const inFlight = useRef<Set<string>>(new Set());
   const marqueeDragged = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Keep the context menu inside the window. It opens down and to the right of
+   * the pointer, so near an edge it used to run under the window's border and
+   * get clipped — the last items were simply unreachable.
+   */
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    const host = rootRef.current;
+    if (!contextMenu || !menu || !host) return;
+    const size = menu.getBoundingClientRect();
+    const bounds = host.getBoundingClientRect();
+    const gap = 4;
+    // Shift by however much it overflows, rather than assigning viewport
+    // coordinates: the menu is fixed inside a transformed window, so its
+    // left/top resolve against that transform, not the viewport.
+    const dx = Math.min(0, bounds.right - gap - size.right);
+    const dy = Math.min(0, bounds.bottom - gap - size.bottom);
+    if (dx || dy) {
+      menu.style.left = `${contextMenu.x + dx}px`;
+      menu.style.top = `${contextMenu.y + dy}px`;
+    }
+  }, [contextMenu]);
   const typeAhead = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
   const sortState: SortState = sort[path] ?? { by: 'name', order: 'asc' };
@@ -995,6 +1019,7 @@ export const FileManager: React.FC<AppProps> = () => {
 
       {contextMenu && (
         <div
+          ref={menuRef}
           className="file-manager__context-menu"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
