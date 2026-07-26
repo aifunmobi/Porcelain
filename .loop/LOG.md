@@ -7,3 +7,5 @@
 - 2026-07-25 L-005 Bring Files up to Finder grade — merged. Try it: `npm run dev`, open Files — three views (⌘1/2/3), sortable list columns, Miller columns, ⌘I Get Info, and a Search Here toggle for subfolders.
 - 2026-07-25 L-006 Bring Text Editor up to TextEdit grade — merged. Try it: `npm run dev`, open Text Editor — Rich/Plain modes, ⌘F find and replace, autosave, recents, and a paper page (⌘P prints the page alone).
 - 2026-07-26 L-007 Add Preview, Archive Utility and Screenshot — merged. Try it: `npm run dev` — double-click an image or PDF in Files for Preview, right-click for Compress/Extract, and press ⌘⇧3 or ⌘⇧4 to capture the desktop.
+- 2026-07-26 Button uniformity sweep — merged. Try it: open any app; a selected toggle presses into the sheet, a primary button reads as deeper stock, a destructive one is tinted. Four variants live in app-controls.css; 458 lines of dead app CSS gone.
+- 2026-07-26 L-009 Save and Save As across the file-handling apps — merged. Try it: `npm run dev`, take a screenshot (⌘⇧3) and it asks for name/format/location; Preview, Photo Viewer, Notes and Camera all offer Save As with two formats.

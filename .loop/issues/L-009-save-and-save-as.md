@@ -1,7 +1,7 @@
 ---
 id: L-009
 title: Save and Save As across the file-handling apps
-status: review
+status: done
 attempts: 1
 branch: "loop/L-009-save-and-save-as"
 claimed_at: ""
@@ -116,3 +116,23 @@ L-002 icon and control vocabulary — reported by the user, not yet fixed. Its
 segmented Capture/Timer controls and shutter button were built ad hoc rather
 than from the shared primitives, and it should be reworked against the same
 guidelines the other apps follow. Worth doing before this issue merges.
+
+### Merged (2026-07-26)
+
+Merged to main as `cbde5d1`. The Screenshot UI blocker recorded above was fixed
+first in `eb0fff0` — the cause was systemic, not Screenshot-specific: the shared
+control in `app-controls.css` outranked every app's `--active` override, so
+selected/primary/danger states were dead across the OS.
+
+**Defect found and fixed while merging.** `useSaveAs` returned `message` and
+`error` but only Preview rendered either; Screenshot, Notes, Photo Viewer and
+Camera saved in total silence, success and failure alike. The outcome now goes
+through the OS toast from inside the hook, so a new adopter cannot forget it.
+
+**Verified this pass:** JPEG conversion is real (`ff d8 ff e0` / JFIF, not a
+renamed PNG), format picker rewrites the extension, overwrite raises "Replace
+file?" naming the folder, toast reports name and destination.
+
+**Still unverified** (carried over): Camera's per-capture save needs a real
+camera; Notes and Photo Viewer save paths confirmed present but not driven
+end to end.
