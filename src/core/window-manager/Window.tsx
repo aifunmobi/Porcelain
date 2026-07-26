@@ -103,6 +103,7 @@ export const Window: React.FC<WindowProps> = ({ window: win, children }) => {
       onResizeStop={handleResizeStop}
       onMouseDown={handleFocus}
       style={windowStyle}
+      data-window-id={win.id}
       className={`window ${isActive ? 'window--active' : 'window--inactive'}`}
       dragHandleClassName="window-drag-handle"
       disableDragging={win.isMaximized}

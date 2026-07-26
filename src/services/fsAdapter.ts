@@ -18,6 +18,8 @@ import {
   getFileExtension,
   readFileText,
   writeTextFile,
+  readFileBinary,
+  writeBinaryFile,
 } from './tauriFs';
 import { useFileSystemStore } from '../stores/fileSystemStore';
 import type { FileNode } from '../types';
@@ -61,6 +63,11 @@ export interface FsBackend {
   searchDeep: (path: string, query: string) => Promise<FsItem[]>;
   /** Read a file's text. Rejects if it is missing or unreadable. */
   readText: (path: string) => Promise<string>;
+  /** Bytes, for archives and images. The virtual tree keeps these as base64. */
+  readBinary: (path: string) => Promise<Uint8Array>;
+  writeBinary: (path: string, data: Uint8Array) => Promise<void>;
+  /** A URL the browser can render for this file, or undefined if it cannot. */
+  objectUrl: (path: string) => Promise<string | undefined>;
   /** Write text, creating the file if it does not exist yet. */
   writeText: (path: string, content: string) => Promise<void>;
 }
@@ -91,6 +98,25 @@ const copyName = (name: string, isDir: boolean, taken: Set<string>): string => {
 /** A move/paste never silently clobbers a same-named item at the destination. */
 const freeName = (name: string, isDir: boolean, taken: Set<string>): string =>
   taken.has(name) ? copyName(name, isDir, taken) : name;
+
+const MIME_BY_EXT: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  ico: 'image/x-icon',
+  pdf: 'application/pdf',
+  zip: 'application/zip',
+  html: 'text/html',
+  md: 'text/markdown',
+  txt: 'text/plain',
+};
+
+export const mimeForPath = (path: string): string =>
+  MIME_BY_EXT[getFileExtension(path)] ?? 'application/octet-stream';
 
 export const kindOf = (item: FsItem): string => {
   if (item.isDir) return 'Folder';
@@ -246,6 +272,12 @@ const realBackend = async (): Promise<FsBackend> => {
     readText: (path) => readFileText(path),
 
     writeText: (path, content) => writeTextFile(path, content),
+
+    readBinary: (path) => readFileBinary(path),
+
+    writeBinary: (path, data) => writeBinaryFile(path, data),
+
+    objectUrl: async (path) => convertFileSrc(path),
   };
 };
 
@@ -385,7 +417,21 @@ const virtualBackend = (): FsBackend => {
     readText: async (path) => {
       const node = nodeAt(path);
       if (!node || node.type === 'folder') throw new Error(`No such file: ${path}`);
-      return typeof node.content === 'string' ? node.content : '';
+      const content = typeof node.content === 'string' ? node.content : '';
+      // Anything written through writeBinary — an extracted archive entry, say —
+      // is held as a data URL. Text callers want the text back, not the wrapper.
+      if (content.startsWith('data:')) {
+        const [header, payload] = [content.slice(0, content.indexOf(',')), content.slice(content.indexOf(',') + 1)];
+        if (!header.includes(';base64')) return decodeURIComponent(payload);
+        try {
+          return new TextDecoder().decode(
+            Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
+          );
+        } catch {
+          return content;
+        }
+      }
+      return content;
     },
 
     writeText: async (path, content) => {
@@ -401,6 +447,46 @@ const virtualBackend = (): FsBackend => {
       const mime =
         ext === 'html' ? 'text/html' : ext === 'md' ? 'text/markdown' : 'text/plain';
       store.createFile(basename(path), parent.id, content, mime);
+    },
+
+    readBinary: async (path) => {
+      const node = nodeAt(path);
+      if (!node || node.type === 'folder') throw new Error(`No such file: ${path}`);
+      const content = typeof node.content === 'string' ? node.content : '';
+      // Binary files live as data URLs; anything else is text, encoded as-is.
+      const base64 = content.startsWith('data:') ? content.slice(content.indexOf(',') + 1) : null;
+      if (base64 === null) return new TextEncoder().encode(content);
+      const binary = atob(base64);
+      const out = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+      return out;
+    },
+
+    writeBinary: async (path, data) => {
+      let binary = '';
+      // Chunked, because String.fromCharCode(...bigArray) blows the call stack.
+      for (let i = 0; i < data.length; i += 0x8000) {
+        binary += String.fromCharCode(...data.subarray(i, i + 0x8000));
+      }
+      const mime = mimeForPath(path);
+      const dataUrl = `data:${mime};base64,${btoa(binary)}`;
+      const store = fsStore();
+      const existing = nodeAt(path);
+      if (existing) {
+        store.updateFileContent(existing.id, dataUrl);
+        return;
+      }
+      const parent = nodeAt(parentPath(path));
+      if (!parent) throw new Error(`No such folder: ${parentPath(path)}`);
+      store.createFile(basename(path), parent.id, dataUrl, mime);
+    },
+
+    objectUrl: async (path) => {
+      const node = nodeAt(path);
+      if (!node || typeof node.content !== 'string') return undefined;
+      if (node.content.startsWith('data:')) return node.content;
+      // Text held verbatim still needs a URL an <object>/<img> can load.
+      return `data:${mimeForPath(path)};base64,${btoa(unescape(encodeURIComponent(node.content)))}`;
     },
   };
 };

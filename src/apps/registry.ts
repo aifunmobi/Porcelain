@@ -14,6 +14,9 @@ import { Browser } from './browser/Browser';
 import { Weather } from './weather/Weather';
 import { Trash } from './trash/Trash';
 import { TextEditor } from './text-editor/TextEditor';
+import { Preview } from './preview/Preview';
+import { Archive } from './archive/Archive';
+import { Screenshot } from './screenshot/Screenshot';
 
 export const appRegistry: Record<string, AppDefinition> = {
   'file-manager': {
@@ -142,6 +145,31 @@ export const appRegistry: Record<string, AppDefinition> = {
     component: TextEditor,
     defaultSize: { width: 700, height: 500 },
     minSize: { width: 400, height: 300 },
+  },
+  preview: {
+    id: 'preview',
+    name: 'Preview',
+    icon: 'preview',
+    component: Preview,
+    defaultSize: { width: 760, height: 560 },
+    minSize: { width: 380, height: 300 },
+  },
+  archive: {
+    id: 'archive',
+    name: 'Archive Utility',
+    icon: 'archive',
+    component: Archive,
+    defaultSize: { width: 660, height: 460 },
+    minSize: { width: 420, height: 320 },
+  },
+  screenshot: {
+    id: 'screenshot',
+    name: 'Screenshot',
+    icon: 'screenshot',
+    component: Screenshot,
+    defaultSize: { width: 620, height: 440 },
+    minSize: { width: 480, height: 360 },
+    singleInstance: true,
   },
 };
 

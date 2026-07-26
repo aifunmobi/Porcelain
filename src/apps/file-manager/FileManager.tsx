@@ -61,6 +61,18 @@ const toClipboardEntry = (item: FsItem): ClipboardEntry => ({
 /** Opened in the Text Editor rather than handed to the OS. */
 const EDITABLE_TEXT = ['txt', 'md', 'html', 'json', 'js', 'ts', 'tsx', 'css', 'xml', 'yaml', 'yml'];
 
+/** Preview owns single-document viewing; Photos still owns the photo library. */
+const PREVIEWABLE = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'pdf'];
+
+/** Opening one of these hands it to a specific app rather than to the OS. */
+const openWith = async (appId: string, props: Record<string, unknown>) => {
+  // The registry imports this component, so pull it in lazily to keep the
+  // module graph acyclic.
+  const { appRegistry } = await import('../registry');
+  const app = appRegistry[appId];
+  if (app) useWindowStore.getState().openWindow(app, props);
+};
+
 const COLUMNS: { by: SortBy; label: string; className: string }[] = [
   { by: 'name', label: 'Name', className: 'name' },
   { by: 'date', label: 'Date Modified', className: 'date' },
@@ -237,15 +249,10 @@ export const FileManager: React.FC<AppProps> = () => {
   const open = useCallback(
     (item: FsItem) => {
       if (item.isDir) return navigate(item.path);
-      if (EDITABLE_TEXT.includes(getFileExtension(item.name))) {
-        // The registry imports this component, so pull it in lazily to keep the
-        // module graph acyclic.
-        void import('../registry').then(({ appRegistry }) => {
-          const app = appRegistry['text-editor'];
-          if (app) useWindowStore.getState().openWindow(app, { filePath: item.path });
-        });
-        return;
-      }
+      const ext = getFileExtension(item.name);
+      if (PREVIEWABLE.includes(ext)) return void openWith('preview', { filePath: item.path });
+      if (ext === 'zip') return void openWith('archive', { archivePath: item.path });
+      if (EDITABLE_TEXT.includes(ext)) return void openWith('text-editor', { filePath: item.path });
       void backend?.open(item).catch(() => setError('Unable to open this file'));
     },
     [backend, navigate]
@@ -1014,6 +1021,32 @@ export const FileManager: React.FC<AppProps> = () => {
                 <Icon name="info" size={14} />
                 Get Info
               </button>
+              <button
+                className="file-manager__context-menu-item"
+                onClick={() => {
+                  void openWith('archive', {
+                    compressPaths: (selectedItems.length ? selectedItems : [contextMenu.item!]).map(
+                      (i) => i.path
+                    ),
+                  });
+                  setContextMenu(null);
+                }}
+              >
+                <Icon name="archive" size={14} />
+                Compress
+              </button>
+              {getFileExtension(contextMenu.item.name) === 'zip' && (
+                <button
+                  className="file-manager__context-menu-item"
+                  onClick={() => {
+                    void openWith('archive', { archivePath: contextMenu.item!.path });
+                    setContextMenu(null);
+                  }}
+                >
+                  <Icon name="upload" size={14} />
+                  Extract
+                </button>
+              )}
               <button
                 className="file-manager__context-menu-item"
                 onClick={() => {

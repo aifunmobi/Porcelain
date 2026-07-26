@@ -54,6 +54,9 @@ const defaultSettings: UserSettings & { theme: ThemeMode } = {
     'weather',
     'camera',
     'terminal',
+    'preview',
+    'archive',
+    'screenshot',
     'settings',
   ],
   desktopIcons: [
@@ -142,7 +145,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'porcelain-settings',
-      version: 2, // Increment this when defaults change
+      version: 3, // Increment this when defaults change
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as SettingsState;
         // If version is old, reset desktop icons and pinned apps to include new apps
@@ -159,6 +162,16 @@ export const useSettingsStore = create<SettingsState>()(
         // a deliberately chosen wallpaper is left alone.
         if (version < 2 && LEGACY_WALLPAPERS.includes(state.wallpaper)) {
           return { ...state, wallpaper: DEFAULT_WALLPAPER, wallpaperType: 'gradient' as const };
+        }
+        // 3.0: Preview, Archive Utility and Screenshot arrived. Add any dock
+        // app the user is missing rather than resetting their arrangement.
+        if (version < 3) {
+          const missing = defaultSettings.pinnedApps.filter(
+            (id) => !state.pinnedApps?.includes(id)
+          );
+          if (missing.length) {
+            return { ...state, pinnedApps: [...(state.pinnedApps ?? []), ...missing] };
+          }
         }
         return state;
       },

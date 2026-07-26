@@ -125,8 +125,22 @@ export const useKeyboardShortcuts = () => {
     }
   }, [activeWindowId, windows, openWindow]);
 
+  // Screenshot (Cmd+Shift+3 whole desktop, Cmd+Shift+4 region). The app opens
+  // already asking for the capture, so one keystroke is enough.
+  const handleCaptureDesktop = useCallback(() => {
+    const app = appRegistry['screenshot'];
+    if (app) openWindow(app, { autoCapture: 'desktop' });
+  }, [openWindow]);
+
+  const handleCaptureRegion = useCallback(() => {
+    const app = appRegistry['screenshot'];
+    if (app) openWindow(app, { autoCapture: 'region' });
+  }, [openWindow]);
+
   useEffect(() => {
     const shortcuts: ShortcutConfig[] = [
+      { key: '3', metaKey: true, shiftKey: true, action: handleCaptureDesktop, description: 'Capture the desktop' },
+      { key: '4', metaKey: true, shiftKey: true, action: handleCaptureRegion, description: 'Capture a region' },
       { key: 'w', metaKey: true, action: handleClose, description: 'Close window' },
       { key: 'm', metaKey: true, action: handleMinimize, description: 'Minimize window' },
       { key: 'q', metaKey: true, action: handleQuit, description: 'Quit app' },
@@ -184,6 +198,8 @@ export const useKeyboardShortcuts = () => {
     handleHideAll,
     handleNewWindow,
     handleMaximize,
+    handleCaptureDesktop,
+    handleCaptureRegion,
   ]);
 };
 
