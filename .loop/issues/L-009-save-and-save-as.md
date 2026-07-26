@@ -1,10 +1,10 @@
 ---
 id: L-009
 title: Save and Save As across the file-handling apps
-status: building
+status: review
 attempts: 1
 branch: "loop/L-009-save-and-save-as"
-claimed_at: "2026-07-26T00:45:50Z"
+claimed_at: ""
 depends: L-007
 ---
 
@@ -74,3 +74,32 @@ and to save in more than one sensible format.
 8. Confirm a clean console throughout.
 
 ## Notes
+
+### Build 1 (2026-07-26)
+
+**Shape.** One `SaveDialog` and one `useSaveAs` hook serve all five apps, so the
+sheet, the overwrite check, the write and the result message exist once rather
+than five times. `saveAs.ts` decides bytes and extension; the two filesystem
+backends were already behind `FsBackend` and needed no changes.
+
+**Verified in browser mode:** build clean, `package.json` unchanged. Preview
+saved a transparent PNG as JPEG and the written bytes begin `ff d8 ff e0` — the
+JPEG magic number, where a renamed PNG would begin `89 50 4e 47` — so the
+conversion is real. Preview saved a markdown file as HTML and the result is a
+full document with `<h1>`, `<strong>` and `<ul>` rendered. Changing the format
+in the sheet rewrote the extension both ways (shot.png → shot.jpg,
+story.md → story.html). Saving over an existing name raised "Replace file?" with
+the folder named, and Replace completed the write. Photo Viewer and Notes show
+their save controls; Screenshot offers "Save As…" beside Copy after a capture,
+opening the sheet with PNG and JPEG. Console clean throughout.
+
+**One mistake worth recording:** the first pass edited the main tree instead of
+the worktree — the shell's cwd had not followed. Reverted and redone in the
+right place; main was clean before the branch was committed.
+
+**Thin spots left for review:** Camera's per-capture save button could not be
+exercised, since the browser had no camera to capture from — the control only
+renders once a capture exists. Notes and Photo Viewer had their buttons
+confirmed present but not driven end to end. JPEG's white-flatten path for
+transparency is implemented and compiles but was only exercised through the 4×4
+test image, not inspected pixel by pixel.
