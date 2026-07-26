@@ -397,7 +397,20 @@ const virtualBackend = (): FsBackend => {
       // Nothing to hand off to in browser mode; folders navigate, files are inert.
     },
 
-    thumb: () => undefined,
+    /**
+     * The image is already in the node as a data URL, so it can be its own
+     * thumbnail. Returning undefined here is what left every picture in Files
+     * showing the generic file glyph.
+     */
+    thumb: (item) => {
+      if (item.isDir || !isImageFile(item.name)) return undefined;
+      const node = fsStore().getFile(item.id);
+      const content = typeof node?.content === 'string' ? node.content : '';
+      if (content.startsWith('data:')) return content;
+      // SVG kept as plain markup still renders once wrapped as a data URL.
+      if (!content) return undefined;
+      return `data:${mimeForPath(item.path)};base64,${btoa(unescape(encodeURIComponent(content)))}`;
+    },
 
     searchDeep: async (path, query) => {
       const q = query.toLowerCase();
