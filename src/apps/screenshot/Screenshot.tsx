@@ -12,6 +12,8 @@ import {
   type Rect,
 } from '../../services/capture';
 import type { AppProps } from '../../types';
+import { useSaveAs } from '../../hooks/useSaveAs';
+import { encodeImage, IMAGE_FORMATS } from '../../services/saveAs';
 import './Screenshot.css';
 
 interface ScreenshotProps extends AppProps {
@@ -213,6 +215,21 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
     }
   }, []);
 
+  const saver = useSaveAs(backend);
+
+  /** The automatic save always writes a PNG; this offers a choice of format. */
+  const saveAs = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !backend) return;
+    const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
+    saver.open({
+      initialName: screenshotName(new Date()),
+      folder: pictures,
+      formats: IMAGE_FORMATS,
+      produce: (format) => encodeImage(canvas, format),
+    });
+  }, [backend, saver]);
+
   const openInPreview = useCallback(() => {
     if (!shot?.path) return;
     void import('../registry').then(({ appRegistry }) => {
@@ -302,6 +319,10 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
                 <Icon name="copy" size={14} />
                 Copy
               </button>
+              <button onClick={saveAs}>
+                <Icon name="save" size={14} />
+                Save As…
+              </button>
               <button onClick={openInPreview} disabled={!shot.path}>
                 <Icon name="preview" size={14} />
                 Open in Preview
@@ -339,6 +360,7 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
           </div>,
           document.body
         )}
+      {saver.node}
     </div>
   );
 };

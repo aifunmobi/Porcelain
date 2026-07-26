@@ -166,3 +166,29 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* Save affordance on each capture thumbnail */
+.camera__thumbnail {
+  position: relative;
+}
+
+.camera__thumbnail-save {
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--paper-0);
+  color: var(--ink);
+  opacity: 0;
+  transition: opacity 120ms var(--ease-out);
+}
+
+.camera__thumbnail:hover .camera__thumbnail-save,
+.camera__thumbnail-save:focus-visible {
+  opacity: 1;
+}
