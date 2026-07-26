@@ -11,3 +11,4 @@
 - 2026-07-26 L-009 Save and Save As across the file-handling apps — merged. Try it: `npm run dev`, take a screenshot (⌘⇧3) and it asks for name/format/location; Preview, Photo Viewer, Notes and Camera all offer Save As with two formats.
 - 2026-07-26 L-009 reviewed against merged main — all 11 acceptance criteria verified by driving the UI, including Camera's save which the build could not test. One defect found and fixed: Preview would not list the HTML it had just written.
 - 2026-07-26 Native app rebuilt and installed. Try it: open Porcelain OS from Launchpad, or double-click ~/Desktop/Commands/Launch Porcelain OS.command. Both now run the same current build; /Applications had been a day stale.
+- 2026-07-26 Edit menu wired across every app — merged. Try it: type in any text field, then use Edit ▸ Cut/Copy/Paste/Select All/Undo/Redo from the top menu. Cut and Copy grey out unless something is selected. 31 labels for features that never existed were removed.
