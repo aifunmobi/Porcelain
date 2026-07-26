@@ -89,7 +89,10 @@ export const Dock: React.FC = () => {
                 <button
                   className={`dock__item ${isRunning ? 'dock__item--running' : ''}`}
                   onClick={() => handleAppClick(app.id)}
-                  title={app.name}
+                  // aria-label, not title: `title` makes the OS draw its own
+                  // tooltip on top of .dock__tooltip, so every icon labelled
+                  // itself twice. This keeps the accessible name without it.
+                  aria-label={app.name}
                 >
                   <div className="dock__icon">
                     <Icon name={app.icon} size={42} mode="tile" />
