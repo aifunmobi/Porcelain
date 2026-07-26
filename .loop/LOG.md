@@ -9,3 +9,4 @@
 - 2026-07-26 L-007 Add Preview, Archive Utility and Screenshot — merged. Try it: `npm run dev` — double-click an image or PDF in Files for Preview, right-click for Compress/Extract, and press ⌘⇧3 or ⌘⇧4 to capture the desktop.
 - 2026-07-26 Button uniformity sweep — merged. Try it: open any app; a selected toggle presses into the sheet, a primary button reads as deeper stock, a destructive one is tinted. Four variants live in app-controls.css; 458 lines of dead app CSS gone.
 - 2026-07-26 L-009 Save and Save As across the file-handling apps — merged. Try it: `npm run dev`, take a screenshot (⌘⇧3) and it asks for name/format/location; Preview, Photo Viewer, Notes and Camera all offer Save As with two formats.
+- 2026-07-26 L-009 reviewed against merged main — all 11 acceptance criteria verified by driving the UI, including Camera's save which the build could not test. One defect found and fixed: Preview would not list the HTML it had just written.

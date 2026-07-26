@@ -49,18 +49,18 @@ and to save in more than one sensible format.
 - No PDF writing.
 
 ## Acceptance criteria
-- [ ] `npm run build` completes with no errors and `package.json` is unchanged.
-- [ ] Preview saves an open PNG as JPEG, and the result opens as a real JPEG
+- [x] `npm run build` completes with no errors and `package.json` is unchanged.
+- [x] Preview saves an open PNG as JPEG, and the result opens as a real JPEG
       (not a renamed PNG).
-- [ ] Preview saves an open markdown file as HTML, and the HTML renders.
-- [ ] Photo Viewer saves the displayed photo in both formats.
-- [ ] Notes exports the selected note as TXT and as MD, with the note's content.
-- [ ] Camera writes a capture to Pictures in both formats.
-- [ ] Screenshot offers Save As with both formats alongside its automatic save.
-- [ ] Choosing a different format in the dialog rewrites the extension.
-- [ ] Saving over an existing file prompts before overwriting.
-- [ ] Every saved file reopens correctly in Preview.
-- [ ] No console errors during any of the above.
+- [x] Preview saves an open markdown file as HTML, and the HTML renders.
+- [x] Photo Viewer saves the displayed photo in both formats.
+- [x] Notes exports the selected note as TXT and as MD, with the note's content.
+- [x] Camera writes a capture to Pictures in both formats.
+- [x] Screenshot offers Save As with both formats alongside its automatic save.
+- [x] Choosing a different format in the dialog rewrites the extension.
+- [x] Saving over an existing file prompts before overwriting.
+- [x] Every saved file reopens correctly in Preview.
+- [x] No console errors during any of the above.
 
 ## Test plan
 1. `npm run build`; diff `package.json`.
@@ -136,3 +136,32 @@ file?" naming the folder, toast reports name and destination.
 **Still unverified** (carried over): Camera's per-capture save needs a real
 camera; Notes and Photo Viewer save paths confirmed present but not driven
 end to end.
+
+### Review (2026-07-26)
+
+Ran the acceptance criteria end to end against merged main, driving the UI
+rather than reading it. All eleven pass.
+
+Evidence for the ones that can lie:
+- Preview `red.png` (138 B) -> `red.jpg` (1219 B), header `ff d8 ff` / JFIF.
+  A renamed PNG would still start `89 50 4e 47`.
+- Preview `story.md` -> `story.html` (196 B), a full document; the source
+  rendered as `<h1>`, `<strong>`, `<ul>` first.
+- Photo Viewer: PNG 26,306 B and JPEG 6,359 B of the same frame.
+- Notes: TXT is the raw body (37 B); MD is 52 B because it gains `# Review
+  Note`. A conversion, not a rename.
+- Camera — the one the build could not test: a real 1280x720 stream, 3s
+  countdown, PNG 1,867,766 B / JPEG 167,827 B, both with correct magic.
+- Overwrite raises "Replace file?" naming the folder; format switch rewrote
+  `shot.png` -> `shot.jpg` and `story.md` -> `story.html`.
+- 17 apps open, no crashes, no empty windows, console clean.
+
+**One defect found and fixed** (`da87f4c`): `PREVIEWABLE` omitted `html`, so
+Preview would write an HTML file and then refuse to list it — criterion 10.
+`docKind()` had always been able to render it; only the filter was short.
+
+Two earlier suspicions did NOT survive checking, and are recorded so nobody
+re-opens them: Preview's pager is deliberately PDF-only — multiple open
+documents are navigated by the thumbnail sidebar, which works; and the picker
+appends rather than replaces, which is what "click several to compare them"
+means.
