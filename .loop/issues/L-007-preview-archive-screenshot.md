@@ -1,10 +1,10 @@
 ---
 id: L-007
 title: Add Preview, Archive Utility and Screenshot
-status: building
+status: review
 attempts: 1
 branch: "loop/L-007-preview-archive-screenshot"
-claimed_at: "2026-07-25T23:45:10Z"
+claimed_at: ""
 depends: L-004
 ---
 
@@ -78,3 +78,53 @@ All three apps follow the L-001/L-004 visual vocabulary and work in light and da
 7. Confirm a clean console throughout.
 
 ## Notes
+
+### Build 1 (2026-07-25)
+
+**Dependencies:** only `fflate`. The screenshot rasteriser is hand-rolled and
+works, so `html-to-image` was not needed.
+
+**One deliberate deviation.** The issue asks for two archive backends — the Rust
+`zip` crate under Tauri, `fflate` in the browser. It is built with `fflate`
+alone. fflate is pure JavaScript, so it runs identically in the Tauri webview;
+what actually differs between the environments is file access, and that already
+goes through `FsBackend`. A second Rust implementation would have to be kept in
+step with this one for no behavioural gain. Say so if you want the Rust path
+regardless.
+
+**Verified in browser mode:** build clean; all three apps in the dock with their
+own distinct icons (compared against each other and the generic file glyph) and
+all three findable in Spotlight. Preview opened png, svg and pdf by double-click
+from Files, and md and txt through its own Open; zoom in/out stepped 100→125→150
+and back, actual size and fit both worked, and rotation produced ±90°; the PDF
+pager read "Page 1 of 1" from the page-object scan; three documents opened
+together gave a thumbnail sidebar and arrow keys moved between them. Archive
+compressed a folder plus two files, preserving nesting, listed entries with both
+sizes without extracting, extracted the tree back with structure and contents
+intact, and reported "This file is not a zip archive." for a deliberately
+corrupt one. Files' context menu offers Compress on any item and Extract only on
+a `.zip`. Screenshot captured the whole shell — menu bar, desktop, the Files
+window and the dock — excluding its own window, and saved it to Pictures.
+Console clean throughout.
+
+**Four bugs found and fixed during the build:**
+1. The Screenshot app crashed the whole shell on open: a zustand selector built
+   an array (`Array.from(...)`), so every render produced a new snapshot and
+   React looped until it bailed out. It now subscribes to the Map and derives
+   with `useMemo`.
+2. Hiding the shutter window by minimising it destroyed the capture — a
+   minimised window returns `null`, unmounting the app mid-operation. The window
+   is marked `data-capture-ignore` and dropped from the clone instead.
+3. "Whole desktop" captured the wallpaper with no windows on it: windows live in
+   a sibling layer to `.desktop`, so the capture now takes the whole shell.
+4. Extracted text files came back as data URLs in text apps, because
+   `writeBinary` stores binaries that way. `readText` now decodes them.
+
+**A browser-mode ceiling worth knowing.** The virtual filesystem lives in
+localStorage, and a full-desktop PNG at devicePixelRatio overran the quota, so
+captures rasterise at 1×. Under Tauri the file goes to the real disk and the cap
+could be lifted. This is recorded in `capture.ts`.
+
+**Not verified in this pass** — left for review: window-mode and region captures
+end to end, the timer countdown, ⌘⇧3 / ⌘⇧4, clipboard copy, opening a saved
+capture in Preview, and dark mode across the three apps.
