@@ -75,7 +75,9 @@
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform: translate(-50%, -120%) rotate(-1.5deg);
+  /* No rotation: a tilt throws off subpixel antialiasing, so the label reads
+     as crooked and slightly fuzzy while dragging. */
+  transform: translate(-50%, -120%);
   pointer-events: none;
 }
 
