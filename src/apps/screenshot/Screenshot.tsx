@@ -6,12 +6,13 @@ import { createBackend } from '../../services/fsAdapter';
 import type { FsBackend } from '../../services/fsAdapter';
 import {
   rasterise,
-  canvasToPngBytes,
   copyCanvasToClipboard,
   screenshotName,
   type Rect,
 } from '../../services/capture';
 import type { AppProps } from '../../types';
+import { useSaveAs } from '../../hooks/useSaveAs';
+import { encodeImage, IMAGE_FORMATS } from '../../services/saveAs';
 import './Screenshot.css';
 
 interface ScreenshotProps extends AppProps {
@@ -61,27 +62,27 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
 
   /* ------------------------------------------------------------- capture */
 
+  const saver = useSaveAs(backend);
+
+  /**
+   * A capture is never written behind the user's back: the shot is held in the
+   * preview and the save sheet asks for a name, a format and a folder. Cancel
+   * keeps the capture on screen, still copyable.
+   */
   const persist = useCallback(
     async (canvas: HTMLCanvasElement) => {
       canvasRef.current = canvas;
-      const url = canvas.toDataURL('image/png');
-      if (!backend) {
-        setShot({ url });
-        return;
-      }
-      try {
-        const bytes = await canvasToPngBytes(canvas);
-        const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
-        const target = backend.join(pictures, screenshotName(new Date()));
-        await backend.writeBinary(target, bytes);
-        setShot({ url, path: target });
-        setStatus(`Saved to ${target}`);
-      } catch (err) {
-        setShot({ url });
-        setError(err instanceof Error ? err.message : 'The capture could not be saved.');
-      }
+      setShot({ url: canvas.toDataURL('image/png') });
+      if (!backend) return;
+      const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
+      saver.open({
+        initialName: screenshotName(new Date()),
+        folder: pictures,
+        formats: IMAGE_FORMATS,
+        produce: (format) => encodeImage(canvas, format),
+      });
     },
-    [backend]
+    [backend, saver]
   );
 
   const runCapture = useCallback(
@@ -213,6 +214,19 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
     }
   }, []);
 
+  /** The automatic save always writes a PNG; this offers a choice of format. */
+  const saveAs = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !backend) return;
+    const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
+    saver.open({
+      initialName: screenshotName(new Date()),
+      folder: pictures,
+      formats: IMAGE_FORMATS,
+      produce: (format) => encodeImage(canvas, format),
+    });
+  }, [backend, saver]);
+
   const openInPreview = useCallback(() => {
     if (!shot?.path) return;
     void import('../registry').then(({ appRegistry }) => {
@@ -302,6 +316,10 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
                 <Icon name="copy" size={14} />
                 Copy
               </button>
+              <button onClick={saveAs}>
+                <Icon name="save" size={14} />
+                Save As…
+              </button>
               <button onClick={openInPreview} disabled={!shot.path}>
                 <Icon name="preview" size={14} />
                 Open in Preview
@@ -339,6 +357,7 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
           </div>,
           document.body
         )}
+      {saver.node}
     </div>
   );
 };

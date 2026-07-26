@@ -109,7 +109,9 @@
   color: var(--ink-soft);
 }
 
-.notes__delete-btn {
+/* Save As and Delete sit in the editor header at the same size; the delete one
+ * carries .is-danger for the tinted stock. */
+.notes__editor-btn {
   width: 32px;
   height: 32px;
   display: flex;

@@ -341,3 +341,6 @@
   font-size: var(--text-sm);
   color: var(--ink-soft);
 }
+
+.preview__saved { color: var(--color-success, var(--ink)); }
+.preview__save-error { color: var(--color-error); }

@@ -5,6 +5,14 @@ import type { FsBackend, FsItem } from '../../services/fsAdapter';
 import { formatFileSize, getFileExtension } from '../../services/tauriFs';
 import type { AppProps } from '../../types';
 import { renderMarkdown } from './markdown';
+import { useSaveAs } from '../../hooks/useSaveAs';
+import {
+  encodeImage,
+  encodeText,
+  IMAGE_FORMATS,
+  TEXT_FORMATS,
+  MARKDOWN_FORMATS,
+} from '../../services/saveAs';
 import './Preview.css';
 
 interface PreviewProps extends AppProps {
@@ -143,12 +151,41 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
     [doc]
   );
 
+  const saver = useSaveAs(backend);
+
+  /** Save As on the open document, converting to whichever format is chosen. */
+  const saveAs = useCallback(() => {
+    if (!doc || !backend) return;
+    const formats =
+      doc.kind === 'image'
+        ? IMAGE_FORMATS
+        : doc.kind === 'markdown'
+          ? MARKDOWN_FORMATS
+          : TEXT_FORMATS;
+    saver.open({
+      initialName: basename(doc.path),
+      folder: backend.parent(doc.path),
+      formats,
+      produce: async (format) => {
+        if (doc.kind === 'image') {
+          if (!doc.url) throw new Error('This image is not loaded yet.');
+          return encodeImage(doc.url, format);
+        }
+        return encodeText(doc.text ?? '', format, basename(doc.path));
+      },
+    });
+  }, [doc, backend, saver]);
+
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey) {
         if (e.key.toLowerCase() === 'p') {
           e.preventDefault();
           window.print();
+        }
+        if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          saveAs();
         }
         return;
       }
@@ -161,7 +198,7 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
         doc?.kind === 'pdf' && e.key === 'ArrowLeft' ? changePage(-1) : move(-1);
       }
     },
-    [doc, move, changePage]
+    [doc, move, changePage, saveAs]
   );
 
   useEffect(() => {
@@ -242,6 +279,9 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
       <div className="preview__toolbar">
         <button className="preview__btn" onClick={() => void showPicker()} title="Open…">
           <Icon name="folder" size={14} />
+        </button>
+        <button className="preview__btn" onClick={saveAs} disabled={!doc} title="Save As… (⌘S)">
+          <Icon name="save" size={14} />
         </button>
         <div className="preview__separator" />
         <button className="preview__btn" onClick={() => stepZoom(-1)} title="Zoom out">
@@ -354,6 +394,8 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
         </div>
       )}
 
+      {saver.node}
+
       <div className="preview__statusbar">
         {doc && (
           <>
@@ -364,6 +406,8 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
                 {index + 1} of {docs.length}
               </span>
             )}
+            {saver.message && <span className="preview__saved">{saver.message}</span>}
+            {saver.error && <span className="preview__save-error">{saver.error}</span>}
           </>
         )}
       </div>

@@ -9,6 +9,10 @@ import {
   openFileDialog,
 } from '../../services/tauriFs';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { useSaveAs } from '../../hooks/useSaveAs';
+import { encodeImage, IMAGE_FORMATS } from '../../services/saveAs';
+import { createBackend } from '../../services/fsAdapter';
+import type { FsBackend } from '../../services/fsAdapter';
 import './PhotoViewer.css';
 
 // Sample images for browser mode
@@ -38,6 +42,23 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; image: ImageFile } | null>(null);
+  const [backend, setBackend] = useState<FsBackend | null>(null);
+  useEffect(() => {
+    createBackend().then(setBackend);
+  }, []);
+  const saver = useSaveAs(backend);
+
+  /** Write the displayed photo out as PNG or JPEG. */
+  const handleSaveAs = useCallback(() => {
+    if (!selectedImage || !backend) return;
+    const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
+    saver.open({
+      initialName: `${selectedImage.name.replace(/\.[^./]+$/, '')}.png`,
+      folder: pictures,
+      formats: IMAGE_FORMATS,
+      produce: (format) => encodeImage(selectedImage.url, format),
+    });
+  }, [selectedImage, backend, saver]);
 
   // Load images from a folder
   const loadImagesFromFolder = useCallback(async (folderPath: string) => {
@@ -370,6 +391,14 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
           <div className="photo-viewer__controls">
             <button
               className="photo-viewer__btn"
+              onClick={handleSaveAs}
+              title="Save As…"
+              disabled={!selectedImage}
+            >
+              <Icon name="save" size={16} />
+            </button>
+            <button
+              className="photo-viewer__btn"
               onClick={handleZoomOut}
               title="Zoom Out"
               disabled={!selectedImage}
@@ -425,6 +454,7 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
           </button>
         </div>
       )}
+      {saver.node}
     </div>
   );
 };

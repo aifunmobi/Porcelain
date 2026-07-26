@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
+import { useSaveAs } from '../../hooks/useSaveAs';
+import { encodeImage, IMAGE_FORMATS } from '../../services/saveAs';
+import { createBackend } from '../../services/fsAdapter';
+import type { FsBackend } from '../../services/fsAdapter';
 import './Camera.css';
 
 export const Camera: React.FC<AppProps> = () => {
@@ -10,6 +14,26 @@ export const Camera: React.FC<AppProps> = () => {
   const [isMirrored, setIsMirrored] = useState(true);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [captures, setCaptures] = useState<string[]>([]);
+  const [backend, setBackend] = useState<FsBackend | null>(null);
+  useEffect(() => {
+    createBackend().then(setBackend);
+  }, []);
+  const saver = useSaveAs(backend);
+
+  /** A capture is only a data URL until it is written somewhere. */
+  const saveCapture = useCallback(
+    (src: string, index: number) => {
+      if (!backend) return;
+      const pictures = backend.favorites.find((f) => f.id === 'pictures')?.path ?? backend.home;
+      saver.open({
+        initialName: `Photo ${index + 1}.png`,
+        folder: pictures,
+        formats: IMAGE_FORMATS,
+        produce: (format) => encodeImage(src, format),
+      });
+    },
+    [backend, saver]
+  );
   const [, setStream] = useState<MediaStream | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -197,11 +221,20 @@ export const Camera: React.FC<AppProps> = () => {
             {captures.map((src, index) => (
               <div key={index} className="camera__thumbnail">
                 <img src={src} alt={`Capture ${index + 1}`} />
+                <button
+                  className="camera__thumbnail-save"
+                  onClick={() => saveCapture(src, index)}
+                  title="Save As…"
+                  aria-label={`Save capture ${index + 1}`}
+                >
+                  <Icon name="save" size={13} />
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
+      {saver.node}
     </div>
   );
 };

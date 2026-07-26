@@ -1,0 +1,79 @@
+/* Save sheet — letterpress material (L-001/L-004), shared by every app. */
+
+.save-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 60;
+}
+
+.save-dialog {
+  width: min(420px, 90%);
+  padding: var(--space-4);
+  background: var(--paper-0);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--emboss-raise-3, var(--shadow-lg));
+}
+
+.save-dialog__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--ink-strong);
+  margin-bottom: var(--space-3);
+}
+
+.save-dialog__message {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.save-dialog__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.save-dialog__field > span {
+  width: 62px;
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+}
+
+.save-dialog__input,
+.save-dialog__select {
+  flex: 1;
+  height: 30px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  padding: 0 var(--space-2);
+  min-width: 0;
+}
+
+.save-dialog__where {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  margin-top: var(--space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.save-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.save-dialog__actions button {
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}

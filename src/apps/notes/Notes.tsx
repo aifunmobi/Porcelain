@@ -1,5 +1,9 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNotesStore } from '../../stores/notesStore';
+import { useSaveAs } from '../../hooks/useSaveAs';
+import { encodeText, TEXT_FORMATS } from '../../services/saveAs';
+import { createBackend } from '../../services/fsAdapter';
+import type { FsBackend } from '../../services/fsAdapter';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import './Notes.css';
@@ -17,6 +21,30 @@ export const Notes: React.FC<AppProps> = () => {
 
   const allNotes = getAllNotes();
   const activeNote = activeNoteId ? notes[activeNoteId] : null;
+
+  const [backend, setBackend] = useState<FsBackend | null>(null);
+  useEffect(() => {
+    createBackend().then(setBackend);
+  }, []);
+  const saver = useSaveAs(backend);
+
+  /** Notes live in their own store; this is how one leaves as a file. */
+  const handleExport = useCallback(() => {
+    if (!activeNote || !backend) return;
+    const documents = backend.favorites.find((f) => f.id === 'documents')?.path ?? backend.home;
+    const safeTitle = (activeNote.title || 'Untitled').replace(/[/\\:]/g, '-');
+    saver.open({
+      initialName: `${safeTitle}.txt`,
+      folder: documents,
+      formats: TEXT_FORMATS,
+      produce: (format) =>
+        encodeText(
+          format.ext === 'md' ? `# ${activeNote.title}\n\n${activeNote.content}` : activeNote.content,
+          format,
+          activeNote.title
+        ),
+    });
+  }, [activeNote, backend, saver]);
 
   const handleCreateNote = useCallback(() => {
     createNote();
@@ -102,7 +130,10 @@ export const Notes: React.FC<AppProps> = () => {
                 onChange={handleTitleChange}
                 placeholder="Note title"
               />
-              <button className="notes__delete-btn is-danger" onClick={handleDeleteNote}>
+              <button className="notes__editor-btn" onClick={handleExport} title="Save As…">
+                <Icon name="save" size={16} />
+              </button>
+              <button className="notes__editor-btn is-danger" onClick={handleDeleteNote} title="Delete note">
                 <Icon name="trash" size={16} />
               </button>
             </div>
@@ -123,6 +154,7 @@ export const Notes: React.FC<AppProps> = () => {
           </div>
         )}
       </div>
+      {saver.node}
     </div>
   );
 };
