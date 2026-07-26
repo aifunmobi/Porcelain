@@ -34,8 +34,10 @@ export const kindForPath = (path: string): DocKind => {
   return 'unsupported';
 };
 
-/** Files Preview claims from Files' double-click. */
-export const PREVIEWABLE = [...IMAGE_EXT, 'pdf', 'md', 'markdown', 'txt'];
+/** Files Preview claims from Files' double-click, and the open picker's filter.
+ *  Must cover everything docKind() can render — html in particular, since Save
+ *  As writes it and a file Preview wrote should be a file Preview will open. */
+export const PREVIEWABLE = [...IMAGE_EXT, 'pdf', 'md', 'markdown', 'txt', 'html'];
 
 /**
  * Page count without a PDF library: every page object carries `/Type /Page`
