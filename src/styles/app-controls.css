@@ -110,6 +110,16 @@
   color: var(--ink-soft);
 }
 
+/* Apps set fixed pixel heights on their toolbar controls, which clip the text
+ * once Settings' text size level scales it up. min-height always wins over
+ * height, and `em` is the element's own font size, so this grows exactly when
+ * the type does and is inert at level 0. */
+.window__body input:not([type='range']):not([type='checkbox']):not([type='radio']),
+.window__body select,
+.window__body button:not(.pcl-bare) {
+  min-height: calc(1.7em + 2px);
+}
+
 .window__body input:focus,
 .window__body textarea:focus,
 .window__body select:focus {

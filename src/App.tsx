@@ -7,7 +7,7 @@ import { DragOverlay } from './components/DragOverlay';
 import { ToastContainer } from './components/Notifications';
 import { IconDefs } from './components/Icons';
 import { useFileSystemStore } from './stores/fileSystemStore';
-import { useSettingsStore } from './stores/settingsStore';
+import { useSettingsStore, SIZE_SCALES } from './stores/settingsStore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import {
   snapToGrid,
@@ -37,6 +37,8 @@ function App() {
   const brightness = useSettingsStore((state) => state.brightness);
   const theme = useSettingsStore((state) => state.theme);
   const accentColor = useSettingsStore((state) => state.accentColor);
+  const fontSize = useSettingsStore((state) => state.fontSize);
+  const iconSize = useSettingsStore((state) => state.iconSize);
   const desktopIcons = useSettingsStore((state) => state.desktopIcons);
   const addDesktopIcon = useSettingsStore((state) => state.addDesktopIcon);
   const updateDesktopIcon = useSettingsStore((state) => state.updateDesktopIcon);
@@ -61,6 +63,14 @@ function App() {
     }
     // 'light' is the default, no class needed
   }, [theme]);
+
+  // Font and icon size levels become two multipliers. The type ramp and every
+  // Icon read them, so nothing else in the OS has to know these settings exist.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--font-scale', String(SIZE_SCALES[fontSize]));
+    root.style.setProperty('--icon-scale', String(SIZE_SCALES[iconSize]));
+  }, [fontSize, iconSize]);
 
   // Push the chosen accent into the token every consumer already reads.
   // ponytail: hover/active derived with color-mix rather than a second picker.

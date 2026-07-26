@@ -10,16 +10,36 @@ export const DOCK_HEIGHT = 80;
 export const MENUBAR_HEIGHT = 28;
 
 /**
- * Snaps a position to the desktop grid
+ * The icon size level, as a multiplier. Icons render at `stored position ×
+ * scale`, so stored positions stay in one scale-independent space and changing
+ * the size setting never rewrites anybody's desktop arrangement.
+ */
+export const iconScale = (): number => {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--icon-scale');
+  const n = parseFloat(raw);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+};
+
+/**
+ * Snaps a position to the desktop grid.
+ *
+ * Takes screen coordinates and returns a stored position. Every write of an
+ * icon position goes through here, which is why the scale division lives here
+ * and not at the seven call sites.
  */
 export const snapToGrid = (x: number, y: number): { x: number; y: number } => {
   // Safety check for window dimensions
   const winWidth = window.innerWidth || 1920;
   const winHeight = window.innerHeight || 1080;
 
+  // Into the unscaled space that positions are stored in
+  const scale = iconScale();
+  x /= scale;
+  y /= scale;
+
   // Desktop area is window minus menubar at top and dock at bottom
-  const desktopHeight = winHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
-  const desktopWidth = winWidth;
+  const desktopHeight = (winHeight - MENUBAR_HEIGHT - DOCK_HEIGHT) / scale;
+  const desktopWidth = winWidth / scale;
 
   // Calculate valid grid boundaries (ensure at least 0)
   const maxGridX = Math.max(0, Math.floor((desktopWidth - ICON_WIDTH - MIN_X) / GRID_SIZE));

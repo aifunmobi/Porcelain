@@ -3,8 +3,19 @@ import { persist } from 'zustand/middleware';
 import type { UserSettings, DesktopIcon } from '../types';
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
+/** 0 is the size the OS shipped with; 1-3 step up from there. */
+export type SizeLevel = 0 | 1 | 2 | 3;
+export const SIZE_LEVELS: SizeLevel[] = [0, 1, 2, 3];
+
+/* One multiplier per level, shared by type and icons so a "2" means the same
+ * amount of bigger in both. Chosen to be noticeable without reflowing layouts:
+ * at level 3 a 12px label is 17px and a 42px dock tile is 59px. */
+export const SIZE_SCALES: Record<SizeLevel, number> = { 0: 1, 1: 1.15, 2: 1.3, 3: 1.4 };
+
 interface SettingsState extends UserSettings {
   theme: ThemeMode;
+  fontSize: SizeLevel;
+  iconSize: SizeLevel;
   // Actions
   setWallpaper: (wallpaper: string, type?: 'image' | 'color' | 'gradient') => void;
   setVolume: (volume: number) => void;
@@ -22,6 +33,8 @@ interface SettingsState extends UserSettings {
   setShowSeconds: (show: boolean) => void;
   setUse24Hour: (use24: boolean) => void;
   setTheme: (theme: ThemeMode) => void;
+  setFontSize: (level: SizeLevel) => void;
+  setIconSize: (level: SizeLevel) => void;
   resetSettings: () => void;
 }
 
@@ -34,7 +47,11 @@ const LEGACY_WALLPAPERS = [
   'linear-gradient(135deg, #f5f3ef 0%, #ebe8e2 50%, #ddd9d0 100%)',
 ];
 
-const defaultSettings: UserSettings & { theme: ThemeMode } = {
+const defaultSettings: UserSettings & {
+  theme: ThemeMode;
+  fontSize: SizeLevel;
+  iconSize: SizeLevel;
+} = {
   wallpaper: DEFAULT_WALLPAPER,
   wallpaperType: 'gradient',
   volume: 75,
@@ -71,6 +88,8 @@ const defaultSettings: UserSettings & { theme: ThemeMode } = {
   showSeconds: false,
   use24Hour: false,
   theme: 'light',
+  fontSize: 0,
+  iconSize: 0,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -140,12 +159,16 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) =>
         set({ theme }),
 
+      setFontSize: (fontSize) => set({ fontSize }),
+
+      setIconSize: (iconSize) => set({ iconSize }),
+
       resetSettings: () =>
         set(defaultSettings),
     }),
     {
       name: 'porcelain-settings',
-      version: 3, // Increment this when defaults change
+      version: 4, // Increment this when defaults change
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as SettingsState;
         // If version is old, reset desktop icons and pinned apps to include new apps
@@ -172,6 +195,15 @@ export const useSettingsStore = create<SettingsState>()(
           if (missing.length) {
             return { ...state, pinnedApps: [...(state.pinnedApps ?? []), ...missing] };
           }
+        }
+        // 4.0: font and icon size levels arrived. Anyone persisted before then
+        // has neither key; both default to 0, the size the OS already had.
+        if (version < 4) {
+          return {
+            ...state,
+            fontSize: state.fontSize ?? 0,
+            iconSize: state.iconSize ?? 0,
+          };
         }
         return state;
       },

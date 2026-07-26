@@ -117,6 +117,11 @@ const IconShell: React.FC<IconProps & { children: React.ReactNode }> = ({
   children,
 }) => {
   const glyphSize = mode === 'tile' ? Math.round(size * 0.56) : size;
+  /* Settings' icon size level lands here, once, so every icon in the OS follows
+   * it without a call site changing. A CSS width beats the SVG width attribute,
+   * which cannot take calc(). --icon-scale is written by App; the fallback is
+   * the size the caller asked for. */
+  const scaled = (px: number) => `calc(${px}px * var(--icon-scale, 1))`;
 
   const svg = (
     <svg
@@ -125,7 +130,7 @@ const IconShell: React.FC<IconProps & { children: React.ReactNode }> = ({
       height={glyphSize}
       viewBox="0 0 24 24"
       fill="none"
-      style={{ color }}
+      style={{ color, width: scaled(glyphSize), height: scaled(glyphSize) }}
       role={title ? 'img' : undefined}
       aria-hidden={title ? undefined : true}
       focusable="false"
@@ -140,8 +145,8 @@ const IconShell: React.FC<IconProps & { children: React.ReactNode }> = ({
       <span
         className={`pcl-tile${className ? ` ${className}` : ''}`}
         style={{
-          width: size,
-          height: size,
+          width: scaled(size),
+          height: scaled(size),
           borderRadius: Math.max(4, Math.round(size * 0.24)),
         }}
       >

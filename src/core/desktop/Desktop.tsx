@@ -643,8 +643,10 @@ const DesktopIconComponent: React.FC<DesktopIconComponentProps> = ({
     <motion.div
       className={`desktop__icon ${isSelected ? 'desktop__icon--selected' : ''} ${icon.isFile ? 'desktop__icon--file' : ''} ${isDropTarget ? 'desktop__icon--drop-target' : ''}`}
       style={{
-        left: icon.position.x,
-        top: icon.position.y,
+        // Positions are stored unscaled; the icon size level is applied here,
+        // and divided back out in snapToGrid. See utils/desktop.ts.
+        left: `calc(${icon.position.x}px * var(--icon-scale, 1))`,
+        top: `calc(${icon.position.y}px * var(--icon-scale, 1))`,
         // Hide this icon while it's being dragged (DragOverlay shows preview)
         opacity: isThisIconBeingDragged ? 0.3 : 1,
         // CRITICAL: Keep pointer events enabled so folders can receive drops

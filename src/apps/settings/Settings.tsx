@@ -1,11 +1,34 @@
 import React, { useState } from 'react';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useSettingsStore, SIZE_LEVELS } from '../../stores/settingsStore';
+import type { SizeLevel } from '../../stores/settingsStore';
 import { Icon } from '../../components/Icons';
 import { FULL_VERSION } from '../../version';
 import type { AppProps } from '../../types';
 import './Settings.css';
 
 type SettingsPanel = 'wallpaper' | 'sound' | 'display' | 'dock' | 'datetime' | 'about';
+
+/** Four steps, 0 being what the OS shipped with. The chosen one is pressed in,
+ *  the same way every other toggle in the OS reads. */
+const SizePicker: React.FC<{
+  level: SizeLevel;
+  onChange: (level: SizeLevel) => void;
+  name: string;
+}> = ({ level, onChange, name }) => (
+  <div className="settings__sizes" role="group" aria-label={name}>
+    {SIZE_LEVELS.map((l) => (
+      <button
+        key={l}
+        className={`settings__size ${level === l ? 'is-selected' : ''}`}
+        onClick={() => onChange(l)}
+        aria-pressed={level === l}
+        title={l === 0 ? `Default ${name}` : `${name} level ${l}`}
+      >
+        {l}
+      </button>
+    ))}
+  </div>
+);
 
 const wallpapers = [
   { id: 'gradient-1', type: 'gradient' as const, value: 'linear-gradient(160deg, var(--paper-1) 0%, var(--paper-2) 55%, var(--paper-3) 100%)', name: 'Porcelain' },
@@ -64,6 +87,8 @@ export const Settings: React.FC<AppProps> = () => {
     showSeconds,
     use24Hour,
     theme,
+    fontSize,
+    iconSize,
     setWallpaper,
     setVolume,
     setBrightness,
@@ -71,6 +96,8 @@ export const Settings: React.FC<AppProps> = () => {
     setShowSeconds,
     setUse24Hour,
     setTheme,
+    setFontSize,
+    setIconSize,
     resetSettings,
   } = useSettingsStore();
 
@@ -170,6 +197,20 @@ export const Settings: React.FC<AppProps> = () => {
                   <span>Auto</span>
                 </button>
               </div>
+            </div>
+            <div className="settings__section">
+              <h3 className="settings__section-title">Size</h3>
+              <div className="settings__row">
+                <label className="settings__label">Text</label>
+                <SizePicker level={fontSize} onChange={setFontSize} name="text size" />
+              </div>
+              <div className="settings__row">
+                <label className="settings__label">Icons</label>
+                <SizePicker level={iconSize} onChange={setIconSize} name="icon size" />
+              </div>
+              <p className="settings__info settings__size-note">
+                Level 0 is the size Porcelain ships with. Changes apply everywhere at once.
+              </p>
             </div>
             <div className="settings__section">
               <div className="settings__row">

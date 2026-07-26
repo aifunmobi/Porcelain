@@ -335,3 +335,25 @@
   font-weight: var(--font-medium);
   cursor: pointer;
 }
+
+/* Text and icon size levels. Material comes from app-controls.css; the chosen
+ * level carries .is-selected, like every other toggle in the OS. */
+.settings__sizes {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.settings__size {
+  width: 34px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings__size-note {
+  margin-top: var(--space-2);
+}

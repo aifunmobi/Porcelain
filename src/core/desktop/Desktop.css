@@ -43,7 +43,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 80px;
+  /* the cell follows the icon so a bigger setting does not clip the label */
+  width: calc(80px * var(--icon-scale, 1));
   padding: var(--space-2);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -70,8 +71,8 @@
 }
 
 .desktop__icon-image {
-  width: 56px;
-  height: 56px;
+  width: calc(56px * var(--icon-scale, 1));
+  height: calc(56px * var(--icon-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,7 +239,7 @@
 }
 
 .desktop__icon--file .desktop__icon-label {
-  max-width: 76px;
+  max-width: calc(76px * var(--icon-scale, 1));
   word-break: break-all;
   white-space: normal;
   line-height: 1.2;

@@ -52,10 +52,11 @@
   align-items: center;
 }
 
-/* the well the tile sits in */
+/* the well the tile sits in — sized off --icon-scale so a larger icon setting
+ * grows the well with it rather than overflowing a fixed 50px slot */
 .dock__item {
-  width: 50px;
-  height: 50px;
+  width: calc(50px * var(--icon-scale, 1));
+  height: calc(50px * var(--icon-scale, 1));
   border-radius: var(--radius-lg);
   background: transparent;
   border: none;
