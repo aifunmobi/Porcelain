@@ -61,6 +61,35 @@ export const snapToGrid = (x: number, y: number): { x: number; y: number } => {
 };
 
 /**
+ * Tidy the desktop: pack every icon onto the grid with no gaps or overlaps.
+ *
+ * This is a clean-up, not a sort — icons keep the order they are already in
+ * (reading left to right, then top to bottom), so a deliberate arrangement
+ * survives while the crooked spacing does not. Columns fill downward, which is
+ * the shape the desktop already ships in.
+ *
+ * Positions are stored unscaled, so the icon size level only affects how many
+ * rows fit on screen — see the note on snapToGrid.
+ */
+export const arrangeIcons = <T extends { position: { x: number; y: number } }>(
+  icons: T[]
+): T[] => {
+  const scale = iconScale();
+  const usableHeight = ((window.innerHeight || 1080) - MENUBAR_HEIGHT - DOCK_HEIGHT) / scale;
+  const rows = Math.max(1, Math.floor((usableHeight - MIN_Y) / GRID_SIZE));
+
+  return [...icons]
+    .sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y)
+    .map((icon, i) => ({
+      ...icon,
+      position: {
+        x: Math.floor(i / rows) * GRID_SIZE + MIN_X,
+        y: (i % rows) * GRID_SIZE + MIN_Y,
+      },
+    }));
+};
+
+/**
  * Checks if a file is an image based on extension
  */
 export const isImageFile = (filename: string): boolean => {

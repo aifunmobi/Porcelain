@@ -14,6 +14,7 @@ import {
   isAudioFile,
   isVideoFile,
   getFileIcon,
+  arrangeIcons,
   GRID_SIZE,
 } from '../../utils/desktop';
 import type { DesktopIcon } from '../../types';
@@ -258,6 +259,14 @@ export const Desktop: React.FC = () => {
       setSelectedIcon(iconId);
     }
   }, []);
+
+  /** Tidy every icon onto the grid, keeping their current reading order. */
+  const handleArrange = useCallback(() => {
+    for (const icon of arrangeIcons(desktopIcons)) {
+      updateDesktopIcon(icon.id, { position: icon.position });
+    }
+    setContextMenu(null);
+  }, [desktopIcons, updateDesktopIcon]);
 
   const handleNewFolder = useCallback((x: number, y: number) => {
     setNewFolderPosition(snapToGrid(x - 40, y - 50));
@@ -519,6 +528,15 @@ export const Desktop: React.FC = () => {
                 onClick={() => handlePasteIcon(contextMenu.x, contextMenu.y)}
               >
                 Paste
+              </button>
+              <div className="desktop__context-menu-divider" />
+              <button
+                className="desktop__context-menu-item"
+                onClick={handleArrange}
+                disabled={desktopIcons.length < 2}
+              >
+                <Icon name="grid" size={14} />
+                Arrange
               </button>
             </>
           )}

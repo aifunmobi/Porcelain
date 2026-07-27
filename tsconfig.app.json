@@ -24,5 +24,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  /* The self-checks are Node scripts run with tsx, not app code. */
+  "exclude": ["src/**/*.test.ts"]
 }
