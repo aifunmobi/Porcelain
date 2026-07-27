@@ -97,6 +97,8 @@
 }
 
 .music-player__controls {
+  /* the transport buttons need a strip to sit on */
+  background: var(--paper-1);
   display: flex;
   align-items: center;
   justify-content: center;

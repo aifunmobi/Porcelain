@@ -13,7 +13,7 @@
   flex-wrap: wrap;
   gap: var(--space-4);
   padding: var(--space-3);
-  background: var(--paper-0);
+  background: var(--paper-1);
   border-bottom: 1px solid var(--edge-hairline);
 }
 

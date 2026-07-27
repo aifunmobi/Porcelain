@@ -90,6 +90,8 @@
 }
 
 .notes__editor-header {
+  /* the Save As and Delete buttons need a strip to sit on */
+  background: var(--paper-1);
   display: flex;
   align-items: center;
   gap: var(--space-2);
