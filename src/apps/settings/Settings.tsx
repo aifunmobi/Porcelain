@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSettingsStore, SIZE_LEVELS } from '../../stores/settingsStore';
-import type { SizeLevel } from '../../stores/settingsStore';
+import type { SizeLevel, IconStyle } from '../../stores/settingsStore';
 import { Icon } from '../../components/Icons';
 import { FULL_VERSION } from '../../version';
 import type { AppProps } from '../../types';
@@ -89,6 +89,7 @@ export const Settings: React.FC<AppProps> = () => {
     theme,
     fontSize,
     iconSize,
+    iconStyle,
     setWallpaper,
     setVolume,
     setBrightness,
@@ -98,6 +99,7 @@ export const Settings: React.FC<AppProps> = () => {
     setTheme,
     setFontSize,
     setIconSize,
+    setIconStyle,
     resetSettings,
   } = useSettingsStore();
 
@@ -211,6 +213,33 @@ export const Settings: React.FC<AppProps> = () => {
               <p className="settings__info settings__size-note">
                 Level 0 is the size Porcelain ships with. Changes apply everywhere at once.
               </p>
+            </div>
+            <div className="settings__section">
+              <h3 className="settings__section-title">Icon Style</h3>
+              <div className="settings__icon-styles">
+                {([
+                  ['ink', 'Inked', 'Glyphs drawn in ink.'],
+                  ['relief', 'Embossed', 'Struck into the paper — only the light shows the shape.'],
+                ] as [IconStyle, string, string][]).map(([value, label, blurb]) => (
+                  <button
+                    key={value}
+                    className={`settings__icon-style ${iconStyle === value ? 'is-selected' : ''}`}
+                    onClick={() => setIconStyle(value)}
+                  >
+                    {/* the sample renders in the style it offers, so the choice
+                        is visible before it is made */}
+                    <span className={value === 'relief' ? 'icons-relief' : undefined}>
+                      <span className="settings__icon-style-row">
+                        <Icon name="folder" size={26} />
+                        <Icon name="notes" size={26} />
+                        <Icon name="settings" size={26} />
+                      </span>
+                    </span>
+                    <span className="settings__icon-style-label">{label}</span>
+                    <span className="settings__icon-style-blurb">{blurb}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="settings__section">
               <div className="settings__row">

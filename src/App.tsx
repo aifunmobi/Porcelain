@@ -39,6 +39,7 @@ function App() {
   const accentColor = useSettingsStore((state) => state.accentColor);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const iconSize = useSettingsStore((state) => state.iconSize);
+  const iconStyle = useSettingsStore((state) => state.iconStyle);
   const desktopIcons = useSettingsStore((state) => state.desktopIcons);
   const addDesktopIcon = useSettingsStore((state) => state.addDesktopIcon);
   const updateDesktopIcon = useSettingsStore((state) => state.updateDesktopIcon);
@@ -71,6 +72,12 @@ function App() {
     root.style.setProperty('--font-scale', String(SIZE_SCALES[fontSize]));
     root.style.setProperty('--icon-scale', String(SIZE_SCALES[iconSize]));
   }, [fontSize, iconSize]);
+
+  // Icon style is a root class, like the theme, so the SVG filter swap is pure
+  // CSS — see Icons.css.
+  useEffect(() => {
+    document.documentElement.classList.toggle('icons-relief', iconStyle === 'relief');
+  }, [iconStyle]);
 
   // Push the chosen accent into the token every consumer already reads.
   // ponytail: hover/active derived with color-mix rather than a second picker.

@@ -357,3 +357,39 @@
 .settings__size-note {
   margin-top: var(--space-2);
 }
+
+/* Icon style picker. Each option renders its own sample in the style it
+ * offers — the .icons-relief wrapper is the same class App puts on the root. */
+.settings__icon-styles {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.settings__icon-style {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-3);
+  cursor: pointer;
+  text-align: center;
+}
+
+.settings__icon-style-row {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.settings__icon-style-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--ink-strong);
+}
+
+.settings__icon-style-blurb {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  line-height: 1.35;
+}

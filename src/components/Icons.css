@@ -80,3 +80,42 @@
     filter: url(#pcl-deboss);
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Relief icons — Settings ▸ Display ▸ Icon style ▸ Embossed
+ *
+ * The glyph is painted in the stock's own colour, so nothing but the light
+ * separates it from the sheet. --paper-0 already flips with the theme, which
+ * is why one rule covers white paper and dark slate.
+ * ------------------------------------------------------------------------ */
+.icons-relief .pcl-icon {
+  color: var(--paper-0);
+  filter: url(#pcl-relief);
+}
+
+.icons-relief.dark .pcl-icon,
+.icons-relief.theme-auto .pcl-icon {
+  filter: url(#pcl-relief-dark);
+}
+
+@media (prefers-color-scheme: light) {
+  .icons-relief.theme-auto .pcl-icon {
+    filter: url(#pcl-relief); 
+  }
+}
+
+/* struck into the tile face rather than raised off the sheet */
+.icons-relief .pcl-tile .pcl-icon {
+  filter: url(#pcl-relief-deboss);
+}
+
+.icons-relief.dark .pcl-tile .pcl-icon,
+.icons-relief.theme-auto .pcl-tile .pcl-icon {
+  filter: url(#pcl-relief-deboss-dark);
+}
+
+@media (prefers-color-scheme: light) {
+  .icons-relief.theme-auto .pcl-tile .pcl-icon {
+    filter: url(#pcl-relief-deboss);
+  }
+}

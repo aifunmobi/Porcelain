@@ -100,6 +100,35 @@ export const IconDefs: React.FC = () => (
         shadow={{ dx: -0.3, dy: -0.35, blur: 0.24, color: '#000000', opacity: 0.8 }}
         highlight={{ dx: 0.36, dy: 0.42, blur: 0.24, color: '#cfdcee', opacity: 0.2 }}
       />
+
+      {/* --- Relief: the glyph is the paper -----------------------------
+       * The four recipes above light an inked glyph. Relief takes the ink
+       * away — the shape is painted in the stock's own colour and only the
+       * light reveals it, which is what an actual blind emboss looks like.
+       * With no tonal contrast doing the work the lighting has to carry the
+       * whole form, so the offsets and opacities are roughly half again as
+       * strong as their inked counterparts.
+       */}
+      <EmbossFilter
+        id="pcl-relief"
+        shadow={{ dx: 0.55, dy: 0.7, blur: 0.42, color: '#4a4237', opacity: 0.55 }}
+        highlight={{ dx: -0.5, dy: -0.6, blur: 0.34, color: '#ffffff', opacity: 1 }}
+      />
+      <EmbossFilter
+        id="pcl-relief-deboss"
+        shadow={{ dx: -0.5, dy: -0.6, blur: 0.38, color: '#4a4237', opacity: 0.55 }}
+        highlight={{ dx: 0.55, dy: 0.68, blur: 0.38, color: '#ffffff', opacity: 1 }}
+      />
+      <EmbossFilter
+        id="pcl-relief-dark"
+        shadow={{ dx: 0.55, dy: 0.7, blur: 0.46, color: '#000000', opacity: 0.9 }}
+        highlight={{ dx: -0.45, dy: -0.55, blur: 0.34, color: '#cfdcee', opacity: 0.3 }}
+      />
+      <EmbossFilter
+        id="pcl-relief-deboss-dark"
+        shadow={{ dx: -0.45, dy: -0.55, blur: 0.4, color: '#000000', opacity: 0.9 }}
+        highlight={{ dx: 0.55, dy: 0.68, blur: 0.4, color: '#cfdcee', opacity: 0.28 }}
+      />
     </defs>
   </svg>
 );
@@ -130,7 +159,15 @@ const IconShell: React.FC<IconProps & { children: React.ReactNode }> = ({
       height={glyphSize}
       viewBox="0 0 24 24"
       fill="none"
-      style={{ color, width: scaled(glyphSize), height: scaled(glyphSize) }}
+      /* `currentColor` is the inherited value, so emitting it inline would be a
+         no-op that nevertheless outranks every stylesheet — which is what kept
+         the relief style from being able to recolour the glyph. Only a colour
+         the caller actually chose is written here. */
+      style={{
+        ...(color !== 'currentColor' ? { color } : null),
+        width: scaled(glyphSize),
+        height: scaled(glyphSize),
+      }}
       role={title ? 'img' : undefined}
       aria-hidden={title ? undefined : true}
       focusable="false"

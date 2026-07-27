@@ -12,10 +12,15 @@ export const SIZE_LEVELS: SizeLevel[] = [0, 1, 2, 3];
  * at level 3 a 12px label is 17px and a 42px dock tile is 59px. */
 export const SIZE_SCALES: Record<SizeLevel, number> = { 0: 1, 1: 1.15, 2: 1.3, 3: 1.4 };
 
+/** 'ink' draws the glyph in ink; 'relief' paints it in the stock and lets the
+ *  light alone reveal it — a blind emboss. */
+export type IconStyle = 'ink' | 'relief';
+
 interface SettingsState extends UserSettings {
   theme: ThemeMode;
   fontSize: SizeLevel;
   iconSize: SizeLevel;
+  iconStyle: IconStyle;
   // Actions
   setWallpaper: (wallpaper: string, type?: 'image' | 'color' | 'gradient') => void;
   setVolume: (volume: number) => void;
@@ -35,6 +40,7 @@ interface SettingsState extends UserSettings {
   setTheme: (theme: ThemeMode) => void;
   setFontSize: (level: SizeLevel) => void;
   setIconSize: (level: SizeLevel) => void;
+  setIconStyle: (style: IconStyle) => void;
   resetSettings: () => void;
 }
 
@@ -51,6 +57,7 @@ const defaultSettings: UserSettings & {
   theme: ThemeMode;
   fontSize: SizeLevel;
   iconSize: SizeLevel;
+  iconStyle: IconStyle;
 } = {
   wallpaper: DEFAULT_WALLPAPER,
   wallpaperType: 'gradient',
@@ -90,6 +97,7 @@ const defaultSettings: UserSettings & {
   theme: 'light',
   fontSize: 0,
   iconSize: 0,
+  iconStyle: 'ink',
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -163,12 +171,14 @@ export const useSettingsStore = create<SettingsState>()(
 
       setIconSize: (iconSize) => set({ iconSize }),
 
+      setIconStyle: (iconStyle) => set({ iconStyle }),
+
       resetSettings: () =>
         set(defaultSettings),
     }),
     {
       name: 'porcelain-settings',
-      version: 4, // Increment this when defaults change
+      version: 5, // Increment this when defaults change
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as SettingsState;
         // If version is old, reset desktop icons and pinned apps to include new apps
@@ -198,11 +208,13 @@ export const useSettingsStore = create<SettingsState>()(
         }
         // 4.0: font and icon size levels arrived. Anyone persisted before then
         // has neither key; both default to 0, the size the OS already had.
-        if (version < 4) {
+        // 5.0: icon style. 'ink' is what the OS already drew.
+        if (version < 5) {
           return {
             ...state,
             fontSize: state.fontSize ?? 0,
             iconSize: state.iconSize ?? 0,
+            iconStyle: state.iconStyle ?? 'ink',
           };
         }
         return state;
