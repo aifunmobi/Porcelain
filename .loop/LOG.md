@@ -13,3 +13,4 @@
 - 2026-07-26 Native app rebuilt and installed. Try it: open Porcelain OS from Launchpad, or double-click ~/Desktop/Commands/Launch Porcelain OS.command. Both now run the same current build; /Applications had been a day stale.
 - 2026-07-26 Edit menu wired across every app — merged. Try it: type in any text field, then use Edit ▸ Cut/Copy/Paste/Select All/Undo/Redo from the top menu. Cut and Copy grey out unless something is selected. 31 labels for features that never existed were removed.
 - 2026-07-26 App menus wired — merged. Try it: open Files and use Go ▸ Documents, then Go ▸ Back; Notes ▸ File ▸ New Note; Terminal ▸ Edit ▸ Clear. Zero hardcoded-disabled items remain; apps publish what they can do and the menu greys the rest.
+- 2026-07-26 Desktop icon labels readable — merged. Try it: switch to the Sky wallpaper; labels now carry a contact shadow instead of the paper engraving's white highlight, which was smearing them against the desk.
