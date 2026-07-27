@@ -16,3 +16,5 @@
 - 2026-07-26 Desktop icon labels readable — merged. Try it: switch to the Sky wallpaper; labels now carry a contact shadow instead of the paper engraving's white highlight, which was smearing them against the desk.
 - 2026-07-26 Dock sizes with the icons — merged. Try it: Settings ▸ Display ▸ Size ▸ Icons ▸ 3. The plank grows to hold the bigger wells instead of letting them hang out the top, and stops at the screen edge rather than running off it.
 - 2026-07-26 Desktop Arrange — merged. Try it: drag the desktop icons somewhere messy, then right-click empty desktop ▸ Arrange. They pack onto the grid keeping their reading order.
+- 2026-07-26 Buttons sit proud of their strips — merged. Try it: open Files; the New Folder/Copy/Rename row now sits on a paper-1 strip instead of vanishing into a same-tone background.
+- 2026-07-26 Embossed icon style — merged. Try it: Settings ▸ Display ▸ Icon Style ▸ Embossed. Every glyph becomes a blind emboss in the stock's own colour; Inked remains the default.

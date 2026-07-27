@@ -77,7 +77,7 @@ Three more apps, the largest issue in the set.
 - **The app bundle is current as of 2026-07-26 19:09** (`e41778d` + the Preview
   html fix). Rebuilt and installed: `/Applications/porcelain-os.app` now matches
   the build output, so Launchpad and the Desktop launcher open the same thing.
-  It embeds `index-CeKPKr3l.js` — check those hashes
+  It embeds `index-gj5o58Oh.js` — check those hashes
   against `dist/assets/` to tell at a glance whether the bundle has gone stale
   again. Rebuild with `npm run tauri:build` (~25s now that Rust is warm), then
   re-copy to `/Applications` or the two drift apart silently.
