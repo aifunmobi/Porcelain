@@ -83,6 +83,16 @@
     0 1px 0 rgba(255, 255, 255, 0.9),
     0 -0.5px 0 rgba(74, 66, 55, 0.18);
 
+  /* ---- Type on the desk, not on paper ---------------------------------
+   * The engraved shadow above puts a white highlight under each letter,
+   * which is what makes type look struck into a sheet. On the wallpaper
+   * there is no sheet — the highlight just smears the letterforms against
+   * whatever colour the desk happens to be. Desktop labels get a plain
+   * contact shadow instead, and take their colour from --ink, so they
+   * darken on a pale desk and lighten on a dark one.
+   */
+  --text-on-desktop: 0 1px 2px rgba(0, 0, 0, 0.45);
+
   /* ---- Paper grain -----------------------------------------------------
    * Defined exactly once. Applied via the .p-paper primitive, never inlined
    * per component.
