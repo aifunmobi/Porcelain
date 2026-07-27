@@ -14,3 +14,4 @@
 - 2026-07-26 Edit menu wired across every app — merged. Try it: type in any text field, then use Edit ▸ Cut/Copy/Paste/Select All/Undo/Redo from the top menu. Cut and Copy grey out unless something is selected. 31 labels for features that never existed were removed.
 - 2026-07-26 App menus wired — merged. Try it: open Files and use Go ▸ Documents, then Go ▸ Back; Notes ▸ File ▸ New Note; Terminal ▸ Edit ▸ Clear. Zero hardcoded-disabled items remain; apps publish what they can do and the menu greys the rest.
 - 2026-07-26 Desktop icon labels readable — merged. Try it: switch to the Sky wallpaper; labels now carry a contact shadow instead of the paper engraving's white highlight, which was smearing them against the desk.
+- 2026-07-26 Dock sizes with the icons — merged. Try it: Settings ▸ Display ▸ Size ▸ Icons ▸ 3. The plank grows to hold the bigger wells instead of letting them hang out the top, and stops at the screen edge rather than running off it.
