@@ -171,7 +171,7 @@ export const Camera: React.FC<AppProps> = () => {
         )}
         {hasPermission === false && (
           <div className="camera__error">
-            <Icon name="camera" size={48} color="var(--color-error)" />
+            <Icon name="camera" size={48} className="pcl-icon--error" />
             <p>Camera unavailable</p>
             <p className="camera__error-hint">{errorMessage || 'Please allow camera access in your browser settings'}</p>
           </div>

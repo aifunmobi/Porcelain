@@ -119,3 +119,17 @@
     filter: url(#pcl-relief-deboss);
   }
 }
+
+/* Relief paints the glyph in the stock, which has to beat the inline colour a
+ * few call sites pass for visual hierarchy — greys that mean nothing once the
+ * icon is an emboss. Colour that carries meaning opts out with
+ * .pcl-icon--error, which outranks the override. */
+.icons-relief .pcl-icon {
+  color: var(--paper-0) !important;
+}
+
+.pcl-icon--error,
+.icons-relief .pcl-icon.pcl-icon--error {
+  color: var(--color-error) !important;
+  filter: none;
+}

@@ -986,7 +986,7 @@ export const FileManager: React.FC<AppProps> = ({ windowId }) => {
             </div>
           ) : error ? (
             <div className="file-manager__empty">
-              <Icon name="alert-circle" size={48} color="var(--color-error)" />
+              <Icon name="alert-circle" size={48} className="pcl-icon--error" />
               <p>{error}</p>
             </div>
           ) : viewMode === 'columns' ? (
