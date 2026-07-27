@@ -9,6 +9,7 @@ import { formatFileSize, getFileIcon, isImageFile, getFileExtension } from '../.
 import { useWindowStore } from '../../stores/windowStore';
 import { createBackend, basename, kindOf } from '../../services/fsAdapter';
 import type { FsBackend, FsItem } from '../../services/fsAdapter';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './FileManager.css';
 
 /* ---------------------------------------------------------------- helpers */
@@ -82,7 +83,7 @@ const COLUMNS: { by: SortBy; label: string; className: string }[] = [
 
 /* -------------------------------------------------------------- component */
 
-export const FileManager: React.FC<AppProps> = () => {
+export const FileManager: React.FC<AppProps> = ({ windowId }) => {
   const [backend, setBackend] = useState<FsBackend | null>(null);
   const [path, setPath] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -419,6 +420,39 @@ export const FileManager: React.FC<AppProps> = () => {
       ([size, created]) => setInfo({ item: primary, size, created })
     );
   }, [backend, primary]);
+
+  /* What the Go/File/View menus can offer right now. Back and Forward come and
+   * go with the history, so they are published conditionally and the menu bar
+   * greys them without knowing what a folder is. */
+  const goFavorite = useCallback(
+    (id: string) => () => {
+      const entry = backend?.favorites.find((f) => f.id === id);
+      if (entry) navigate(entry.path);
+    },
+    [backend, navigate]
+  );
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => ({
+        back: canBack ? goBack : undefined,
+        forward: canForward ? goForward : undefined,
+        parent: path && path !== '/' ? goParent : undefined,
+        home: goFavorite('home'),
+        desktop: goFavorite('desktop'),
+        documents: goFavorite('documents'),
+        downloads: goFavorite('downloads'),
+        newFolder,
+        getInfo: primary ? showInfo : undefined,
+        viewIcons: () => setViewMode('grid'),
+        viewList: () => setViewMode('list'),
+        viewColumns: () => setViewMode('columns'),
+      }),
+      [canBack, canForward, goBack, goForward, goParent, path, goFavorite,
+       newFolder, primary, showInfo, setViewMode]
+    )
+  );
 
   /* ------------------------------------------------------------ keyboard */
 

@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './Browser.css';
 
 // Sites that work well in iframes (don't have X-Frame-Options restrictions)
@@ -17,7 +18,7 @@ const IFRAME_FRIENDLY_SITES = [
   'lite.duckduckgo.com',
 ];
 
-export const Browser: React.FC<AppProps> = () => {
+export const Browser: React.FC<AppProps> = ({ windowId }) => {
   const [url, setUrl] = useState(DEFAULT_URL);
   const [inputValue, setInputValue] = useState(DEFAULT_URL);
   const [isLoading, setIsLoading] = useState(true);
@@ -135,6 +136,20 @@ export const Browser: React.FC<AppProps> = () => {
       iframeRef.current.src = url;
     }
   };
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => ({
+        back: canGoBack ? handleBack : undefined,
+        forward: canGoForward ? handleForward : undefined,
+        reload: handleRefresh,
+        home: () => navigate(DEFAULT_URL),
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [canGoBack, canGoForward, navigate]
+    )
+  );
 
   const handleHome = () => {
     navigate(DEFAULT_URL);

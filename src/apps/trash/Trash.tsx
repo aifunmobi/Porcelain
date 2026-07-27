@@ -1,12 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { useTrashStore } from '../../stores/trashStore';
 import type { TrashItem } from '../../stores/trashStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import type { AppProps } from '../../types';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './Trash.css';
 
-export const Trash: React.FC<AppProps> = () => {
+export const Trash: React.FC<AppProps> = ({ windowId }) => {
   const { items, restoreFromTrash, emptyTrash, removeFromTrash } = useTrashStore();
   const { addDesktopIcon } = useSettingsStore();
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
@@ -32,6 +33,14 @@ export const Trash: React.FC<AppProps> = () => {
       emptyTrash();
     }
   }, [items.length, emptyTrash]);
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => ({ emptyTrash: items.length ? handleEmptyTrash : undefined }),
+      [items.length, handleEmptyTrash]
+    )
+  );
 
   const handleContextMenu = useCallback((e: React.MouseEvent, item: TrashItem) => {
     e.preventDefault();

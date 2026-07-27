@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFileSystemStore } from '../../stores/fileSystemStore';
 import { FULL_VERSION } from '../../version';
 import type { AppProps } from '../../types';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './Terminal.css';
 
 interface TerminalLine {
@@ -17,7 +18,7 @@ const COMMANDS = [
   'hostname', 'uptime', 'env', 'export', 'unset', 'alias', 'unalias', 'which',
 ];
 
-export const Terminal: React.FC<AppProps> = () => {
+export const Terminal: React.FC<AppProps> = ({ windowId }) => {
   const [lines, setLines] = useState<TerminalLine[]>([
     { id: 0, type: 'output', content: `Welcome to Porcelain OS Terminal v${FULL_VERSION}` },
     { id: 1, type: 'output', content: 'Type "help" for available commands.\n' },
@@ -491,6 +492,11 @@ export const Terminal: React.FC<AppProps> = () => {
         addLine('error', `${cmd}: command not found`);
     }
   }, [currentPath, addLine, getFileByPath, getChildren, createFolder, createFile, deleteFile, envVars, aliases, history, startTime]);
+
+  useAppCommands(
+    windowId,
+    useMemo(() => ({ clear: () => setLines([]) }), [])
+  );
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {

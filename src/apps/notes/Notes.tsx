@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNotesStore } from '../../stores/notesStore';
 import { useSaveAs } from '../../hooks/useSaveAs';
 import { encodeText, TEXT_FORMATS } from '../../services/saveAs';
@@ -6,9 +6,10 @@ import { createBackend } from '../../services/fsAdapter';
 import type { FsBackend } from '../../services/fsAdapter';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './Notes.css';
 
-export const Notes: React.FC<AppProps> = () => {
+export const Notes: React.FC<AppProps> = ({ windowId }) => {
   const {
     notes,
     activeNoteId,
@@ -49,6 +50,11 @@ export const Notes: React.FC<AppProps> = () => {
   const handleCreateNote = useCallback(() => {
     createNote();
   }, [createNote]);
+
+  useAppCommands(
+    windowId,
+    useMemo(() => ({ newNote: handleCreateNote }), [handleCreateNote])
+  );
 
   const handleDeleteNote = useCallback(() => {
     if (activeNoteId) {

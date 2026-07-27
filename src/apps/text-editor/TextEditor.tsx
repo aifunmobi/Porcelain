@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { useWindowStore } from '../../stores/windowStore';
 import {
@@ -23,6 +23,7 @@ import {
   wrapHtmlDocument,
   unwrapHtmlDocument,
 } from './richText';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './TextEditor.css';
 
 interface TextEditorProps extends AppProps {
@@ -479,6 +480,21 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   }, [backend]);
 
   /* ------------------------------------------------------------ keyboard */
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => ({
+        find: () => setFindOpen(true),
+        findReplace: () => setFindOpen(true),
+        bigger: () => setFontSize(fontSize + 1),
+        smaller: () => setFontSize(fontSize - 1),
+        toggleWrap: () => setWrapToPage(!wrapToPage),
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [fontSize, wrapToPage]
+    )
+  );
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {

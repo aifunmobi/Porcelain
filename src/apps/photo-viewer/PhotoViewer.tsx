@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import {
@@ -13,6 +13,7 @@ import { useSaveAs } from '../../hooks/useSaveAs';
 import { encodeImage, IMAGE_FORMATS } from '../../services/saveAs';
 import { createBackend } from '../../services/fsAdapter';
 import type { FsBackend } from '../../services/fsAdapter';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './PhotoViewer.css';
 
 // Sample images for browser mode
@@ -33,7 +34,7 @@ interface PhotoViewerProps extends AppProps {
   initialImage?: ImageFile;
 }
 
-export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
+export const PhotoViewer: React.FC<PhotoViewerProps> = ({ windowId, initialImage }) => {
   const [isInTauri, setIsInTauri] = useState(false);
   const [images, setImages] = useState<ImageFile[]>(initialImage ? [initialImage] : sampleImages);
   const [selectedImage, setSelectedImage] = useState<ImageFile | null>(initialImage || sampleImages[0]);
@@ -185,6 +186,17 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
     setZoom(1);
     setRotation(0);
   };
+
+  /* Zoom and rotation are always available once an image is on screen. */
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => (selectedImage
+        ? { zoomIn: handleZoomIn, zoomOut: handleZoomOut, actualSize: handleReset }
+        : {}),
+      [selectedImage]
+    )
+  );
 
   // Navigate to next/previous image
   const handlePrevious = useCallback(() => {

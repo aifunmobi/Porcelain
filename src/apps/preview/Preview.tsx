@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { createBackend, basename, mimeForPath } from '../../services/fsAdapter';
 import type { FsBackend, FsItem } from '../../services/fsAdapter';
@@ -13,6 +13,7 @@ import {
   TEXT_FORMATS,
   MARKDOWN_FORMATS,
 } from '../../services/saveAs';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './Preview.css';
 
 interface PreviewProps extends AppProps {
@@ -64,7 +65,7 @@ interface Doc {
 
 const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
-export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
+export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths }) => {
   const [backend, setBackend] = useState<FsBackend | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [index, setIndex] = useState(0);
@@ -217,6 +218,22 @@ export const Preview: React.FC<PreviewProps> = ({ filePath, filePaths }) => {
         .slice(0, 100)
     );
   }, [backend]);
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => (doc
+        ? {
+            zoomIn: () => stepZoom(1),
+            zoomOut: () => stepZoom(-1),
+            rotate: () => setRotation((r) => r + 90),
+            print: () => window.print(),
+            open: () => void showPicker(),
+          }
+        : { open: () => void showPicker() }),
+      [doc, stepZoom, showPicker]
+    )
+  );
 
   const transform = `rotate(${rotation}deg)` + (fit ? '' : ` scale(${zoom})`);
 

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './Weather.css';
 
 interface WeatherData {
@@ -72,7 +73,7 @@ const getDayName = (dateStr: string): string => {
   return days[date.getDay()];
 };
 
-export const Weather: React.FC<AppProps> = () => {
+export const Weather: React.FC<AppProps> = ({ windowId }) => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [searchInput, setSearchInput] = useState('');
@@ -205,6 +206,18 @@ export const Weather: React.FC<AppProps> = () => {
       searchLocation(searchInput.trim());
     }
   };
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      // Refresh re-runs the search for wherever we are showing.
+      () => ({
+        refresh: weather?.location ? () => void searchLocation(weather.location) : undefined,
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [weather?.location]
+    )
+  );
 
   const toggleUnit = () => {
     setUnit(unit === 'F' ? 'C' : 'F');

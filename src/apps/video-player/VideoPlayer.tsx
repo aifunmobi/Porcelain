@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import {
@@ -9,6 +9,7 @@ import {
   openFileDialog,
 } from '../../services/tauriFs';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './VideoPlayer.css';
 
 interface VideoFile {
@@ -18,7 +19,7 @@ interface VideoFile {
   url?: string;
 }
 
-export const VideoPlayer: React.FC<AppProps> = () => {
+export const VideoPlayer: React.FC<AppProps> = ({ windowId }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isInTauri, setIsInTauri] = useState(false);
   const [videos, setVideos] = useState<VideoFile[]>([]);
@@ -172,6 +173,19 @@ export const VideoPlayer: React.FC<AppProps> = () => {
       videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
     }
   };
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => ({
+        playPause: handlePlayPause,
+        skipForward: handleSkipForward,
+        skipBackward: handleSkipBack,
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    )
+  );
 
   return (
     <div className={`video-player ${isFullscreen ? 'video-player--fullscreen' : ''}`}>

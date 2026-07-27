@@ -9,6 +9,7 @@ import { Icon } from '../../components/Icons';
 import { NotificationBell, NotificationCenter } from '../../components/Notifications';
 import { FULL_VERSION, BUILD_TIMESTAMP } from '../../version';
 import { runEditCommand, canRun, type EditCommand } from './editCommands';
+import { useAppCommandStore } from '../../stores/appCommandStore';
 import './MenuBar.css';
 
 interface MenuItem {
@@ -53,6 +54,9 @@ export const MenuBar: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  // Subscribe to the Map itself; a selector that derives a new object each
+  // render is treated by zustand as a changed snapshot — an update loop.
+  const commandsByWindow = useAppCommandStore((s) => s.byWindow);
 
   const activeWindow = activeWindowId ? windows.get(activeWindowId) : null;
   const activeApp = activeWindow ? appRegistry[activeWindow.appId] : null;
@@ -113,6 +117,18 @@ export const MenuBar: React.FC = () => {
   }, [activeAppId, windows]);
 
   // Create menus with actions
+  /* An item backed by a command the focused app has published. Absent command
+   * means the app cannot do it right now, so the item greys — that is how Back
+   * is dead at the root of the tree and live one folder down. */
+  const appCommands = activeWindowId ? commandsByWindow.get(activeWindowId) : undefined;
+  const appItem = useCallback(
+    (label: string, shortcut: string | undefined, id: string): MenuItem => {
+      const run = appCommands?.[id];
+      return { label, shortcut, action: run, disabled: !run };
+    },
+    [appCommands]
+  );
+
   const getMenus = useCallback((): MenuDefinition => {
     // Default menus for Porcelain OS (when no app is focused)
     const defaultMenus: MenuDefinition = {
@@ -145,13 +161,13 @@ export const MenuBar: React.FC = () => {
     const appMenus: { [appId: string]: MenuDefinition } = {
       'file-manager': {
         File: [
-          { label: 'New Folder', shortcut: '⇧⌘N', disabled: true },
+          appItem('New Folder', '⇧⌘N', 'newFolder'),
           { label: 'New Window', shortcut: '⌘N', action: openNewWindow },
           { label: 'divider', divider: true },
-          { label: 'Open', shortcut: '⌘O', disabled: true },
+          appItem('Open', '⌘O', 'open'),
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
-          { label: 'Get Info', shortcut: '⌘I', disabled: true },
+          appItem('Get Info', '⌘I', 'getInfo'),
         ],
         Edit: [
           editItem('Undo', '⌘Z', 'undo'),
@@ -163,19 +179,19 @@ export const MenuBar: React.FC = () => {
           editItem('Select All', '⌘A', 'selectAll'),
         ],
         View: [
-          { label: 'as Icons', shortcut: '⌘1', disabled: true },
-          { label: 'as List', shortcut: '⌘2', disabled: true },
+          appItem('as Icons', '⌘1', 'viewIcons'),
+          appItem('as List', '⌘2', 'viewList'),
           
         ],
         Go: [
-          { label: 'Back', shortcut: '⌘[', disabled: true },
-          { label: 'Forward', shortcut: '⌘]', disabled: true },
-          { label: 'Enclosing Folder', shortcut: '⌘↑', disabled: true },
+          appItem('Back', '⌘[', 'back'),
+          appItem('Forward', '⌘]', 'forward'),
+          appItem('Enclosing Folder', '⌘↑', 'parent'),
           { label: 'divider', divider: true },
-          { label: 'Home', shortcut: '⇧⌘H', disabled: true },
-          { label: 'Desktop', shortcut: '⇧⌘D', disabled: true },
-          { label: 'Documents', shortcut: '⇧⌘O', disabled: true },
-          { label: 'Downloads', shortcut: '⌥⌘L', disabled: true },
+          appItem('Home', '⇧⌘H', 'home'),
+          appItem('Desktop', '⇧⌘D', 'desktop'),
+          appItem('Documents', '⇧⌘O', 'documents'),
+          appItem('Downloads', '⌥⌘L', 'downloads'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
@@ -186,7 +202,7 @@ export const MenuBar: React.FC = () => {
       },
       'notes': {
         File: [
-          { label: 'New Note', shortcut: '⌘N', disabled: true },
+          appItem('New Note', '⌘N', 'newNote'),
           { label: 'divider', divider: true },
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
@@ -217,7 +233,7 @@ export const MenuBar: React.FC = () => {
           editItem('Paste', '⌘V', 'paste'),
           editItem('Select All', '⌘A', 'selectAll'),
           { label: 'divider', divider: true },
-          { label: 'Clear', shortcut: '⌘K', disabled: true },
+          appItem('Clear', '⌘K', 'clear'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
@@ -240,18 +256,16 @@ export const MenuBar: React.FC = () => {
           
         ],
         View: [
-          { label: 'Reload Page', shortcut: '⌘R', disabled: true },
+          appItem('Reload Page', '⌘R', 'reload'),
           { label: 'divider', divider: true },
-          { label: 'Zoom In', shortcut: '⌘+', disabled: true },
-          { label: 'Zoom Out', shortcut: '⌘-', disabled: true },
           { label: 'divider', divider: true },
           { label: 'Enter Full Screen', shortcut: '⌃⌘F', action: zoomActiveWindow },
         ],
         History: [
-          { label: 'Back', shortcut: '⌘[', disabled: true },
-          { label: 'Forward', shortcut: '⌘]', disabled: true },
+          appItem('Back', '⌘[', 'back'),
+          appItem('Forward', '⌘]', 'forward'),
           { label: 'divider', divider: true },
-          { label: 'Home', disabled: true },
+          appItem('Home', undefined, 'home'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
@@ -260,7 +274,7 @@ export const MenuBar: React.FC = () => {
       },
       'photo-viewer': {
         File: [
-          { label: 'Open...', shortcut: '⌘O', disabled: true },
+          appItem('Open...', '⌘O', 'open'),
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
@@ -268,9 +282,9 @@ export const MenuBar: React.FC = () => {
           editItem('Copy', '⌘C', 'copy'),
         ],
         View: [
-          { label: 'Zoom In', shortcut: '⌘+', disabled: true },
-          { label: 'Zoom Out', shortcut: '⌘-', disabled: true },
-          { label: 'Actual Size', shortcut: '⌘0', disabled: true },
+          appItem('Zoom In', '⌘+', 'zoomIn'),
+          appItem('Zoom Out', '⌘-', 'zoomOut'),
+          appItem('Actual Size', '⌘0', 'actualSize'),
           { label: 'divider', divider: true },
           { label: 'Enter Full Screen', shortcut: '⌃⌘F', action: zoomActiveWindow },
         ],
@@ -281,7 +295,7 @@ export const MenuBar: React.FC = () => {
       },
       'music-player': {
         File: [
-          { label: 'Open...', shortcut: '⌘O', disabled: true },
+          appItem('Open...', '⌘O', 'open'),
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
@@ -289,12 +303,12 @@ export const MenuBar: React.FC = () => {
           editItem('Copy', '⌘C', 'copy'),
         ],
         Controls: [
-          { label: 'Play/Pause', shortcut: 'Space', disabled: true },
-          { label: 'Next', shortcut: '⌘→', disabled: true },
-          { label: 'Previous', shortcut: '⌘←', disabled: true },
+          appItem('Play/Pause', 'Space', 'playPause'),
+          appItem('Next', '⌘→', 'next'),
+          appItem('Previous', '⌘←', 'previous'),
           { label: 'divider', divider: true },
-          { label: 'Shuffle', disabled: true },
-          { label: 'Repeat', disabled: true },
+          appItem('Shuffle', undefined, 'shuffle'),
+          appItem('Repeat', undefined, 'repeat'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
@@ -303,7 +317,7 @@ export const MenuBar: React.FC = () => {
       },
       'video-player': {
         File: [
-          { label: 'Open...', shortcut: '⌘O', disabled: true },
+          appItem('Open...', '⌘O', 'open'),
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
@@ -311,10 +325,10 @@ export const MenuBar: React.FC = () => {
           editItem('Copy', '⌘C', 'copy'),
         ],
         Playback: [
-          { label: 'Play/Pause', shortcut: 'Space', disabled: true },
+          appItem('Play/Pause', 'Space', 'playPause'),
           { label: 'divider', divider: true },
-          { label: 'Skip Forward', shortcut: '→', disabled: true },
-          { label: 'Skip Backward', shortcut: '←', disabled: true },
+          appItem('Skip Forward', '→', 'skipForward'),
+          appItem('Skip Backward', '←', 'skipBackward'),
         ],
         View: [
           { label: 'Enter Full Screen', shortcut: '⌃⌘F', action: zoomActiveWindow },
@@ -352,7 +366,7 @@ export const MenuBar: React.FC = () => {
       },
       'weather': {
         File: [
-          { label: 'Refresh', shortcut: '⌘R', disabled: true },
+          appItem('Refresh', '⌘R', 'refresh'),
           { label: 'divider', divider: true },
           { label: 'Close Window', shortcut: '⌘W', action: closeActiveWindow },
         ],
@@ -380,14 +394,14 @@ export const MenuBar: React.FC = () => {
           editItem('Paste', '⌘V', 'paste'),
           editItem('Select All', '⌘A', 'selectAll'),
           { label: 'divider', divider: true },
-          { label: 'Find...', shortcut: '⌘F', disabled: true },
-          { label: 'Find and Replace...', shortcut: '⌥⌘F', disabled: true },
+          appItem('Find...', '⌘F', 'find'),
+          appItem('Find and Replace...', '⌥⌘F', 'findReplace'),
         ],
         View: [
-          { label: 'Bigger', shortcut: '⌘+', disabled: true },
-          { label: 'Smaller', shortcut: '⌘-', disabled: true },
+          appItem('Bigger', '⌘+', 'bigger'),
+          appItem('Smaller', '⌘-', 'smaller'),
           { label: 'divider', divider: true },
-          { label: 'Toggle Word Wrap', disabled: true },
+          appItem('Toggle Word Wrap', undefined, 'toggleWrap'),
         ],
         Window: [
           { label: 'Minimize', shortcut: '⌘M', action: minimizeActiveWindow },
@@ -409,7 +423,7 @@ export const MenuBar: React.FC = () => {
     };
 
     return activeAppId && appMenus[activeAppId] ? appMenus[activeAppId] : defaultMenus;
-  }, [activeAppId, activeApp, activeWindowId, openNewWindow, closeActiveWindow, minimizeActiveWindow, zoomActiveWindow, bringAllToFront]);
+  }, [activeAppId, activeApp, activeWindowId, openNewWindow, closeActiveWindow, minimizeActiveWindow, zoomActiveWindow, bringAllToFront, appItem]);
 
   const currentMenus = getMenus();
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import {
@@ -9,6 +9,7 @@ import {
   openFileDialog,
 } from '../../services/tauriFs';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { useAppCommands } from '../../hooks/useAppCommands';
 import './MusicPlayer.css';
 
 // Generate stable random heights for waveform bars
@@ -38,7 +39,7 @@ const sampleTracks: Track[] = [
   { id: '5', title: 'Morning Light', artist: 'Calm Ensemble', duration: 184, path: '' },
 ];
 
-export const MusicPlayer: React.FC<AppProps> = () => {
+export const MusicPlayer: React.FC<AppProps> = ({ windowId }) => {
   const [isInTauri, setIsInTauri] = useState(false);
   const [tracks, setTracks] = useState<Track[]>(sampleTracks);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -192,6 +193,21 @@ export const MusicPlayer: React.FC<AppProps> = () => {
     const nextIndex = (currentIndex + 1) % tracks.length;
     handleTrackSelect(tracks[nextIndex]);
   };
+
+  useAppCommands(
+    windowId,
+    useMemo(
+      () => ({
+        playPause: handlePlay,
+        next: handleNext,
+        previous: handlePrevious,
+        shuffle: () => setShuffle((s) => !s),
+        repeat: () => setRepeat((r) => !r),
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    )
+  );
 
   const handleTrackSelect = (track: Track) => {
     setCurrentTrack(track);
