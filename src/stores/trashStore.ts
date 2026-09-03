@@ -5,12 +5,17 @@ import type { DesktopIcon } from '../types';
 export interface TrashItem extends DesktopIcon {
   deletedAt: Date;
   originalPosition: { x: number; y: number };
+  /**
+   * Where the file lives now, for items that were really moved into the
+   * trash folder by Files. Desktop-only icons (no file behind them) omit it.
+   */
+  trashedPath?: string;
 }
 
 interface TrashState {
   items: TrashItem[];
   // Actions
-  moveToTrash: (icon: DesktopIcon) => void;
+  moveToTrash: (icon: DesktopIcon & { trashedPath?: string }) => void;
   restoreFromTrash: (id: string) => DesktopIcon | null;
   emptyTrash: () => void;
   removeFromTrash: (id: string) => void;
@@ -25,7 +30,9 @@ export const useTrashStore = create<TrashState>()(
       moveToTrash: (icon) =>
         set((state) => ({
           items: [
-            ...state.items,
+            // Trashing the same path twice must not leave two entries with
+            // one id; the newer one wins.
+            ...state.items.filter((i) => i.id !== icon.id),
             {
               ...icon,
               deletedAt: new Date(),
@@ -45,11 +52,14 @@ export const useTrashStore = create<TrashState>()(
         }));
 
         // Return the restored icon with original position
-        const { deletedAt, originalPosition, ...restoredIcon } = item;
-        return {
-          ...restoredIcon,
-          position: originalPosition,
+        const restoredIcon: DesktopIcon & Partial<Pick<TrashItem, 'deletedAt' | 'originalPosition' | 'trashedPath'>> = {
+          ...item,
+          position: item.originalPosition,
         };
+        delete restoredIcon.deletedAt;
+        delete restoredIcon.originalPosition;
+        delete restoredIcon.trashedPath;
+        return restoredIcon;
       },
 
       emptyTrash: () => set({ items: [] }),

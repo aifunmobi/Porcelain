@@ -8,7 +8,7 @@ import {
   type EditorMode,
   type FontFamilyId,
 } from '../../stores/textEditorStore';
-import { createBackend, basename } from '../../services/fsAdapter';
+import { getBackend, basename } from '../../services/fsAdapter';
 import type { FsBackend } from '../../services/fsAdapter';
 import { getFileExtension } from '../../services/tauriFs';
 import type { AppProps } from '../../types';
@@ -22,6 +22,8 @@ import {
   htmlToText,
   wrapHtmlDocument,
   unwrapHtmlDocument,
+  sanitizeHtml,
+  isSafeUrl,
 } from './richText';
 import './TextEditor.css';
 
@@ -93,6 +95,13 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
    */
   const history = useRef<{ stack: string[]; index: number }>({ stack: [''], index: 0 });
   const applyingHistory = useRef(false);
+  /**
+   * Set by a Rich/Plain switch and cleared by a write. While it is set the
+   * document no longer matches the format of the file on disk, so autosave
+   * must hold off: it once wrote a full HTML document over a .txt three
+   * seconds after the user clicked "Rich".
+   */
+  const formatChanged = useRef(false);
 
   const pushHistory = useCallback((value: string) => {
     if (applyingHistory.current) return;
@@ -109,8 +118,31 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   const fontStack = FONT_FAMILIES.find((f) => f.id === fontFamily)?.stack ?? FONT_FAMILIES[0].stack;
   const fileName = path ? basename(path) : 'Untitled';
 
+  /** Where untitled documents go: the Documents favourite, else home. */
+  const documentsDir = useCallback(
+    () => backend?.favorites.find((f) => f.id === 'documents')?.path ?? backend?.home ?? '/',
+    [backend]
+  );
+
+  /**
+   * A name typed into Save As without a leading slash is relative to the
+   * document's folder (or Documents). Writing `notes.txt` verbatim used to
+   * create `/notes.txt` while the editor kept `notes.txt` as its path, so
+   * every autosave made another copy.
+   */
+  const resolveTarget = useCallback(
+    (value: string): string | null => {
+      const name = value.trim();
+      if (!name) return null;
+      if (name.startsWith('/')) return name.replace(/\/+$/, '') || null;
+      const dir = path && backend ? backend.parent(path) : documentsDir();
+      return backend ? backend.join(dir, name) : `${dir === '/' ? '' : dir}/${name}`;
+    },
+    [backend, path, documentsDir]
+  );
+
   useEffect(() => {
-    createBackend().then(setBackend);
+    getBackend().then(setBackend);
   }, []);
 
   /* ------------------------------------------------------------- document */
@@ -134,12 +166,16 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   const loadInto = useCallback(
     (raw: string, target: string | null, nextMode: EditorMode) => {
       setMode(nextMode);
+      formatChanged.current = false;
       if (nextMode === 'rich') {
-        const body = unwrapHtmlDocument(raw);
+        const body = sanitizeHtml(unwrapHtmlDocument(raw));
         if (richRef.current) richRef.current.innerHTML = body;
         savedRef.current = body;
         setPlainText('');
       } else {
+        // Otherwise the previous rich document would still sit in the
+        // (hidden) surface and come back on the next switch to Rich.
+        if (richRef.current) richRef.current.innerHTML = '';
         setPlainText(raw);
         savedRef.current = raw;
       }
@@ -176,7 +212,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
 
   /** Pass the new value when it is already known — React state lags a keystroke. */
   const markDirty = useCallback(
-    (value?: string) => setDirty((value ?? currentValue()) !== savedRef.current),
+    (value?: string) =>
+      setDirty(formatChanged.current || (value ?? currentValue()) !== savedRef.current),
     [currentValue]
   );
 
@@ -190,6 +227,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       try {
         await backend.writeText(target, payload);
         savedRef.current = value;
+        formatChanged.current = false;
         setDirty(false);
         setPath(target);
         addRecent(target);
@@ -206,10 +244,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
 
   const defaultName = useCallback(() => {
     const ext = mode === 'rich' ? 'html' : 'txt';
-    if (!path) return `/Documents/Untitled.${ext}`;
+    if (!path) return `${documentsDir()}/Untitled.${ext}`;
     // Rich documents round-trip as HTML, so retarget the extension on save.
     return mode === 'rich' ? path.replace(/\.[^./]+$/, '') + '.html' : path;
-  }, [mode, path]);
+  }, [mode, path, documentsDir]);
 
   const saveAs = useCallback(() => setDialog({ kind: 'saveAs', value: defaultName() }), [defaultName]);
 
@@ -219,9 +257,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
     void writeTo(target);
   }, [path, mode, defaultName, saveAs, writeTo]);
 
-  // Autosave: only once the document has somewhere to go.
+  // Autosave: only once the document has somewhere to go, and never after a
+  // mode switch — that needs an explicit Save so the format change is chosen.
   useEffect(() => {
-    if (!dirty || !path) return;
+    if (!dirty || !path || formatChanged.current) return;
     const timer = window.setTimeout(() => void writeTo(path), AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
   }, [dirty, path, writeTo, plainText]);
@@ -233,6 +272,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       savedRef.current = '';
       resetHistory('');
       setPath(null);
+      formatChanged.current = false;
       setDirty(false);
       setStatus(null);
     };
@@ -309,6 +349,9 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
         if (!hit || !el) return;
         el.focus();
         el.setSelectionRange(hit[0], hit[1]);
+        // Focus goes back to the Find field: with it left in the textarea the
+        // next Enter replaced the selected match with a newline.
+        findInputRef.current?.focus();
       } else {
         const { ranges } = richRanges();
         const range = ranges[index];
@@ -345,6 +388,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       const next = plainText.slice(0, hit[0]) + replacement + plainText.slice(hit[1]);
       setPlainText(next);
       markDirty(next);
+      pushHistory(next);
       setStats(countStats(next));
     } else {
       const { ranges } = richRanges();
@@ -359,7 +403,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       refreshStats();
       setDocVersion((v) => v + 1);
     });
-  }, [mode, matchTotal, matchIndex, plainMatches, plainText, replacement, richRanges, markDirty, refreshStats]);
+  }, [mode, matchTotal, matchIndex, plainMatches, plainText, replacement, richRanges, markDirty, pushHistory, refreshStats]);
 
   const replaceAll = useCallback(() => {
     if (mode === 'plain') {
@@ -372,6 +416,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       }
       setPlainText(out);
       markDirty(out);
+      pushHistory(out);
       setStats(countStats(out));
     } else {
       const { ranges } = richRanges();
@@ -386,7 +431,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
       refreshStats();
       setDocVersion((v) => v + 1);
     });
-  }, [mode, plainMatches, plainText, replacement, richRanges, markDirty, refreshStats]);
+  }, [mode, plainMatches, plainText, replacement, richRanges, markDirty, pushHistory, refreshStats]);
 
   /* --------------------------------------------------------- formatting */
 
@@ -447,6 +492,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
           savedRef.current = html;
         }
         setMode(next);
+        formatChanged.current = true;
         setDirty(true);
         if (path) setModeForPath(path, next);
       };
@@ -469,13 +515,19 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   const showOpenDialog = useCallback(async () => {
     setDialog({ kind: 'open' });
     if (!backend) return;
-    const found = await backend.searchDeep(backend.home, '');
-    setOpenList(
-      found
-        .filter((f) => !f.isDir && TEXT_EXTENSIONS.includes(getFileExtension(f.name)))
-        .map((f) => f.path)
-        .slice(0, 50)
-    );
+    try {
+      const found = await backend.searchDeep(backend.home, '');
+      setOpenList(
+        found
+          .filter((f) => !f.isDir && TEXT_EXTENSIONS.includes(getFileExtension(f.name)))
+          .map((f) => f.path)
+          .sort((a, b) => basename(a).localeCompare(basename(b)))
+          .slice(0, 200)
+      );
+    } catch {
+      setOpenList([]);
+      setStatus('Could not list documents');
+    }
   }, [backend]);
 
   /* ------------------------------------------------------------ keyboard */
@@ -483,9 +535,14 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
+      // ⌃⌘F is the shell's full-screen toggle, not Find.
+      if (e.metaKey && e.ctrlKey) return;
       // Bound at the window, so the shortcuts survive focus leaving the page —
       // but only the frontmost editor window may act on them.
       if (useWindowStore.getState().activeWindowId !== windowId) return;
+      // The Find and dialog fields keep their own ⌘Z/⌘A; this runs in the
+      // capture phase, so their stopPropagation cannot shield them.
+      if ((e.target as HTMLElement | null)?.tagName === 'INPUT') return;
       const key = e.key.toLowerCase();
       const stop = () => {
         e.preventDefault();
@@ -506,7 +563,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
         return stop(), stepHistory(e.shiftKey ? 1 : -1);
       }
     },
-    [mode, save, saveAs, showOpenDialog, newDocument, exec, windowId]
+    [mode, save, saveAs, showOpenDialog, newDocument, exec, stepHistory, windowId]
   );
 
   useEffect(() => {
@@ -514,9 +571,11 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [onKeyDown]);
 
-  // The menu bar's File items drive the same actions.
+  // The menu bar's File items drive the same actions — for the frontmost
+  // editor only, or File > Save would save every open document at once.
   useEffect(() => {
     const onCommand = (e: Event) => {
+      if (useWindowStore.getState().activeWindowId !== windowId) return;
       switch ((e as CustomEvent<string>).detail) {
         case 'new': return newDocument();
         case 'open': return void showOpenDialog();
@@ -526,7 +585,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
     };
     window.addEventListener('text-editor-command', onCommand as EventListener);
     return () => window.removeEventListener('text-editor-command', onCommand as EventListener);
-  }, [newDocument, showOpenDialog, save, saveAs]);
+  }, [newDocument, showOpenDialog, save, saveAs, windowId]);
 
   /* --------------------------------------------------------------- render */
 
@@ -770,10 +829,12 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
                   onKeyDown={(e) => {
                     e.stopPropagation();
                     if (e.key === 'Enter') {
-                      const target = dialog.value;
+                      const target = resolveTarget(dialog.value);
+                      if (!target) return;
                       setDialog(null);
                       void writeTo(target);
                     }
+                    if (e.key === 'Escape') setDialog(null);
                   }}
                 />
                 <div className="text-editor__dialog-actions">
@@ -781,7 +842,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
                   <button
                     className="is-primary"
                     onClick={() => {
-                      const target = dialog.value;
+                      const target = resolveTarget(dialog.value);
+                      if (!target) return;
                       setDialog(null);
                       void writeTo(target);
                     }}
@@ -807,8 +869,13 @@ export const TextEditor: React.FC<TextEditorProps> = ({ windowId, filePath }) =>
                   <button
                     className="is-primary"
                     onClick={() => {
-                      const url = dialog.value;
+                      const url = dialog.value.trim();
                       setDialog(null);
+                      // A javascript: link would run on click; refuse it.
+                      if (!url || !isSafeUrl(url)) {
+                        setStatus('Links must be http(s) or mailto');
+                        return;
+                      }
                       exec('createLink', url);
                     }}
                   >

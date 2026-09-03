@@ -131,6 +131,20 @@ const createInitialFileSystem = (): Record<string, FileNode> => {
 };
 
 /**
+ * Bytes a node's content stands for. Binary files are held as base64 data
+ * URLs, whose string length overstates the real size by a third.
+ */
+const contentSize = (content: string): number => {
+  if (!content.startsWith('data:')) return new TextEncoder().encode(content).length;
+  const comma = content.indexOf(',');
+  const header = content.slice(0, comma);
+  const payload = content.slice(comma + 1);
+  if (!header.includes(';base64')) return payload.length;
+  const padding = payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0;
+  return Math.floor((payload.length * 3) / 4) - padding;
+};
+
+/**
  * A folder's path is baked into every descendant, so moving or renaming one has
  * to re-path the whole subtree — otherwise lookups by path orphan the children.
  */
@@ -196,7 +210,7 @@ export const useFileSystemStore = create<FileSystemState>()(
               parentId,
               content,
               mimeType,
-              size: content.length,
+              size: contentSize(content),
               createdAt: now,
               modifiedAt: now,
             },
@@ -289,7 +303,16 @@ export const useFileSystemStore = create<FileSystemState>()(
         const file = get().files[id];
         const oldParent = get().files[file?.parentId || 'root'];
         const newParent = get().files[newParentId];
-        if (!file || !newParent) return;
+        if (!file || !newParent || id === 'root') return;
+        if (file.parentId === newParentId) return;
+        // A folder cannot be moved into itself or one of its own descendants:
+        // repath would loop and the subtree would vanish from every listing.
+        if (
+          newParentId === id ||
+          newParent.path.startsWith(`${file.path === '/' ? '' : file.path}/`)
+        ) {
+          return;
+        }
 
         const now = new Date();
         const newPath = `${newParent.path === '/' ? '' : newParent.path}/${file.name}`;
@@ -354,7 +377,7 @@ export const useFileSystemStore = create<FileSystemState>()(
             [id]: {
               ...file,
               content,
-              size: content.length,
+              size: contentSize(content),
               modifiedAt: new Date(),
             },
           },

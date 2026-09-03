@@ -94,7 +94,7 @@ export const readDirectory = async (path: string): Promise<FileEntry[]> => {
     const fileEntries: FileEntry[] = [];
 
     for (const entry of entries) {
-      const fullPath = `${path}/${entry.name}`;
+      const fullPath = `${path.replace(/\/+$/, '')}/${entry.name}`;
       try {
         const fileStat = await stat(fullPath);
         fileEntries.push({

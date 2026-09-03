@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import {
@@ -38,14 +38,19 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; image: ImageFile } | null>(null);
+  // Folder listings stat every file, so a big folder can finish after a
+  // small one opened later. Only the newest request may apply its result.
+  const loadSeqRef = useRef(0);
 
   // Load images from a folder
   const loadImagesFromFolder = useCallback(async (folderPath: string) => {
+    const seq = ++loadSeqRef.current;
     setIsLoading(true);
     setCurrentFolder(folderPath);
 
     try {
       const entries = await readDirectory(folderPath);
+      if (seq !== loadSeqRef.current) return;
       const imageFiles = entries.filter(
         (entry) => !entry.isDirectory && isImageFile(entry.name)
       );
@@ -65,11 +70,12 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
         setSelectedImage(null);
       }
     } catch (err) {
+      if (seq !== loadSeqRef.current) return;
       console.error('Error loading images from folder:', err);
       setImages([]);
       setSelectedImage(null);
     } finally {
-      setIsLoading(false);
+      if (seq === loadSeqRef.current) setIsLoading(false);
     }
   }, []);
 
@@ -79,7 +85,9 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
       const tauriEnv = isTauri();
       setIsInTauri(tauriEnv);
 
-      if (tauriEnv) {
+      // A caller that handed us a specific image wants that image shown, not
+      // whatever happens to be first in Pictures.
+      if (tauriEnv && !initialImage) {
         // Load images from Pictures folder by default
         try {
           const dirs = await getSpecialDirs();
@@ -92,7 +100,7 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
       }
     };
     init();
-  }, [loadImagesFromFolder]);
+  }, [loadImagesFromFolder, initialImage]);
 
   // Select image
   const handleSelectImage = useCallback((img: ImageFile) => {
@@ -148,7 +156,10 @@ export const PhotoViewer: React.FC<PhotoViewerProps> = ({ initialImage }) => {
         });
 
         if (newImages.length > 0) {
-          setImages((prev) => [...prev, ...newImages]);
+          setImages((prev) => {
+            const known = new Set(prev.map((i) => i.id));
+            return [...prev, ...newImages.filter((i) => !known.has(i.id))];
+          });
           setSelectedImage(newImages[0]);
         }
       }

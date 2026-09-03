@@ -1,37 +1,101 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Icon } from '../../components/Icons';
 import { useTrashStore } from '../../stores/trashStore';
 import type { TrashItem } from '../../stores/trashStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { getBackend } from '../../services/fsAdapter';
+import type { FsBackend } from '../../services/fsAdapter';
 import type { AppProps } from '../../types';
 import './Trash.css';
 
 export const Trash: React.FC<AppProps> = () => {
   const { items, restoreFromTrash, emptyTrash, removeFromTrash } = useTrashStore();
   const { addDesktopIcon } = useSettingsStore();
+  const [backend, setBackend] = useState<FsBackend | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: TrashItem } | null>(null);
+  const [confirmingEmpty, setConfirmingEmpty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRestore = useCallback((id: string) => {
-    const restored = restoreFromTrash(id);
-    if (restored) {
-      addDesktopIcon(restored);
+  useEffect(() => {
+    let cancelled = false;
+    getBackend().then((created) => {
+      if (!cancelled) setBackend(created);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /**
+   * Put Back. An item Files moved into the trash folder goes back to the
+   * folder it came from; a desktop-only icon just reappears on the desktop.
+   * Before this, "Put Back" made an icon for a file that was still in the
+   * trash folder, and the file itself was never seen again.
+   */
+  const handleRestore = useCallback(async (id: string) => {
+    const item = items.find((i) => i.id === id);
+    setContextMenu(null);
+    setSelectedItem(null);
+    if (!item) return;
+    setError(null);
+
+    if (item.trashedPath && item.filePath) {
+      if (!backend) return;
+      try {
+        await backend.moveInto(item.trashedPath, backend.parent(item.filePath));
+      } catch (err) {
+        setError(`Could not put back "${item.name}": ${err instanceof Error ? err.message : String(err)}`);
+        return;
+      }
+      removeFromTrash(id);
+      return;
     }
-    setSelectedItem(null);
-    setContextMenu(null);
-  }, [restoreFromTrash, addDesktopIcon]);
 
-  const handleDelete = useCallback((id: string) => {
-    removeFromTrash(id);
-    setSelectedItem(null);
-    setContextMenu(null);
-  }, [removeFromTrash]);
+    const restored = restoreFromTrash(id);
+    if (restored) addDesktopIcon(restored);
+  }, [items, backend, restoreFromTrash, removeFromTrash, addDesktopIcon]);
 
-  const handleEmptyTrash = useCallback(() => {
-    if (items.length > 0 && window.confirm(`Are you sure you want to permanently delete ${items.length} item(s)?`)) {
+  /** Delete Immediately: the bytes go too, not just the list entry. */
+  const deleteForGood = useCallback(async (item: TrashItem) => {
+    if (item.trashedPath) {
+      if (!backend) throw new Error('The filesystem is not ready yet');
+      await backend.remove(item.trashedPath);
+    }
+    removeFromTrash(item.id);
+  }, [backend, removeFromTrash]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    const item = items.find((i) => i.id === id);
+    setContextMenu(null);
+    setSelectedItem(null);
+    if (!item) return;
+    setError(null);
+    try {
+      await deleteForGood(item);
+    } catch (err) {
+      setError(`Could not delete "${item.name}": ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [items, deleteForGood]);
+
+  const handleEmptyTrash = useCallback(async () => {
+    setConfirmingEmpty(false);
+    setContextMenu(null);
+    setError(null);
+    const failures: string[] = [];
+    for (const item of items) {
+      try {
+        await deleteForGood(item);
+      } catch {
+        failures.push(item.name);
+      }
+    }
+    if (failures.length) {
+      setError(`Could not delete: ${failures.join(', ')}`);
+    } else {
       emptyTrash();
     }
-  }, [items.length, emptyTrash]);
+  }, [items, deleteForGood, emptyTrash]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, item: TrashItem) => {
     e.preventDefault();
@@ -62,14 +126,33 @@ export const Trash: React.FC<AppProps> = () => {
           <span>Trash</span>
           <span className="trash__count">{items.length} item{items.length !== 1 ? 's' : ''}</span>
         </div>
-        <button
-          className="trash__empty-btn"
-          onClick={handleEmptyTrash}
-          disabled={items.length === 0}
-        >
-          Empty Trash
-        </button>
+        {confirmingEmpty ? (
+          <div className="trash__confirm">
+            <span>Permanently delete {items.length} item{items.length !== 1 ? 's' : ''}?</span>
+            <button className="trash__empty-btn" onClick={() => setConfirmingEmpty(false)}>
+              Cancel
+            </button>
+            <button className="trash__empty-btn trash__empty-btn--danger" onClick={handleEmptyTrash}>
+              Empty Trash
+            </button>
+          </div>
+        ) : (
+          <button
+            className="trash__empty-btn"
+            onClick={() => setConfirmingEmpty(true)}
+            disabled={items.length === 0}
+          >
+            Empty Trash
+          </button>
+        )}
       </div>
+
+      {error && (
+        <div className="trash__error" role="alert">
+          <Icon name="alert-circle" size={14} />
+          <span>{error}</span>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="trash__empty">
@@ -85,6 +168,7 @@ export const Trash: React.FC<AppProps> = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedItem(item.id);
+                setContextMenu(null);
               }}
               onDoubleClick={() => handleRestore(item.id)}
               onContextMenu={(e) => handleContextMenu(e, item)}
@@ -98,7 +182,10 @@ export const Trash: React.FC<AppProps> = () => {
               </div>
               <div className="trash__item-info">
                 <div className="trash__item-name">{item.name}</div>
-                <div className="trash__item-date">Deleted {formatDate(item.deletedAt)}</div>
+                <div className="trash__item-date">
+                  Deleted {formatDate(item.deletedAt)}
+                  {item.filePath ? ` · from ${item.filePath}` : ''}
+                </div>
               </div>
             </div>
           ))}

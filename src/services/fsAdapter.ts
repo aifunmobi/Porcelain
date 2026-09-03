@@ -20,6 +20,7 @@ import {
   writeTextFile,
   readFileBinary,
   writeBinaryFile,
+  deleteFile as deleteRealFile,
 } from './tauriFs';
 import { useFileSystemStore } from '../stores/fileSystemStore';
 import type { FileNode } from '../types';
@@ -55,7 +56,10 @@ export interface FsBackend {
   copyInto: (sourcePath: string, destDir: string) => Promise<void>;
   moveInto: (sourcePath: string, destDir: string) => Promise<void>;
   duplicate: (item: FsItem) => Promise<void>;
-  trash: (item: FsItem) => Promise<void>;
+  /** Move into the trash folder; resolves to where the item now lives. */
+  trash: (item: FsItem) => Promise<string>;
+  /** Delete for good. Folders go recursively. */
+  remove: (path: string) => Promise<void>;
   dirSize: (item: FsItem) => Promise<number>;
   createdAt: (item: FsItem) => Promise<Date | undefined>;
   open: (item: FsItem) => Promise<void>;
@@ -183,8 +187,12 @@ const realBackend = async (): Promise<FsBackend> => {
   };
 
   const moveInto = async (sourcePath: string, destDir: string) => {
-    const name = freeName(basename(sourcePath), false, await namesIn(destDir));
-    await renameRealFile(sourcePath, `${destDir}/${name}`);
+    // A colliding folder "My.Folder" must become "My.Folder copy", not "My copy.Folder".
+    const isDir = await getFileStats(sourcePath).then((s) => s.isDirectory).catch(() => false);
+    const name = freeName(basename(sourcePath), isDir, await namesIn(destDir));
+    const dest = `${destDir}/${name}`;
+    await renameRealFile(sourcePath, dest);
+    return dest;
   };
 
   return {
@@ -222,7 +230,9 @@ const realBackend = async (): Promise<FsBackend> => {
       await copyPath(sourcePath, `${destDir}/${name}`);
     },
 
-    moveInto,
+    moveInto: async (sourcePath, destDir) => {
+      await moveInto(sourcePath, destDir);
+    },
 
     duplicate: async (item) => {
       const dir = parentPath(item.path);
@@ -233,7 +243,11 @@ const realBackend = async (): Promise<FsBackend> => {
     trash: async (item) => {
       // Move, never delete — the Trash app has to be able to hand it back.
       await ensureDir(trashDir);
-      await moveInto(item.path, trashDir);
+      return moveInto(item.path, trashDir);
+    },
+
+    remove: async (path) => {
+      await deleteRealFile(path);
     },
 
     dirSize: async (item) => {
@@ -381,6 +395,12 @@ const virtualBackend = (): FsBackend => {
     trash: async (item) => {
       const trash = ensureDir(VIRTUAL_TRASH);
       fsStore().moveFile(item.id, trash.id);
+      return fsStore().getFile(item.id)?.path ?? joinPath(VIRTUAL_TRASH, item.name);
+    },
+
+    remove: async (path) => {
+      const node = nodeAt(path);
+      if (node) fsStore().deleteFile(node.id);
     },
 
     dirSize: async (item) => {
@@ -506,3 +526,36 @@ const virtualBackend = (): FsBackend => {
 
 export const createBackend = async (): Promise<FsBackend> =>
   isTauri() ? realBackend() : virtualBackend();
+
+let shared: Promise<FsBackend> | null = null;
+
+/**
+ * The backend every window shares. The choice of backend cannot change while
+ * the page is alive, so building it once is enough; a failed build is
+ * forgotten so the next caller retries.
+ */
+export const getBackend = (): Promise<FsBackend> => {
+  if (!shared) {
+    shared = createBackend().catch((err) => {
+      shared = null;
+      throw err;
+    });
+  }
+  return shared;
+};
+
+/**
+ * A thumbnail URL for a path in whichever backend is live, or undefined.
+ * Callers on the shell (desktop icons) do not hold a backend of their own.
+ */
+export const thumbForPath = async (path: string, name = basename(path)): Promise<string | undefined> => {
+  if (!path || !isImageFile(name)) return undefined;
+  try {
+    const backend = await getBackend();
+    const items = await backend.list(backend.parent(path));
+    const item = items.find((i) => i.path === path) ?? { id: path, name, path, isDir: false, size: 0 };
+    return backend.thumb(item);
+  } catch {
+    return undefined;
+  }
+};

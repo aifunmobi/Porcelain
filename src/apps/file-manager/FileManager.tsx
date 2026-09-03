@@ -7,7 +7,7 @@ import { Icon } from '../../components/Icons';
 import type { AppProps, SortBy, ViewMode } from '../../types';
 import { formatFileSize, getFileIcon, isImageFile, getFileExtension } from '../../services/tauriFs';
 import { useWindowStore } from '../../stores/windowStore';
-import { createBackend, basename, kindOf } from '../../services/fsAdapter';
+import { getBackend, basename, kindOf } from '../../services/fsAdapter';
 import type { FsBackend, FsItem } from '../../services/fsAdapter';
 import './FileManager.css';
 
@@ -29,7 +29,9 @@ const sortItems = (items: FsItem[], { by, order }: SortState): FsItem[] => {
 
 /** Every folder from the browsing root down to `path`, for columns + breadcrumb. */
 const chainFor = (backend: FsBackend, path: string): string[] => {
-  const base = backend.home !== '/' && path.startsWith(backend.home) ? backend.home : '/';
+  // Whole-segment match only: home /Users/bob must not claim /Users/bobby.
+  const underHome = path === backend.home || path.startsWith(`${backend.home}/`);
+  const base = backend.home !== '/' && underHome ? backend.home : '/';
   const chain = [base];
   let current = base;
   for (const segment of path.slice(base.length).split('/').filter(Boolean)) {
@@ -90,6 +92,8 @@ export const FileManager: React.FC<AppProps> = () => {
   const [dirCache, setDirCache] = useState<Record<string, FsItem[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** A failed action, shown in the status bar; the listing stays put. */
+  const [notice, setNotice] = useState<string | null>(null);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<string | null>(null);
@@ -120,6 +124,20 @@ export const FileManager: React.FC<AppProps> = () => {
   const gridRef = useRef<HTMLDivElement>(null);
   const inFlight = useRef<Set<string>>(new Set());
   const marqueeDragged = useRef(false);
+  /** Enter/Escape already settled the rename; the blur that follows must not. */
+  const renameSettled = useRef(false);
+
+  /**
+   * The context menu and marquee are `position: fixed`, but the window they
+   * live in is moved with a CSS transform, which makes it their containing
+   * block. Viewport coordinates therefore have to be shifted into the
+   * window's own space or everything lands offset by the window's position.
+   */
+  const toLocal = useCallback((x: number, y: number) => {
+    const host = rootRef.current?.closest('[data-window-id]') ?? rootRef.current;
+    const rect = host?.getBoundingClientRect();
+    return rect ? { x: x - rect.left, y: y - rect.top } : { x, y };
+  }, []);
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -146,13 +164,13 @@ export const FileManager: React.FC<AppProps> = () => {
   }, [contextMenu]);
   const typeAhead = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
-  const sortState: SortState = sort[path] ?? { by: 'name', order: 'asc' };
+  const sortState: SortState = useMemo(() => sort[path] ?? { by: 'name', order: 'asc' }, [sort, path]);
 
   /* ------------------------------------------------------------- loading */
 
   useEffect(() => {
     let cancelled = false;
-    createBackend().then((created) => {
+    getBackend().then((created) => {
       if (cancelled) return;
       setBackend(created);
       setPath(created.home);
@@ -277,7 +295,7 @@ export const FileManager: React.FC<AppProps> = () => {
       if (PREVIEWABLE.includes(ext)) return void openWith('preview', { filePath: item.path });
       if (ext === 'zip') return void openWith('archive', { archivePath: item.path });
       if (EDITABLE_TEXT.includes(ext)) return void openWith('text-editor', { filePath: item.path });
-      void backend?.open(item).catch(() => setError('Unable to open this file'));
+      void backend?.open(item).catch(() => setNotice('Unable to open this file'));
     },
     [backend, navigate]
   );
@@ -340,7 +358,10 @@ export const FileManager: React.FC<AppProps> = () => {
         refresh();
       } catch (err) {
         console.error(failure, err);
-        setError(failure);
+        // Say what failed, but keep the listing: the folder is still there.
+        const detail = err instanceof Error && err.message ? `: ${err.message}` : '';
+        setNotice(`${failure}${detail}`);
+        refresh();
       }
     },
     [refresh]
@@ -377,8 +398,8 @@ export const FileManager: React.FC<AppProps> = () => {
     if (!backend || !selectedItems.length) return;
     void run(async () => {
       for (const item of selectedItems) {
-        await backend.trash(item);
-        // Mirror it into the Trash app's list so it shows up there too.
+        const trashedPath = await backend.trash(item);
+        // Mirror it into the Trash app's list so it can be put back from there.
         moveToTrash({
           id: `file-${item.path}`,
           name: item.name,
@@ -386,6 +407,7 @@ export const FileManager: React.FC<AppProps> = () => {
           position: { x: 20, y: 20 },
           isFile: !item.isDir,
           filePath: item.path,
+          trashedPath,
         });
       }
       setSelected(new Set());
@@ -404,6 +426,9 @@ export const FileManager: React.FC<AppProps> = () => {
       if (!backend || !clipboard) return;
       void run(async () => {
         for (const entry of clipboard.entries) {
+          // Cutting and pasting back into the same folder is a no-op, not a
+          // rename to "X copy".
+          if (clipboard.mode === 'cut' && backend.parent(entry.path) === destination) continue;
           if (clipboard.mode === 'cut') await backend.moveInto(entry.path, destination);
           else await backend.copyInto(entry.path, destination);
         }
@@ -471,11 +496,17 @@ export const FileManager: React.FC<AppProps> = () => {
       if (key === 'ArrowLeft') return stop(), moveSelection(-1);
       if (key === 'ArrowRight') return stop(), moveSelection(1);
       if (key === 'Enter') {
-        if (primary) stop(), open(primary);
+        if (primary) {
+          stop();
+          open(primary);
+        }
         return;
       }
       if (key === 'F2') {
-        if (primary) stop(), startRename(primary);
+        if (primary) {
+          stop();
+          startRename(primary);
+        }
         return;
       }
       if (key === 'Escape') return setSelected(new Set());
@@ -486,7 +517,10 @@ export const FileManager: React.FC<AppProps> = () => {
         const buffer = now - typeAhead.current.at < 800 ? typeAhead.current.text + key : key;
         typeAhead.current = { text: buffer, at: now };
         const match = visible.find((item) => item.name.toLowerCase().startsWith(buffer.toLowerCase()));
-        if (match) stop(), selectOnly(match);
+        if (match) {
+          stop();
+          selectOnly(match);
+        }
       }
     },
     [
@@ -630,6 +664,11 @@ export const FileManager: React.FC<AppProps> = () => {
         setMarquee(null);
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
+        // The click that follows this pointerup may land outside the grid, in
+        // which case clearSelection never runs to reset the flag.
+        window.setTimeout(() => {
+          marqueeDragged.current = false;
+        }, 0);
       };
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
@@ -645,12 +684,26 @@ export const FileManager: React.FC<AppProps> = () => {
         className="file-manager__rename-input"
         value={renameValue}
         onChange={(e) => setRenameValue(e.target.value)}
-        onBlur={commitRename}
+        // Unmounting the focused input fires blur, so Enter and Escape must
+        // settle the rename before that blur can commit (or re-commit) it.
+        onBlur={() => {
+          if (!renameSettled.current) commitRename();
+        }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           e.stopPropagation();
-          if (e.key === 'Enter') commitRename();
-          if (e.key === 'Escape') setRenaming(null);
+          if (e.key === 'Enter') {
+            renameSettled.current = true;
+            commitRename();
+          }
+          if (e.key === 'Escape') {
+            renameSettled.current = true;
+            setRenaming(null);
+            setRenameValue('');
+          }
+        }}
+        onFocus={() => {
+          renameSettled.current = false;
         }}
         autoFocus
       />
@@ -668,7 +721,7 @@ export const FileManager: React.FC<AppProps> = () => {
       e.preventDefault();
       e.stopPropagation();
       selectOnly(item);
-      setContextMenu({ x: e.clientX, y: e.clientY, item });
+      setContextMenu({ ...toLocal(e.clientX, e.clientY), item });
     },
   });
 
@@ -821,7 +874,7 @@ export const FileManager: React.FC<AppProps> = () => {
       onPointerUp={handleRootPointerUp}
       onContextMenu={(e) => {
         e.preventDefault();
-        setContextMenu({ x: e.clientX, y: e.clientY, item: null });
+        setContextMenu({ ...toLocal(e.clientX, e.clientY), item: null });
       }}
     >
       <div className="file-manager__toolbar">
@@ -1000,6 +1053,11 @@ export const FileManager: React.FC<AppProps> = () => {
 
       <div className="file-manager__statusbar">
         {backend?.isReal && <span className="file-manager__statusbar-tauri">📁 Real File System</span>}
+        {notice && (
+          <span className="file-manager__statusbar-notice" role="alert" onClick={() => setNotice(null)}>
+            <Icon name="alert-circle" size={12} /> {notice}
+          </span>
+        )}
         {visible.length} items
         {selectedItems.length > 0 && ` • ${selectedItems.length} selected`}
         {selectedItems.length > 0 && ` • ${formatFileSize(selectionSize)}`}
@@ -1009,8 +1067,8 @@ export const FileManager: React.FC<AppProps> = () => {
         <div
           className="file-manager__marquee"
           style={{
-            left: Math.min(marquee.x0, marquee.x1),
-            top: Math.min(marquee.y0, marquee.y1),
+            left: toLocal(Math.min(marquee.x0, marquee.x1), 0).x,
+            top: toLocal(0, Math.min(marquee.y0, marquee.y1)).y,
             width: Math.abs(marquee.x1 - marquee.x0),
             height: Math.abs(marquee.y1 - marquee.y0),
           }}

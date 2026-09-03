@@ -80,6 +80,9 @@ export function StyleGallery() {
     for (const token of LEGACY_SHADOW_TOKENS) {
       report[token] = styles.getPropertyValue(token).trim();
     }
+    // Dev-only gallery: the report has to be read back from the live DOM
+    // after the theme class lands, which only an effect can see.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTokenReport(report);
   }, [theme]);
 

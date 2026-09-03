@@ -28,6 +28,8 @@ export const Browser: React.FC<AppProps> = () => {
   const [historyIndex, setHistoryIndex] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
+  // Counts page loads so a stale timeout cannot judge a newer navigation.
+  const loadSeqRef = useRef(0);
 
   const isIframeFriendly = (urlToCheck: string): boolean => {
     try {
@@ -54,39 +56,60 @@ export const Browser: React.FC<AppProps> = () => {
     return `${SEARCH_ENGINE}${encodeURIComponent(trimmed)}`;
   };
 
-  const navigate = useCallback((newUrl: string) => {
-    const formattedUrl = formatUrl(newUrl);
-
-    // Clear any existing timeout
+  /**
+   * Point the frame at `target` and start the "did it load?" clock. Setting
+   * the same `src` prop twice is a no-op for React, so a repeat of the
+   * current URL is written to the element directly to force a reload.
+   */
+  const beginLoad = useCallback((target: string) => {
     if (loadTimeoutRef.current) {
       window.clearTimeout(loadTimeoutRef.current);
     }
+    const seq = ++loadSeqRef.current;
 
-    setUrl(formattedUrl);
-    setInputValue(formattedUrl);
+    let hostname: string;
+    try {
+      hostname = new URL(target).hostname;
+    } catch {
+      setIsLoading(false);
+      setLoadError(`"${target}" is not a valid address.`);
+      return false;
+    }
+
     setIsLoading(true);
     setLoadError(null);
+    if (target === url && iframeRef.current) {
+      iframeRef.current.src = target;
+    }
+    setUrl(target);
+    setInputValue(target);
 
     // Check if this site is likely to work
-    if (!isIframeFriendly(formattedUrl) && !formattedUrl.includes('duckduckgo')) {
+    if (!isIframeFriendly(target) && !target.includes('duckduckgo')) {
       setLoadError(
-        `Many websites block embedding for security. "${new URL(formattedUrl).hostname}" may not load. ` +
+        `Many websites block embedding for security. "${hostname}" may not load. ` +
         `Try Wikipedia, Archive.org, W3Schools, or use the search for web results.`
       );
     }
 
-    // Set a timeout to detect if the page didn't load
+    // Set a timeout to detect if the page didn't load. The check has to be
+    // against the sequence number, not `isLoading`: that value belongs to the
+    // render this closure was made in, before setIsLoading(true) applied.
     loadTimeoutRef.current = window.setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        if (!loadError) {
-          setLoadError(
-            'Page may have been blocked from loading in this browser. ' +
-            'Many sites restrict embedding. Try searching instead or visit an iframe-friendly site.'
-          );
-        }
-      }
+      if (loadSeqRef.current !== seq) return;
+      setIsLoading(false);
+      setLoadError((current) =>
+        current ??
+        'Page may have been blocked from loading in this browser. ' +
+        'Many sites restrict embedding. Try searching instead or visit an iframe-friendly site.'
+      );
     }, 10000);
+    return true;
+  }, [url]);
+
+  const navigate = useCallback((newUrl: string) => {
+    const formattedUrl = formatUrl(newUrl);
+    if (!beginLoad(formattedUrl)) return;
 
     // Update history
     const newHistory = history.slice(0, historyIndex + 1);
@@ -95,7 +118,7 @@ export const Browser: React.FC<AppProps> = () => {
     setHistoryIndex(newHistory.length - 1);
     setCanGoBack(newHistory.length > 1);
     setCanGoForward(false);
-  }, [history, historyIndex, isLoading, loadError]);
+  }, [beginLoad, history, historyIndex]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,10 +129,7 @@ export const Browser: React.FC<AppProps> = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
-      setUrl(history[newIndex]);
-      setInputValue(history[newIndex]);
-      setIsLoading(true);
-      setLoadError(null);
+      beginLoad(history[newIndex]);
       setCanGoBack(newIndex > 0);
       setCanGoForward(true);
     }
@@ -119,21 +139,14 @@ export const Browser: React.FC<AppProps> = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
-      setUrl(history[newIndex]);
-      setInputValue(history[newIndex]);
-      setIsLoading(true);
-      setLoadError(null);
+      beginLoad(history[newIndex]);
       setCanGoBack(true);
       setCanGoForward(newIndex < history.length - 1);
     }
   };
 
   const handleRefresh = () => {
-    setIsLoading(true);
-    setLoadError(null);
-    if (iframeRef.current) {
-      iframeRef.current.src = url;
-    }
+    beginLoad(url);
   };
 
   const handleHome = () => {
@@ -144,10 +157,15 @@ export const Browser: React.FC<AppProps> = () => {
     if (loadTimeoutRef.current) {
       window.clearTimeout(loadTimeoutRef.current);
     }
+    loadSeqRef.current++;
     setIsLoading(false);
   };
 
   const handleIframeError = () => {
+    if (loadTimeoutRef.current) {
+      window.clearTimeout(loadTimeoutRef.current);
+    }
+    loadSeqRef.current++;
     setIsLoading(false);
     setLoadError('Failed to load page. The site may block embedding.');
   };
@@ -255,7 +273,9 @@ export const Browser: React.FC<AppProps> = () => {
           title="Browser"
           onLoad={handleLoad}
           onError={handleIframeError}
-          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
+          // No allow-top-navigation: a frame-busting site would otherwise
+          // replace the whole desktop with itself.
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
           referrerPolicy="no-referrer"
         />
       </div>
