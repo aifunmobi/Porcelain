@@ -370,7 +370,9 @@ export const FileManager: React.FC<AppProps> = ({ windowId }) => {
       } catch (err) {
         console.error(failure, err);
         // Say what failed, but keep the listing: the folder is still there.
-        const detail = err instanceof Error && err.message ? `: ${err.message}` : '';
+        // Tauri rejects with plain strings, so those are shown too.
+        const text = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+        const detail = text ? `: ${text}` : '';
         setNotice(`${failure}${detail}`);
         refresh();
       }
