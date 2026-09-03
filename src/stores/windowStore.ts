@@ -23,8 +23,11 @@ interface WindowState {
   isAppRunning: (appId: string) => boolean;
 }
 
-const SCREEN_PADDING = 60;
-const TITLE_BAR_HEIGHT = 38;
+// The window manager is the strip between the menu bar and the dock
+// (see WindowManager.css: top 28px, bottom 70px). A maximized window fills
+// that strip exactly; positions are relative to it, so y starts at 0.
+const MENUBAR_HEIGHT = 28;
+const DOCK_AREA_HEIGHT = 70;
 
 const getInitialPosition = (index: number): Position => {
   const baseX = 100 + (index % 5) * 30;
@@ -44,9 +47,24 @@ export const useWindowStore = create<WindowState>((set, get) => ({
     if (app.singleInstance) {
       const existing = Array.from(state.windows.values()).find(w => w.appId === app.id);
       if (existing) {
-        get().focusWindow(existing.id);
+        // Hand the new props over, otherwise ⌘⇧3 with Screenshot already open
+        // (or "open this file" for any single-instance app) does nothing.
+        if (props) {
+          set((s) => {
+            const current = s.windows.get(existing.id);
+            if (!current) return s;
+            return {
+              windows: new Map(s.windows).set(existing.id, {
+                ...current,
+                props: { ...current.props, ...props },
+              }),
+            };
+          });
+        }
         if (existing.isMinimized) {
           get().restoreWindow(existing.id);
+        } else {
+          get().focusWindow(existing.id);
         }
         return existing.id;
       }
@@ -138,17 +156,19 @@ export const useWindowStore = create<WindowState>((set, get) => ({
 
       const newWindows = new Map(state.windows);
       const screenWidth = globalThis.innerWidth;
-      const screenHeight = globalThis.innerHeight - SCREEN_PADDING;
+      const screenHeight = globalThis.innerHeight - MENUBAR_HEIGHT - DOCK_AREA_HEIGHT;
 
       newWindows.set(id, {
         ...window,
         isMaximized: true,
-        previousState: {
+        // Keep the first un-maximized geometry: maximizing twice in a row
+        // (e.g. after a viewport resize) must not remember the maximized box.
+        previousState: window.previousState ?? {
           position: { ...window.position },
           size: { ...window.size },
         },
-        position: { x: 0, y: TITLE_BAR_HEIGHT },
-        size: { width: screenWidth, height: screenHeight - TITLE_BAR_HEIGHT },
+        position: { x: 0, y: 0 },
+        size: { width: screenWidth, height: Math.max(window.minSize.height, screenHeight) },
       });
 
       return { windows: newWindows };
@@ -206,7 +226,7 @@ export const useWindowStore = create<WindowState>((set, get) => ({
       if (!window) return state;
 
       const newWindows = new Map(state.windows);
-      newWindows.set(id, { ...window, position, isMaximized: false });
+      newWindows.set(id, { ...window, position, isMaximized: false, previousState: undefined });
 
       return { windows: newWindows };
     });
@@ -218,7 +238,7 @@ export const useWindowStore = create<WindowState>((set, get) => ({
       if (!window) return state;
 
       const newWindows = new Map(state.windows);
-      newWindows.set(id, { ...window, size, isMaximized: false });
+      newWindows.set(id, { ...window, size, isMaximized: false, previousState: undefined });
 
       return { windows: newWindows };
     });

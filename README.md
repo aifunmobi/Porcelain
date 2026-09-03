@@ -72,4 +72,21 @@ export default defineConfig([
 ])
 ```
 # Porcelain
-# Porcelain
+
+## Running
+
+- `npm run dev` — browser build at http://localhost:5173 with a simulated filesystem (metadata in localStorage, file bytes in IndexedDB).
+- `npm run tauri:dev` / `npm run tauri:build` — the native app against the real filesystem.
+
+## Tests
+
+End-to-end tests drive the browser build with Playwright:
+
+```sh
+npx playwright install chromium   # once per machine
+npm run test:e2e                  # headless
+npm run test:e2e:ui               # interactive runner
+```
+
+To use a browser you already have instead of the download, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its path. Specs live in `tests/e2e/`; each starts from a cleared localStorage and IndexedDB so they can run in parallel.
+

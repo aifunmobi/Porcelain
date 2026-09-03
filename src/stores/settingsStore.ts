@@ -179,12 +179,14 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'porcelain-settings',
       version: 5, // Increment this when defaults change
+      // Each step applies on top of the previous one — an early return here
+      // would skip every later migration for older installs.
       migrate: (persistedState: unknown, version: number) => {
-        const state = persistedState as SettingsState;
+        let state = { ...(persistedState as SettingsState) };
         // If version is old, reset desktop icons and pinned apps to include new apps
         if (version < 1.5) {
           console.log('[Settings] Migrating from version', version, 'to 1.5');
-          return {
+          state = {
             ...state,
             desktopIcons: defaultSettings.desktopIcons,
             pinnedApps: defaultSettings.pinnedApps,
@@ -194,7 +196,7 @@ export const useSettingsStore = create<SettingsState>()(
         // theme. Anyone still on the old hardcoded cream gets moved across;
         // a deliberately chosen wallpaper is left alone.
         if (version < 2 && LEGACY_WALLPAPERS.includes(state.wallpaper)) {
-          return { ...state, wallpaper: DEFAULT_WALLPAPER, wallpaperType: 'gradient' as const };
+          state = { ...state, wallpaper: DEFAULT_WALLPAPER, wallpaperType: 'gradient' as const };
         }
         // 3.0: Preview, Archive Utility and Screenshot arrived. Add any dock
         // app the user is missing rather than resetting their arrangement.
@@ -203,14 +205,14 @@ export const useSettingsStore = create<SettingsState>()(
             (id) => !state.pinnedApps?.includes(id)
           );
           if (missing.length) {
-            return { ...state, pinnedApps: [...(state.pinnedApps ?? []), ...missing] };
+            state = { ...state, pinnedApps: [...(state.pinnedApps ?? []), ...missing] };
           }
         }
         // 4.0: font and icon size levels arrived. Anyone persisted before then
         // has neither key; both default to 0, the size the OS already had.
         // 5.0: icon style. 'ink' is what the OS already drew.
         if (version < 5) {
-          return {
+          state = {
             ...state,
             fontSize: state.fontSize ?? 0,
             iconSize: state.iconSize ?? 0,
@@ -218,6 +220,15 @@ export const useSettingsStore = create<SettingsState>()(
           };
         }
         return state;
+      },
+      // blob: URLs only live for the page that created them, so a thumbnail
+      // persisted from a native file drop is dead after a reload.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<SettingsState>;
+        const desktopIcons = persisted.desktopIcons?.map((icon) =>
+          icon.thumbnail?.startsWith('blob:') ? { ...icon, thumbnail: undefined } : icon
+        );
+        return { ...currentState, ...persisted, ...(desktopIcons ? { desktopIcons } : {}) };
       },
     }
   )

@@ -66,16 +66,18 @@ export const rasterise = async (element: HTMLElement, clip?: Rect): Promise<HTML
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
     `<foreignObject x="0" y="0" width="${width}" height="${height}">` +
     `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px">` +
-    `<style>${css.replace(/<\/style>/gi, '')}</style>${markup}` +
+    // The SVG is parsed as XML, so `&` or `<` in a stylesheet (CSS nesting,
+    // a font URL with a query string) would be a fatal parse error. CDATA
+    // carries the text through verbatim.
+    `<style><![CDATA[${css.replace(/\]\]>/g, ']]]]><![CDATA[>')}]]></style>${markup}` +
     `</div></foreignObject></svg>`;
 
   const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   const image = await loadImage(url);
 
-  // ponytail: 1 device pixel per CSS pixel. At devicePixelRatio a full-desktop
-  // PNG runs to several megabytes, which overruns the browser backend's
-  // localStorage budget; raise this once binaries live somewhere with room.
-  const ratio = 1;
+  // Full device resolution: bytes live in IndexedDB now, so a multi-megabyte
+  // PNG no longer overruns the browser backend.
+  const ratio = Math.max(1, window.devicePixelRatio || 1);
   const out = document.createElement('canvas');
   const cw = clip ? Math.max(1, Math.round(clip.width)) : width;
   const ch = clip ? Math.max(1, Math.round(clip.height)) : height;

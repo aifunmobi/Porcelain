@@ -81,9 +81,10 @@ export const Notes: React.FC<AppProps> = ({ windowId }) => {
   );
 
   const formatDate = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    // Compare calendar days, not 24-hour spans: a note from 11 PM yesterday
+    // seen at 8 AM is "Yesterday", not a bare time that reads as today.
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const days = Math.round((startOfDay(new Date()) - startOfDay(date)) / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
       return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });

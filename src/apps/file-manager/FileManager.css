@@ -701,3 +701,12 @@
 .file-manager:focus {
   outline: none;
 }
+
+/* A failed action is reported here instead of replacing the listing. */
+.file-manager__statusbar-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-danger, #b3423a);
+  cursor: pointer;
+}

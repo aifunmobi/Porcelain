@@ -15,6 +15,13 @@
   padding: 0;
 }
 
+/* Any author `display:` rule beats the UA's [hidden] { display: none }, so
+ * without this an element hidden via the attribute (the rich-text surface in
+ * plain mode, say) stays visible. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;

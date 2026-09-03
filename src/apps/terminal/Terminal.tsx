@@ -39,7 +39,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
     ll: 'ls -l',
     la: 'ls -a',
   });
-  const [startTime] = useState(Date.now());
+  const [startTime] = useState(() => Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const lineIdRef = useRef(2);
@@ -56,9 +56,24 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
     setLines((prev) => [...prev, { id: lineIdRef.current++, type, content }]);
   }, []);
 
-  // Update PWD env var when path changes
-  useEffect(() => {
-    setEnvVars((prev) => ({ ...prev, PWD: currentPath }));
+  // PWD follows the current path; deriving it beats syncing it in an effect.
+  const env = useMemo<Record<string, string>>(() => ({ ...envVars, PWD: currentPath }), [envVars, currentPath]);
+
+  /**
+   * Turn what the user typed into the absolute path the store knows: `~`,
+   * `.`, `..`, trailing slashes and relative segments all resolve here, so
+   * `cd Documents/` (what Tab completion produces) and `cat ../a.txt` work.
+   */
+  const resolvePath = useCallback((input: string): string => {
+    let raw = input.trim();
+    if (raw === '~' || raw.startsWith('~/')) raw = '/' + raw.slice(2);
+    const base = raw.startsWith('/') ? [] : currentPath.split('/').filter(Boolean);
+    for (const part of raw.split('/')) {
+      if (!part || part === '.') continue;
+      if (part === '..') base.pop();
+      else base.push(part);
+    }
+    return '/' + base.join('/');
   }, [currentPath]);
 
   // Get completions for tab
@@ -80,11 +95,9 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
       ? lastPart.substring(lastPart.lastIndexOf('/') + 1)
       : lastPart;
 
-    const fullPath = basePath.startsWith('/')
-      ? basePath
-      : `${currentPath === '/' ? '' : currentPath}/${basePath}`;
+    const fullPath = resolvePath(basePath || '.');
 
-    const folder = getFileByPath(fullPath || '/');
+    const folder = getFileByPath(fullPath);
     if (folder && folder.type === 'folder') {
       const children = getChildren(folder.id);
       return children
@@ -92,7 +105,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         .map((f) => basePath + f.name + (f.type === 'folder' ? '/' : ''));
     }
     return [];
-  }, [currentPath, getFileByPath, getChildren]);
+  }, [resolvePath, getFileByPath, getChildren]);
 
   const processCommand = useCallback((input: string) => {
     let trimmed = input.trim();
@@ -105,7 +118,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
     }
 
     // Expand environment variables ($VAR or ${VAR})
-    trimmed = trimmed.replace(/\$\{?(\w+)\}?/g, (_, varName) => envVars[varName] || '');
+    trimmed = trimmed.replace(/\$\{?(\w+)\}?/g, (_, varName) => env[varName] || '');
 
     addLine('input', `${currentPath} $ ${input.trim()}`);
 
@@ -144,49 +157,54 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         break;
 
       case 'ls': {
-        const targetPath = arg
-          ? (arg.startsWith('/') ? arg : `${currentPath === '/' ? '' : currentPath}/${arg}`)
-          : currentPath;
+        // Flags first (so the shipped `ll`/`la` aliases work), then the path.
+        const flags = args.filter((a) => a.startsWith('-')).join('').replace(/-/g, '');
+        const operand = args.filter((a) => !a.startsWith('-')).join(' ');
+        const showAll = flags.includes('a');
+        const long = flags.includes('l');
+        const targetPath = operand ? resolvePath(operand) : currentPath;
         const folder = getFileByPath(targetPath);
         if (folder && folder.type === 'folder') {
-          const children = getChildren(folder.id);
+          const children = getChildren(folder.id).filter((f) => showAll || !f.name.startsWith('.'));
           if (children.length === 0) {
             addLine('output', '(empty directory)');
           } else {
-            const output = children
-              .sort((a, b) => {
-                if (a.type === b.type) return a.name.localeCompare(b.name);
-                return a.type === 'folder' ? -1 : 1;
+            const sorted = children.sort((a, b) => {
+              if (a.type === b.type) return a.name.localeCompare(b.name);
+              return a.type === 'folder' ? -1 : 1;
+            });
+            const output = sorted
+              .map((f) => {
+                const label = f.type === 'folder' ? `📁 ${f.name}/` : `📄 ${f.name}`;
+                if (!long) return label;
+                const kind = f.type === 'folder' ? 'd' : '-';
+                const size = String(f.size).padStart(8);
+                const when = new Date(f.modifiedAt).toLocaleString();
+                return `${kind}  ${size}  ${when}  ${label}`;
               })
-              .map((f) => (f.type === 'folder' ? `📁 ${f.name}/` : `📄 ${f.name}`))
               .join('\n');
             addLine('output', output);
           }
         } else {
-          addLine('error', `ls: ${arg || currentPath}: No such directory`);
+          addLine('error', `ls: ${operand || currentPath}: No such directory`);
         }
         break;
       }
 
       case 'cd': {
-        if (!arg || arg === '~' || arg === '/') {
+        if (!arg || arg === '~') {
+          setEnvVars((prev) => ({ ...prev, OLDPWD: currentPath }));
           setCurrentPath('/');
-        } else if (arg === '..') {
-          const parts = currentPath.split('/').filter(Boolean);
-          parts.pop();
-          setCurrentPath('/' + parts.join('/') || '/');
         } else if (arg === '-') {
           // Go to previous directory (OLDPWD)
-          const oldPwd = envVars.OLDPWD;
+          const oldPwd = env.OLDPWD;
           if (oldPwd) {
             setEnvVars((prev) => ({ ...prev, OLDPWD: currentPath }));
             setCurrentPath(oldPwd);
             addLine('output', oldPwd);
           }
         } else {
-          const newPath = arg.startsWith('/')
-            ? arg
-            : `${currentPath === '/' ? '' : currentPath}/${arg}`;
+          const newPath = resolvePath(arg);
           const folder = getFileByPath(newPath);
           if (folder && folder.type === 'folder') {
             setEnvVars((prev) => ({ ...prev, OLDPWD: currentPath }));
@@ -206,9 +224,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         if (!arg) {
           addLine('error', 'cat: missing file operand');
         } else {
-          const filePath = arg.startsWith('/')
-            ? arg
-            : `${currentPath === '/' ? '' : currentPath}/${arg}`;
+          const filePath = resolvePath(arg);
           const file = getFileByPath(filePath);
           if (file && file.type === 'file') {
             addLine('output', (file.content as string) || '(empty file)');
@@ -223,9 +239,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         if (!arg) {
           addLine('error', 'head: missing file operand');
         } else {
-          const filePath = arg.startsWith('/')
-            ? arg
-            : `${currentPath === '/' ? '' : currentPath}/${arg}`;
+          const filePath = resolvePath(arg);
           const file = getFileByPath(filePath);
           if (file && file.type === 'file') {
             const content = (file.content as string) || '';
@@ -242,9 +256,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         if (!arg) {
           addLine('error', 'tail: missing file operand');
         } else {
-          const filePath = arg.startsWith('/')
-            ? arg
-            : `${currentPath === '/' ? '' : currentPath}/${arg}`;
+          const filePath = resolvePath(arg);
           const file = getFileByPath(filePath);
           if (file && file.type === 'file') {
             const content = (file.content as string) || '';
@@ -262,9 +274,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         if (!arg) {
           addLine('error', 'wc: missing file operand');
         } else {
-          const filePath = arg.startsWith('/')
-            ? arg
-            : `${currentPath === '/' ? '' : currentPath}/${arg}`;
+          const filePath = resolvePath(arg);
           const file = getFileByPath(filePath);
           if (file && file.type === 'file') {
             const content = (file.content as string) || '';
@@ -280,9 +290,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
       }
 
       case 'tree': {
-        const targetPath = arg
-          ? (arg.startsWith('/') ? arg : `${currentPath === '/' ? '' : currentPath}/${arg}`)
-          : currentPath;
+        const targetPath = arg ? resolvePath(arg) : currentPath;
 
         const buildTree = (folderId: string, prefix: string = ''): string[] => {
           const children = getChildren(folderId);
@@ -310,28 +318,31 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         break;
       }
 
-      case 'mkdir': {
-        if (!arg) {
-          addLine('error', 'mkdir: missing operand');
-        } else {
-          const folder = getFileByPath(currentPath);
-          if (folder) {
-            createFolder(arg, folder.id);
-            addLine('success', `Created directory: ${arg}`);
-          }
-        }
-        break;
-      }
-
+      case 'mkdir':
       case 'touch': {
+        const verb = cmd.toLowerCase();
         if (!arg) {
-          addLine('error', 'touch: missing operand');
+          addLine('error', `${verb}: missing operand`);
+          break;
+        }
+        // `mkdir a/b` makes `b` inside `a`; it used to make a folder named "a/b".
+        const target = resolvePath(arg);
+        const name = target.split('/').filter(Boolean).pop() ?? '';
+        const parentPath = target.slice(0, target.length - name.length).replace(/\/+$/, '') || '/';
+        const folder = getFileByPath(parentPath);
+        if (!name) {
+          addLine('error', `${verb}: ${arg}: invalid name`);
+        } else if (!folder || folder.type !== 'folder') {
+          addLine('error', `${verb}: ${parentPath}: No such directory`);
+        } else if (getFileByPath(target)) {
+          // touch on an existing file is a no-op, like the real thing.
+          if (verb === 'mkdir') addLine('error', `mkdir: ${arg}: File exists`);
+        } else if (verb === 'mkdir') {
+          createFolder(name, folder.id);
+          addLine('success', `Created directory: ${arg}`);
         } else {
-          const folder = getFileByPath(currentPath);
-          if (folder) {
-            createFile(arg, folder.id);
-            addLine('success', `Created file: ${arg}`);
-          }
+          createFile(name, folder.id);
+          addLine('success', `Created file: ${arg}`);
         }
         break;
       }
@@ -340,9 +351,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         if (!arg) {
           addLine('error', 'rm: missing operand');
         } else {
-          const filePath = arg.startsWith('/')
-            ? arg
-            : `${currentPath === '/' ? '' : currentPath}/${arg}`;
+          const filePath = resolvePath(arg);
           const file = getFileByPath(filePath);
           if (file) {
             deleteFile(file.id);
@@ -367,7 +376,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         break;
 
       case 'whoami':
-        addLine('output', envVars.USER || 'user');
+        addLine('output', env.USER || 'user');
         break;
 
       case 'hostname':
@@ -392,12 +401,12 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
         break;
 
       case 'env':
-        addLine('output', Object.entries(envVars).map(([k, v]) => `${k}=${v}`).join('\n'));
+        addLine('output', Object.entries(env).map(([k, v]) => `${k}=${v}`).join('\n'));
         break;
 
       case 'export': {
         if (!arg) {
-          addLine('output', Object.entries(envVars).map(([k, v]) => `export ${k}="${v}"`).join('\n'));
+          addLine('output', Object.entries(env).map(([k, v]) => `export ${k}="${v}"`).join('\n'));
         } else {
           const match = arg.match(/^(\w+)=(.*)$/);
           if (match) {
@@ -491,7 +500,7 @@ export const Terminal: React.FC<AppProps> = ({ windowId }) => {
       default:
         addLine('error', `${cmd}: command not found`);
     }
-  }, [currentPath, addLine, getFileByPath, getChildren, createFolder, createFile, deleteFile, envVars, aliases, history, startTime]);
+  }, [currentPath, resolvePath, addLine, getFileByPath, getChildren, createFolder, createFile, deleteFile, env, aliases, history, startTime]);
 
   useAppCommands(
     windowId,

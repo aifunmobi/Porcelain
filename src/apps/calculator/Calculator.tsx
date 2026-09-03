@@ -1,6 +1,28 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { AppProps } from '../../types';
 import './Calculator.css';
+
+/**
+ * Show a result the way a desk calculator would: no 0.30000000000000004,
+ * no 17-digit thirds, and no bare NaN/Infinity.
+ */
+const formatResult = (value: number): string => {
+  if (!Number.isFinite(value)) return 'Error';
+  const rounded = parseFloat(value.toPrecision(12));
+  if (Object.is(rounded, -0)) return '0';
+  const plain = String(rounded);
+  return plain.length > 16 ? rounded.toExponential(8).replace(/\.?0+e/, 'e') : plain;
+};
+
+const applyOperator = (a: number, op: string, b: number): number => {
+  switch (op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '×': return a * b;
+    case '÷': return a / b;
+    default: return b;
+  }
+};
 
 export const Calculator: React.FC<AppProps> = () => {
   const [display, setDisplay] = useState('0');
@@ -8,6 +30,8 @@ export const Calculator: React.FC<AppProps> = () => {
   const [operator, setOperator] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [, setHistory] = useState<string[]>([]);
+  /** The last "op b" pair, so = pressed again repeats it like a real calculator. */
+  const [lastOp, setLastOp] = useState<{ op: string; value: number } | null>(null);
 
   const inputDigit = useCallback((digit: string) => {
     if (waitingForOperand) {
@@ -32,84 +56,91 @@ export const Calculator: React.FC<AppProps> = () => {
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(false);
+    setLastOp(null);
   }, []);
 
   const toggleSign = useCallback(() => {
-    setDisplay(String(-parseFloat(display)));
+    if (display === 'Error') return;
+    // Flip the text, not the parsed number, so "5." keeps its decimal point.
+    setDisplay(display.startsWith('-') ? display.slice(1) : display === '0' ? '0' : `-${display}`);
   }, [display]);
 
   const percentage = useCallback(() => {
-    setDisplay(String(parseFloat(display) / 100));
+    if (display === 'Error') return;
+    setDisplay(formatResult(parseFloat(display) / 100));
   }, [display]);
 
   const performOperation = useCallback((nextOperator: string) => {
+    if (display === 'Error') return;
     const inputValue = parseFloat(display);
+
+    // An operator pressed straight after another one swaps it: "5 + ×"
+    // means "5 ×", it does not compute 5 + 5.
+    if (waitingForOperand && previousValue !== null) {
+      setOperator(nextOperator);
+      return;
+    }
 
     if (previousValue === null) {
       setPreviousValue(inputValue);
     } else if (operator) {
-      const currentValue = previousValue;
-      let newValue: number;
-
-      switch (operator) {
-        case '+':
-          newValue = currentValue + inputValue;
-          break;
-        case '-':
-          newValue = currentValue - inputValue;
-          break;
-        case '×':
-          newValue = currentValue * inputValue;
-          break;
-        case '÷':
-          newValue = currentValue / inputValue;
-          break;
-        default:
-          newValue = inputValue;
-      }
-
-      const historyEntry = `${currentValue} ${operator} ${inputValue} = ${newValue}`;
-      setHistory((prev) => [historyEntry, ...prev].slice(0, 10));
-
-      setDisplay(String(newValue));
-      setPreviousValue(newValue);
+      const newValue = applyOperator(previousValue, operator, inputValue);
+      setHistory((prev) => [`${previousValue} ${operator} ${inputValue} = ${newValue}`, ...prev].slice(0, 10));
+      setDisplay(formatResult(newValue));
+      setPreviousValue(Number.isFinite(newValue) ? newValue : null);
     }
 
     setWaitingForOperand(true);
     setOperator(nextOperator);
-  }, [display, operator, previousValue]);
+    setLastOp(null);
+  }, [display, operator, previousValue, waitingForOperand]);
 
   const calculate = useCallback(() => {
+    if (display === 'Error') return;
+    const inputValue = parseFloat(display);
+
     if (operator && previousValue !== null) {
-      const inputValue = parseFloat(display);
-      let newValue: number;
-
-      switch (operator) {
-        case '+':
-          newValue = previousValue + inputValue;
-          break;
-        case '-':
-          newValue = previousValue - inputValue;
-          break;
-        case '×':
-          newValue = previousValue * inputValue;
-          break;
-        case '÷':
-          newValue = previousValue / inputValue;
-          break;
-        default:
-          newValue = inputValue;
-      }
-
-      const historyEntry = `${previousValue} ${operator} ${inputValue} = ${newValue}`;
-      setHistory((prev) => [historyEntry, ...prev].slice(0, 10));
-
-      setDisplay(String(newValue));
+      const newValue = applyOperator(previousValue, operator, inputValue);
+      setHistory((prev) => [`${previousValue} ${operator} ${inputValue} = ${newValue}`, ...prev].slice(0, 10));
+      setDisplay(formatResult(newValue));
       setPreviousValue(null);
       setOperator(null);
       setWaitingForOperand(true);
+      setLastOp({ op: operator, value: inputValue });
+    } else if (lastOp) {
+      // = again repeats the last operation: 2 + 3 = = = → 5, 8, 11.
+      const newValue = applyOperator(inputValue, lastOp.op, lastOp.value);
+      setDisplay(formatResult(newValue));
+      setWaitingForOperand(true);
     }
-  }, [display, operator, previousValue]);
+  }, [display, operator, previousValue, lastOp]);
+
+  // Keyboard: digits, . + - * / Enter = Escape Backspace %.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const k = e.key;
+      const run = (fn: () => void) => {
+        e.preventDefault();
+        fn();
+      };
+      if (/^[0-9]$/.test(k)) return run(() => inputDigit(k));
+      if (k === '.' || k === ',') return run(inputDecimal);
+      if (k === '+' || k === '-') return run(() => performOperation(k));
+      if (k === '*' || k === 'x' || k === 'X') return run(() => performOperation('×'));
+      if (k === '/') return run(() => performOperation('÷'));
+      if (k === 'Enter' || k === '=') return run(calculate);
+      if (k === 'Escape' || k === 'Delete') return run(clear);
+      if (k === '%') return run(percentage);
+      if (k === 'Backspace') {
+        return run(() => {
+          if (waitingForOperand || display === 'Error') return;
+          setDisplay(display.length > 1 && display !== '-0' ? display.slice(0, -1) : '0');
+        });
+      }
+    },
+    [inputDigit, inputDecimal, performOperation, calculate, clear, percentage, waitingForOperand, display]
+  );
 
   const buttons = [
     { label: 'AC', action: clear, type: 'function' },
@@ -134,7 +165,7 @@ export const Calculator: React.FC<AppProps> = () => {
   ];
 
   return (
-    <div className="calculator">
+    <div className="calculator" ref={rootRef} tabIndex={0} onKeyDown={handleKeyDown}>
       <div className="calculator__display">
         <div className="calculator__history">
           {previousValue !== null && operator && (

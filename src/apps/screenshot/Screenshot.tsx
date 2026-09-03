@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom';
 import { Icon } from '../../components/Icons';
 import { useWindowStore } from '../../stores/windowStore';
-import { createBackend } from '../../services/fsAdapter';
+import { getBackend } from '../../services/fsAdapter';
 import type { FsBackend } from '../../services/fsAdapter';
 import {
   rasterise,
@@ -18,6 +18,8 @@ import './Screenshot.css';
 interface ScreenshotProps extends AppProps {
   /** Set by the ⌘⇧3 / ⌘⇧4 shortcuts, which capture without a further click. */
   autoCapture?: 'desktop' | 'region';
+  /** Changes with every shortcut press, so a second press captures again. */
+  captureNonce?: number;
 }
 
 type Mode = 'desktop' | 'window' | 'region';
@@ -31,7 +33,7 @@ const desktopElement = () =>
   (document.getElementById('root') as HTMLElement | null) ??
   (document.querySelector('.desktop') as HTMLElement | null);
 
-export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture }) => {
+export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture, captureNonce }) => {
   const [backend, setBackend] = useState<FsBackend | null>(null);
   const [mode, setMode] = useState<Mode>(autoCapture === 'region' ? 'region' : 'desktop');
   const [delay, setDelay] = useState<(typeof DELAYS)[number]>(0);
@@ -52,11 +54,12 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
   const openWindow = useWindowStore((s) => s.openWindow);
 
   useEffect(() => {
-    createBackend().then(setBackend);
+    getBackend().then(setBackend);
   }, []);
 
+  // Minimised windows are display:none and rasterise to nothing.
   const others = useMemo(
-    () => Array.from(windowMap.values()).filter((w) => w.id !== windowId),
+    () => Array.from(windowMap.values()).filter((w) => w.id !== windowId && !w.isMinimized),
     [windowMap, windowId]
   );
 
@@ -108,20 +111,32 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
     [persist, targetWindow]
   );
 
+  // One countdown at a time, and none that outlives the window: a second
+  // shutter press restarts it, closing the window cancels it.
+  const countdownTimer = useRef<number | null>(null);
+  const cancelCountdown = useCallback(() => {
+    if (countdownTimer.current !== null) window.clearTimeout(countdownTimer.current);
+    countdownTimer.current = null;
+    setCountdown(null);
+  }, []);
+  useEffect(() => cancelCountdown, [cancelCountdown]);
+
   const captureWithDelay = useCallback(
     async (which: Mode, clip?: Rect) => {
+      cancelCountdown();
       const tick = async (remaining: number) => {
         if (remaining <= 0) {
+          countdownTimer.current = null;
           setCountdown(null);
           await runCapture(which, clip);
           return;
         }
         setCountdown(remaining);
-        window.setTimeout(() => void tick(remaining - 1), 1000);
+        countdownTimer.current = window.setTimeout(() => void tick(remaining - 1), 1000);
       };
       await tick(delay);
     },
-    [delay, runCapture]
+    [delay, runCapture, cancelCountdown]
   );
 
   /**
@@ -134,14 +149,17 @@ export const Screenshot: React.FC<ScreenshotProps> = ({ windowId, autoCapture })
     own?.setAttribute('data-capture-ignore', '');
   }, []);
 
-  // ⌘⇧3 / ⌘⇧4 open this app already asking for a capture.
-  const auto = useRef(false);
+  // ⌘⇧3 / ⌘⇧4 open this app already asking for a capture. Each press carries
+  // a fresh nonce, so pressing again while the app is open captures again.
+  const handledNonce = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (!autoCapture || auto.current || !backend) return;
-    auto.current = true;
+    if (!autoCapture || !backend) return;
+    const nonce = captureNonce ?? 0;
+    if (handledNonce.current === nonce) return;
+    handledNonce.current = nonce;
     if (autoCapture === 'desktop') void captureWithDelay('desktop');
     else setSelecting(true);
-  }, [autoCapture, backend, captureWithDelay]);
+  }, [autoCapture, captureNonce, backend, captureWithDelay]);
 
   /* -------------------------------------------------------- region select */
 

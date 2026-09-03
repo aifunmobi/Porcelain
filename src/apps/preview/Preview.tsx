@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
-import { createBackend, basename, mimeForPath } from '../../services/fsAdapter';
+import { getBackend, basename, mimeForPath } from '../../services/fsAdapter';
 import type { FsBackend, FsItem } from '../../services/fsAdapter';
 import { formatFileSize, getFileExtension } from '../../services/tauriFs';
 import type { AppProps } from '../../types';
 import { renderMarkdown } from './markdown';
+import { kindForPath, PREVIEWABLE, type DocKind } from './kinds';
 import { useSaveAs } from '../../hooks/useSaveAs';
 import {
   encodeImage,
@@ -20,25 +21,6 @@ interface PreviewProps extends AppProps {
   filePath?: string;
   filePaths?: string[];
 }
-
-type DocKind = 'image' | 'pdf' | 'markdown' | 'text' | 'unsupported';
-
-const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'];
-
-export const kindForPath = (path: string): DocKind => {
-  const ext = getFileExtension(path);
-  if (IMAGE_EXT.includes(ext)) return 'image';
-  if (ext === 'pdf') return 'pdf';
-  if (ext === 'md' || ext === 'markdown') return 'markdown';
-  if (['txt', 'json', 'js', 'ts', 'tsx', 'css', 'html', 'xml', 'yaml', 'yml', 'log'].includes(ext))
-    return 'text';
-  return 'unsupported';
-};
-
-/** Files Preview claims from Files' double-click, and the open picker's filter.
- *  Must cover everything docKind() can render — html in particular, since Save
- *  As writes it and a file Preview wrote should be a file Preview will open. */
-export const PREVIEWABLE = [...IMAGE_EXT, 'pdf', 'md', 'markdown', 'txt', 'html'];
 
 /**
  * Page count without a PDF library: every page object carries `/Type /Page`
@@ -67,7 +49,7 @@ const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths }) => {
   const [backend, setBackend] = useState<FsBackend | null>(null);
-  const [docs, setDocs] = useState<Doc[]>([]);
+  const [loadedDocs, setDocs] = useState<Doc[]>([]);
   const [index, setIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [fit, setFit] = useState(true);
@@ -85,8 +67,11 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
   );
 
   useEffect(() => {
-    createBackend().then(setBackend);
+    getBackend().then(setBackend);
   }, []);
+
+  // With nothing to show (the picker's Clear) the stale list must not linger.
+  const docs = useMemo(() => (paths.length ? loadedDocs : []), [paths.length, loadedDocs]);
 
   useEffect(() => {
     if (!backend || !paths.length) return;
@@ -113,6 +98,7 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
       }
       if (!cancelled) {
         setDocs(loaded);
+        setIndex((current) => Math.min(current, Math.max(0, loaded.length - 1)));
         setError(loaded.length ? null : 'Nothing to preview');
       }
     })();
@@ -121,15 +107,18 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
     };
   }, [backend, paths]);
 
-  const doc = docs[index];
+  // The list can shrink underneath the index (Clear in the picker), which
+  // used to leave "No document open" with no way back to the first one.
+  const doc = docs[Math.min(index, Math.max(0, docs.length - 1))];
 
-  // A new document starts fitted, unrotated, on page one.
-  useEffect(() => {
+  /** Show another document: it starts fitted, unrotated, on page one. */
+  const showDoc = useCallback((next: number | ((current: number) => number)) => {
+    setIndex(next);
     setZoom(1);
     setFit(true);
     setRotation(0);
     setPage(1);
-  }, [index]);
+  }, []);
 
   const stepZoom = useCallback((delta: number) => {
     setFit(false);
@@ -141,8 +130,8 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
   }, []);
 
   const move = useCallback(
-    (delta: number) => setIndex((i) => Math.min(docs.length - 1, Math.max(0, i + delta))),
-    [docs.length]
+    (delta: number) => showDoc((i) => Math.min(docs.length - 1, Math.max(0, i + delta))),
+    [docs.length, showDoc]
   );
 
   const changePage = useCallback(
@@ -194,11 +183,13 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
       }
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
         e.preventDefault();
-        doc?.kind === 'pdf' && e.key === 'ArrowRight' ? changePage(1) : move(1);
+        if (doc?.kind === 'pdf' && e.key === 'ArrowRight') changePage(1);
+        else move(1);
       }
       if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        doc?.kind === 'pdf' && e.key === 'ArrowLeft' ? changePage(-1) : move(-1);
+        if (doc?.kind === 'pdf' && e.key === 'ArrowLeft') changePage(-1);
+        else move(-1);
       }
     },
     [doc, move, changePage, saveAs]
@@ -364,7 +355,7 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
               <button
                 key={d.path}
                 className={`pcl-bare preview__thumb ${i === index ? 'preview__thumb--active' : ''}`}
-                onClick={() => setIndex(i)}
+                onClick={() => showDoc(i)}
                 title={basename(d.path)}
               >
                 {d.kind === 'image' && d.url ? (
@@ -396,7 +387,7 @@ export const Preview: React.FC<PreviewProps> = ({ windowId, filePath, filePaths 
                     setExtraPaths((current) =>
                       current?.includes(option.path) ? current : [...(current ?? []), option.path]
                     );
-                    setIndex(0);
+                    showDoc(0);
                   }}
                 >
                   <Icon name="file" size={14} />

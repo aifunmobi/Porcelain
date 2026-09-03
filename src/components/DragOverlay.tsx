@@ -34,7 +34,7 @@ export const DragOverlay: React.FC<DragOverlayProps> = ({ onDropToDesktop, onDro
     const isOverFileManager = elemBelow.closest('.file-manager') !== null;
     const isOverWindow = elemBelow.closest('.window') !== null;
     const isOverDock = elemBelow.closest('.dock') !== null;
-    const isOverMenuBar = elemBelow.closest('.menu-bar') !== null;
+    const isOverMenuBar = elemBelow.closest('.menubar') !== null;
     const isOverDesktopFolder = elemBelow.closest('.desktop__icon:not(.desktop__icon--file)') !== null;
 
     // Determine drop target based on drag source and hover location
@@ -66,11 +66,20 @@ export const DragOverlay: React.FC<DragOverlayProps> = ({ onDropToDesktop, onDro
 
     if (overlay) overlay.style.display = '';
 
-    const isOverFileManager = elemBelow?.closest('.file-manager') !== null;
-    const isOverWindow = elemBelow?.closest('.window') !== null;
-    const isOverDock = elemBelow?.closest('.dock') !== null;
-    const isOverMenuBar = elemBelow?.closest('.menu-bar') !== null;
-    const isOverDesktopFolder = elemBelow?.closest('.desktop__icon:not(.desktop__icon--file)') !== null;
+    // `elemBelow?.closest(...) !== null` is true when elemBelow is undefined
+    // (pointer released outside the viewport), which used to read as "over
+    // everything" and copied desktop drags into Files. Coerce instead.
+    const isOverFileManager = !!elemBelow?.closest('.file-manager');
+    const isOverWindow = !!elemBelow?.closest('.window');
+    const isOverDock = !!elemBelow?.closest('.dock');
+    const isOverMenuBar = !!elemBelow?.closest('.menubar');
+    const isOverDesktopFolder = !!elemBelow?.closest('.desktop__icon:not(.desktop__icon--file)');
+
+    if (!elemBelow) {
+      // Released outside the viewport: nothing sensible to drop onto.
+      endDrag();
+      return;
+    }
 
     console.log('[DragOverlay] drop - source:', dragData.source);
     console.log('[DragOverlay] drop - elemBelow:', elemBelow?.tagName, elemBelow?.className);

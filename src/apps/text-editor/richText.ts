@@ -91,17 +91,54 @@ export const clearHighlights = () => {
 
 const BLOCK_SELECTOR = 'div,p,h1,h2,h3,h4,h5,h6,li,blockquote,pre';
 
+const isElement = (node: Node): node is HTMLElement => node.nodeType === Node.ELEMENT_NODE;
+
+/** Inline content of one block: text, with `<br>` as a line break. */
+const inlineText = (node: Node): string => {
+  if (node.nodeType === Node.TEXT_NODE) return (node as Text).data;
+  if (!isElement(node)) return '';
+  if (node.tagName === 'BR') return '\n';
+  return [...node.childNodes].map(inlineText).join('');
+};
+
 /**
  * HTML -> plain text, one line per leaf block. `innerText` cannot be used here:
  * it renders `<div><br></div>` — how an empty line is represented — as two
  * newlines, so every plain/rich toggle would grow the document by a blank line.
+ *
+ * Text that sits directly under the root (the first line typed into an empty
+ * surface is a bare text node, before the browser starts wrapping lines in
+ * divs) counts as a line of its own rather than being dropped.
  */
 export const htmlToText = (root: HTMLElement): string => {
-  const blocks = [...root.querySelectorAll(BLOCK_SELECTOR)].filter(
-    (b) => !b.querySelector(BLOCK_SELECTOR)
-  );
-  if (!blocks.length) return root.textContent ?? '';
-  return blocks.map((b) => b.textContent ?? '').join('\n');
+  const lines: string[] = [];
+  let pending: string | null = null;
+  const flush = () => {
+    if (pending !== null) lines.push(...pending.split('\n'));
+    pending = null;
+  };
+  const visit = (node: Node) => {
+    if (isElement(node) && node.matches(BLOCK_SELECTOR)) {
+      flush();
+      if (node.querySelector(BLOCK_SELECTOR)) {
+        [...node.childNodes].forEach(visit);
+        flush();
+      } else {
+        // A trailing <br> is the block's own terminator, not an extra line.
+        lines.push(inlineText(node).replace(/\n$/, ''));
+      }
+      return;
+    }
+    if (isElement(node) && node.tagName === 'BR') {
+      pending = pending ?? '';
+      flush();
+      return;
+    }
+    pending = (pending ?? '') + inlineText(node);
+  };
+  [...root.childNodes].forEach(visit);
+  flush();
+  return lines.join('\n');
 };
 
 /** Plain text -> HTML, one block per line, so a mode switch keeps the shape. */
@@ -113,11 +150,14 @@ export const textToHtml = (text: string): string => {
   return lines.map((line) => `<div>${line ? escape(line) : '<br>'}</div>`).join('');
 };
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 /** A full HTML document for saving, so reopening restores the formatting. */
 export const wrapHtmlDocument = (body: string, title: string): string =>
   `<!doctype html>
 <html>
-<head><meta charset="utf-8"><title>${title}</title></head>
+<head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head>
 <body>
 ${body}
 </body>
@@ -127,4 +167,59 @@ ${body}
 export const unwrapHtmlDocument = (html: string): string => {
   const match = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   return (match ? match[1] : html).trim();
+};
+
+/* ------------------------------------------------------------ sanitising */
+
+const DROP_ELEMENTS = new Set([
+  'SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'BASE',
+  'FORM', 'INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'TEMPLATE', 'NOSCRIPT',
+  'FRAME', 'FRAMESET', 'SVG', 'MATH',
+]);
+const URL_ATTRIBUTES = new Set(['href', 'src', 'action', 'formaction', 'xlink:href', 'poster', 'background']);
+
+/** True for a link/image target that cannot run code. */
+export const isSafeUrl = (value: string, allowDataImage = false): boolean => {
+  // Control characters are dropped first: "java\tscript:" is still javascript:.
+  const trimmed = [...value.trim()]
+    .filter((c) => c.charCodeAt(0) > 0x1f && c.charCodeAt(0) !== 0x7f)
+    .join('');
+  if (!trimmed) return true;
+  if (/^(https?|mailto|tel):/i.test(trimmed)) return true;
+  if (/^(\/|\.\/|\.\.\/|#|\?)/.test(trimmed)) return true;
+  if (allowDataImage && /^data:image\/(png|jpe?g|gif|webp|bmp|svg\+xml);base64,/i.test(trimmed)) return true;
+  // Anything with a scheme we did not list (javascript:, vbscript:, data:text…).
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return false;
+  return true;
+};
+
+/**
+ * Strip what could execute when the fragment lands in a contenteditable via
+ * innerHTML: script-like elements, `on*` handlers, and `javascript:` URLs.
+ * Formatting is left alone. Files come from Files/desktop, so an .html a user
+ * did not author gets the same treatment as one they did.
+ */
+export const sanitizeHtml = (html: string): string => {
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const walk = (el: Element) => {
+    for (const child of [...el.children]) {
+      if (DROP_ELEMENTS.has(child.tagName.toUpperCase())) {
+        child.remove();
+        continue;
+      }
+      for (const attr of [...child.attributes]) {
+        const name = attr.name.toLowerCase();
+        if (name.startsWith('on') || name === 'srcdoc') {
+          child.removeAttribute(attr.name);
+        } else if (URL_ATTRIBUTES.has(name) && !isSafeUrl(attr.value, child.tagName === 'IMG')) {
+          child.removeAttribute(attr.name);
+        } else if (name === 'style' && /expression\s*\(|url\s*\(\s*['"]?\s*javascript:/i.test(attr.value)) {
+          child.removeAttribute(attr.name);
+        }
+      }
+      walk(child);
+    }
+  };
+  walk(doc.body);
+  return doc.body.innerHTML;
 };

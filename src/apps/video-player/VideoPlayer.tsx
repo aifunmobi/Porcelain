@@ -44,12 +44,13 @@ export const VideoPlayer: React.FC<AppProps> = ({ windowId }) => {
     init();
   }, []);
 
-  // Handle volume changes
+  // Handle volume changes. The element is created with the first video, so
+  // the effect has to re-run when it appears, not only when the slider moves.
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.volume = volume / 100;
     }
-  }, [volume]);
+  }, [volume, currentVideo]);
 
   // Load videos from Videos folder
   const loadVideosFromFolder = async () => {
@@ -105,7 +106,7 @@ export const VideoPlayer: React.FC<AppProps> = ({ windowId }) => {
           path: selected,
           url: convertFileSrc(selected),
         };
-        setVideos((prev) => [newVideo, ...prev]);
+        setVideos((prev) => [newVideo, ...prev.filter((v) => v.id !== newVideo.id)]);
         setCurrentVideo(newVideo);
         setIsPlaying(true);
       }
@@ -126,9 +127,13 @@ export const VideoPlayer: React.FC<AppProps> = ({ windowId }) => {
     if (isPlaying) {
       videoRef.current.pause();
     } else {
-      videoRef.current.play();
+      // onPlay/onPause keep isPlaying honest; a rejected play() must not
+      // leave the pause glyph showing for a file that never started.
+      videoRef.current.play().catch((err: DOMException) => {
+        if (err.name !== 'AbortError') console.error('[Video] Playback failed:', err);
+        setIsPlaying(false);
+      });
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleTimeUpdate = () => {
