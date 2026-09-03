@@ -39,7 +39,9 @@
         "$AUDIO",
         "$AUDIO/**",
         "$DESKTOP",
-        "$DESKTOP/**"
+        "$DESKTOP/**",
+        "$HOME/.porcelain-trash",
+        "$HOME/.porcelain-trash/**"
       ]
     }
   ]

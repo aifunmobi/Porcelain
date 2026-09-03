@@ -16,6 +16,9 @@ export const Camera: React.FC<AppProps> = () => {
 
   useEffect(() => {
     let currentStream: MediaStream | null = null;
+    // Unmounting while the permission prompt is up used to leave the stream
+    // that arrived afterwards running, camera light and all.
+    let cancelled = false;
 
     const initCamera = async () => {
       // Check if mediaDevices API is available
@@ -32,6 +35,10 @@ export const Camera: React.FC<AppProps> = () => {
           video: { facingMode: 'user', width: 1280, height: 720 },
           audio: false,
         });
+        if (cancelled) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
         console.log('[Camera] Camera access granted, stream:', mediaStream);
         const videoTracks = mediaStream.getVideoTracks();
         console.log('[Camera] Video tracks:', videoTracks);
@@ -73,6 +80,7 @@ export const Camera: React.FC<AppProps> = () => {
           }
         }, 100);
       } catch (err) {
+        if (cancelled) return;
         console.error('[Camera] Camera access error:', err);
         const error = err as Error;
         if (error.name === 'NotAllowedError') {
@@ -91,6 +99,7 @@ export const Camera: React.FC<AppProps> = () => {
     initCamera();
 
     return () => {
+      cancelled = true;
       if (currentStream) {
         currentStream.getTracks().forEach((track) => track.stop());
       }
@@ -120,6 +129,13 @@ export const Camera: React.FC<AppProps> = () => {
     setCountdown(3);
   }, []);
 
+  // The countdown reads the latest capture through a ref so toggling Mirror
+  // mid-count does not restart the running second.
+  const capturePhotoRef = useRef(capturePhoto);
+  useEffect(() => {
+    capturePhotoRef.current = capturePhoto;
+  }, [capturePhoto]);
+
   useEffect(() => {
     if (countdown === null) return;
 
@@ -130,11 +146,11 @@ export const Camera: React.FC<AppProps> = () => {
 
     // countdown === 0, schedule capture on next tick to avoid setState during render
     const captureTimer = setTimeout(() => {
-      capturePhoto();
+      capturePhotoRef.current();
       setCountdown(null);
     }, 0);
     return () => clearTimeout(captureTimer);
-  }, [countdown, capturePhoto]);
+  }, [countdown]);
 
   return (
     <div className="camera">

@@ -16,7 +16,7 @@ export const WindowManager: React.FC = () => {
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback((_e: React.DragEvent) => {
+  const handleDrop = useCallback(() => {
     // Don't handle drops here - let them go to Desktop
     // The WindowManager has pointer-events: none anyway, but just in case
   }, []);

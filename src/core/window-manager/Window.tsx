@@ -85,10 +85,9 @@ export const Window: React.FC<WindowProps> = ({ window: win, children }) => {
     [win.zIndex, win.isMinimized]
   );
 
-  if (win.isMinimized) {
-    return null;
-  }
-
+  // A minimized window stays mounted (display: none via windowStyle) so the
+  // app keeps its state: music keeps playing, the camera stays open, the
+  // browser keeps its history. Unmounting here threw all of that away.
 
   return (
     <Rnd

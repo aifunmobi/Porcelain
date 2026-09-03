@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileNode } from '../types';
+import { blobStore, isIdbMarker, idbMarkerFor } from '../services/blobStore';
 
 interface FileSystemState {
   files: Record<string, FileNode>;
@@ -13,14 +14,15 @@ interface FileSystemState {
   getFileByPath: (path: string) => FileNode | undefined;
   getChildren: (parentId: string) => FileNode[];
   getChildrenByPath: (path: string) => FileNode[];
-  createFile: (name: string, parentId: string, content?: string, mimeType?: string) => string;
+  /** `size` overrides the size derived from `content` (bytes held in IndexedDB). */
+  createFile: (name: string, parentId: string, content?: string, mimeType?: string, size?: number) => string;
   createFolder: (name: string, parentId: string) => string;
   deleteFile: (id: string) => void;
   renameFile: (id: string, newName: string) => void;
   moveFile: (id: string, newParentId: string) => void;
   /** `newName` omitted keeps the " copy" suffix; pass one to place it verbatim. */
   copyFile: (id: string, newParentId: string, newName?: string) => string;
-  updateFileContent: (id: string, content: string) => void;
+  updateFileContent: (id: string, content: string, size?: number) => void;
   getPathParts: (path: string) => string[];
   navigateToPath: (path: string) => void;
 }
@@ -131,6 +133,21 @@ const createInitialFileSystem = (): Record<string, FileNode> => {
 };
 
 /**
+ * Bytes a node's content stands for. Binary files are held as base64 data
+ * URLs, whose string length overstates the real size by a third.
+ */
+const contentSize = (content: string): number => {
+  if (isIdbMarker(content)) return 0; // the caller passes the real size
+  if (!content.startsWith('data:')) return new TextEncoder().encode(content).length;
+  const comma = content.indexOf(',');
+  const header = content.slice(0, comma);
+  const payload = content.slice(comma + 1);
+  if (!header.includes(';base64')) return payload.length;
+  const padding = payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0;
+  return Math.floor((payload.length * 3) / 4) - padding;
+};
+
+/**
  * A folder's path is baked into every descendant, so moving or renaming one has
  * to re-path the whole subtree — otherwise lookups by path orphan the children.
  */
@@ -177,7 +194,7 @@ export const useFileSystemStore = create<FileSystemState>()(
         return get().getChildren(file.id);
       },
 
-      createFile: (name, parentId, content = '', mimeType = 'text/plain') => {
+      createFile: (name, parentId, content = '', mimeType = 'text/plain', size) => {
         const id = uuidv4();
         const parent = get().files[parentId];
         if (!parent) return '';
@@ -196,7 +213,7 @@ export const useFileSystemStore = create<FileSystemState>()(
               parentId,
               content,
               mimeType,
-              size: content.length,
+              size: size ?? contentSize(content),
               createdAt: now,
               modifiedAt: now,
             },
@@ -252,6 +269,7 @@ export const useFileSystemStore = create<FileSystemState>()(
         if (file.type === 'folder' && file.children) {
           file.children.forEach((childId) => get().deleteFile(childId));
         }
+        if (isIdbMarker(file.content)) void blobStore.remove(id);
 
         set((state) => {
           const newFiles = { ...state.files };
@@ -289,7 +307,16 @@ export const useFileSystemStore = create<FileSystemState>()(
         const file = get().files[id];
         const oldParent = get().files[file?.parentId || 'root'];
         const newParent = get().files[newParentId];
-        if (!file || !newParent) return;
+        if (!file || !newParent || id === 'root') return;
+        if (file.parentId === newParentId) return;
+        // A folder cannot be moved into itself or one of its own descendants:
+        // repath would loop and the subtree would vanish from every listing.
+        if (
+          newParentId === id ||
+          newParent.path.startsWith(`${file.path === '/' ? '' : file.path}/`)
+        ) {
+          return;
+        }
 
         const now = new Date();
         const newPath = `${newParent.path === '/' ? '' : newParent.path}/${file.name}`;
@@ -335,18 +362,30 @@ export const useFileSystemStore = create<FileSystemState>()(
           });
           return newFolderId;
         } else {
+          const copyName = newName ?? file.name.replace(/(\.[^.]+)?$/, ' copy$1');
+          if (isIdbMarker(file.content)) {
+            // The bytes get their own row, keyed by the new node's id.
+            const newId = get().createFile(copyName, newParentId, '', file.mimeType, file.size);
+            if (newId) {
+              get().updateFileContent(newId, idbMarkerFor(newId), file.size);
+              void blobStore.copy(id, newId);
+            }
+            return newId;
+          }
           return get().createFile(
-            newName ?? file.name.replace(/(\.[^.]+)?$/, ' copy$1'),
+            copyName,
             newParentId,
-            file.content as string,
+            typeof file.content === 'string' ? file.content : '',
             file.mimeType
           );
         }
       },
 
-      updateFileContent: (id, content) => {
+      updateFileContent: (id, content, size) => {
         const file = get().files[id];
         if (!file || file.type !== 'file') return;
+        // Replacing IndexedDB-backed bytes with inline content orphans the row.
+        if (isIdbMarker(file.content) && !isIdbMarker(content)) void blobStore.remove(id);
 
         set((state) => ({
           files: {
@@ -354,7 +393,7 @@ export const useFileSystemStore = create<FileSystemState>()(
             [id]: {
               ...file,
               content,
-              size: content.length,
+              size: size ?? contentSize(content),
               modifiedAt: new Date(),
             },
           },

@@ -49,14 +49,21 @@ export const getSpecialDirs = async () => {
   }
 
   try {
-    const [home, desktop, documents, downloads, pictures, videos, music] = await Promise.all([
-      homeDir(),
-      desktopDir(),
-      documentDir(),
-      downloadDir(),
-      pictureDir(),
-      videoDir(),
-      audioDir(),
+    const home = (await homeDir()).replace(/\/+$/, '');
+    // Each directory resolves on its own: on Linux without XDG user dirs
+    // (and on any OS with a missing folder) `documentDir()` rejects, and
+    // one rejection inside a Promise.all used to discard the real home too.
+    const dirOr = (lookup: () => Promise<string>, fallback: string) =>
+      lookup()
+        .then((p) => p.replace(/\/+$/, ''))
+        .catch(() => `${home}/${fallback}`);
+    const [desktop, documents, downloads, pictures, videos, music] = await Promise.all([
+      dirOr(desktopDir, 'Desktop'),
+      dirOr(documentDir, 'Documents'),
+      dirOr(downloadDir, 'Downloads'),
+      dirOr(pictureDir, 'Pictures'),
+      dirOr(videoDir, 'Movies'),
+      dirOr(audioDir, 'Music'),
     ]);
 
     return {
@@ -94,7 +101,7 @@ export const readDirectory = async (path: string): Promise<FileEntry[]> => {
     const fileEntries: FileEntry[] = [];
 
     for (const entry of entries) {
-      const fullPath = `${path}/${entry.name}`;
+      const fullPath = `${path.replace(/\/+$/, '')}/${entry.name}`;
       try {
         const fileStat = await stat(fullPath);
         fileEntries.push({

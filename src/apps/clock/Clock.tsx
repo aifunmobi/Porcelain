@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AppProps } from '../../types';
 import './Clock.css';
 
@@ -25,32 +25,44 @@ export const Clock: React.FC<AppProps> = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Timer logic
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (timerRunning && timerRemaining > 0) {
-      interval = setInterval(() => {
-        setTimerRemaining((prev) => {
-          if (prev <= 1) {
-            setTimerRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [timerRunning, timerRemaining]);
+  // Both counters are derived from the wall clock, not from counting ticks:
+  // browsers throttle timers (to once a second in a background tab), so a
+  // stopwatch that added 10 ms per tick ran up to 100x slow.
 
-  // Stopwatch logic
+  // Timer logic: remember when the current run ends, and re-derive the
+  // remaining seconds from that on every tick.
+  const timerEndsAt = useRef<number | null>(null);
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (stopwatchRunning) {
-      interval = setInterval(() => {
-        setStopwatchTime((prev) => prev + 10);
-      }, 10);
+    if (!timerRunning || timerRemaining <= 0) {
+      timerEndsAt.current = null;
+      return;
     }
+    if (timerEndsAt.current === null) timerEndsAt.current = Date.now() + timerRemaining * 1000;
+    const endsAt = timerEndsAt.current;
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      setTimerRemaining(left);
+      if (left === 0) setTimerRunning(false);
+    };
+    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
+    // timerRemaining is deliberately absent: it is what this effect writes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerRunning]);
+
+  // Stopwatch logic: elapsed = what it showed when started + time since.
+  const stopwatchBase = useRef(0);
+  const stopwatchStartedAt = useRef(0);
+  useEffect(() => {
+    if (!stopwatchRunning) return;
+    stopwatchStartedAt.current = Date.now();
+    const interval = setInterval(() => {
+      setStopwatchTime(stopwatchBase.current + (Date.now() - stopwatchStartedAt.current));
+    }, 31);
+    return () => {
+      clearInterval(interval);
+      stopwatchBase.current += Date.now() - stopwatchStartedAt.current;
+    };
   }, [stopwatchRunning]);
 
   const startTimer = useCallback(() => {
@@ -80,6 +92,7 @@ export const Clock: React.FC<AppProps> = () => {
 
   const resetStopwatch = useCallback(() => {
     setStopwatchRunning(false);
+    stopwatchBase.current = 0;
     setStopwatchTime(0);
     setLaps([]);
   }, []);
@@ -162,7 +175,7 @@ export const Clock: React.FC<AppProps> = () => {
                       min="0"
                       max="99"
                       value={timerMinutes}
-                      onChange={(e) => setTimerMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                      onChange={(e) => setTimerMinutes(Math.min(99, Math.max(0, parseInt(e.target.value) || 0)))}
                       className="clock-app__timer-input"
                     />
                     <span className="clock-app__timer-label">min</span>

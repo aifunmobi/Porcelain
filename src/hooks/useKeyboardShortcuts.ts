@@ -129,12 +129,12 @@ export const useKeyboardShortcuts = () => {
   // already asking for the capture, so one keystroke is enough.
   const handleCaptureDesktop = useCallback(() => {
     const app = appRegistry['screenshot'];
-    if (app) openWindow(app, { autoCapture: 'desktop' });
+    if (app) openWindow(app, { autoCapture: 'desktop', captureNonce: Date.now() });
   }, [openWindow]);
 
   const handleCaptureRegion = useCallback(() => {
     const app = appRegistry['screenshot'];
-    if (app) openWindow(app, { autoCapture: 'region' });
+    if (app) openWindow(app, { autoCapture: 'region', captureNonce: Date.now() });
   }, [openWindow]);
 
   useEffect(() => {
@@ -172,8 +172,14 @@ export const useKeyboardShortcuts = () => {
         const altMatch = shortcut.altKey ? e.altKey : !e.altKey;
         const ctrlMatch = shortcut.ctrlKey ? e.ctrlKey : !e.ctrlKey;
 
+        // With Shift held, `e.key` for a digit is the shifted glyph ('#', '$'),
+        // so ⌘⇧3 never matched by key alone. `e.code` names the physical key.
+        const keyMatch =
+          e.key.toLowerCase() === shortcut.key.toLowerCase() ||
+          (/^[0-9]$/.test(shortcut.key) && e.code === `Digit${shortcut.key}`);
+
         if (
-          e.key.toLowerCase() === shortcut.key.toLowerCase() &&
+          keyMatch &&
           metaMatch &&
           shiftMatch &&
           altMatch &&

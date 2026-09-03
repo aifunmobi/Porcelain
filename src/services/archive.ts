@@ -21,9 +21,59 @@ export interface ArchiveEntry {
 
 export class ArchiveError extends Error {}
 
-/** Zip's end-of-central-directory signature; absent means it is not a zip. */
+/** Zip's local-file signature at the start; absent means it is not a zip. */
 const looksLikeZip = (data: Uint8Array) =>
   data.length >= 4 && data[0] === 0x50 && data[1] === 0x4b;
+
+/**
+ * Sizes from the central directory. The streaming reader only sees local
+ * headers, and archives written with data descriptors (Finder, most streaming
+ * writers) leave the sizes there blank — the central directory always has
+ * them. Returns null when the directory cannot be found (zip64, truncated).
+ */
+const centralDirectorySizes = (data: Uint8Array): Map<string, { size: number; compressed: number }> | null => {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  // End-of-central-directory record: signature 0x06054b50, within the last 64K+22 bytes.
+  const floor = Math.max(0, data.length - 65557);
+  let eocd = -1;
+  for (let i = data.length - 22; i >= floor; i--) {
+    if (view.getUint32(i, true) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd === -1) return null;
+  const count = view.getUint16(eocd + 10, true);
+  const offset = view.getUint32(eocd + 16, true);
+  if (offset === 0xffffffff || offset + 46 > data.length) return null;
+  const out = new Map<string, { size: number; compressed: number }>();
+  const decoder = new TextDecoder();
+  let at = offset;
+  for (let n = 0; n < count; n++) {
+    if (at + 46 > data.length || view.getUint32(at, true) !== 0x02014b50) return null;
+    const compressed = view.getUint32(at + 20, true);
+    const size = view.getUint32(at + 24, true);
+    const nameLength = view.getUint16(at + 28, true);
+    const extraLength = view.getUint16(at + 30, true);
+    const commentLength = view.getUint16(at + 32, true);
+    const name = decoder.decode(data.subarray(at + 46, at + 46 + nameLength));
+    out.set(name, {
+      size: size === 0xffffffff ? 0 : size,
+      compressed: compressed === 0xffffffff ? 0 : compressed,
+    });
+    at += 46 + nameLength + extraLength + commentLength;
+  }
+  return out;
+};
+
+/**
+ * An entry name that would land outside the extraction folder. Zip names are
+ * attacker-controlled: `../../.zshrc` must never be honoured.
+ */
+const escapesDestination = (name: string): boolean => {
+  if (/^[a-zA-Z]:/.test(name) || name.startsWith('/') || name.includes('\\')) return true;
+  return name.split('/').some((segment) => segment === '..');
+};
 
 /**
  * Read the entry table without inflating anything: fflate hands us each file's
@@ -48,6 +98,16 @@ export const listArchive = async (data: Uint8Array): Promise<ArchiveEntry[]> => 
     try {
       reader.push(data, true);
       if (!entries.length) throw new ArchiveError('This archive is empty or its index is damaged.');
+      const known = centralDirectorySizes(data);
+      if (known) {
+        for (const entry of entries) {
+          const sizes = known.get(entry.name);
+          if (sizes) {
+            entry.size = sizes.size;
+            entry.compressedSize = sizes.compressed;
+          }
+        }
+      }
       resolve(entries);
     } catch (err) {
       reject(
@@ -136,6 +196,10 @@ export const extractArchive = async (
   const files = await inflate(data);
   const names = Object.keys(files);
   if (!names.length) throw new ArchiveError('This archive is empty.');
+  const unsafe = names.find(escapesDestination);
+  if (unsafe) {
+    throw new ArchiveError(`This archive contains an unsafe path ("${unsafe}") and was not extracted.`);
+  }
 
   const written: string[] = [];
   let done = 0;

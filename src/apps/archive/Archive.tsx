@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/Icons';
-import { createBackend, basename } from '../../services/fsAdapter';
+import { getBackend, basename } from '../../services/fsAdapter';
 import type { FsBackend, FsItem } from '../../services/fsAdapter';
 import {
   listArchive,
@@ -35,7 +35,7 @@ export const Archive: React.FC<ArchiveProps> = ({ compressPaths, archivePath }) 
   const [picker, setPicker] = useState<Picker>(null);
 
   useEffect(() => {
-    createBackend().then(setBackend);
+    getBackend().then(setBackend);
   }, []);
 
   const fail = useCallback((err: unknown) => {
@@ -69,7 +69,9 @@ export const Archive: React.FC<ArchiveProps> = ({ compressPaths, archivePath }) 
   );
 
   useEffect(() => {
-    if (archivePath && backend) void inspect(archivePath);
+    if (!archivePath || !backend) return;
+    const timer = window.setTimeout(() => void inspect(archivePath), 0);
+    return () => window.clearTimeout(timer);
   }, [archivePath, backend, inspect]);
 
   useEffect(() => {
@@ -96,7 +98,13 @@ export const Archive: React.FC<ArchiveProps> = ({ compressPaths, archivePath }) 
     try {
       const data = await createArchive(backend, staged, setProgress);
       const folder = backend.parent(staged[0].path);
-      const target = backend.join(folder, archiveNameFor(staged));
+      // "Photos.zip", then "Photos 2.zip": never replace an archive that exists.
+      const wanted = archiveNameFor(staged);
+      const stem = wanted.replace(/\.zip$/i, '');
+      const siblings = await backend.list(folder);
+      let name = wanted;
+      for (let n = 2; siblings.some((s) => s.name === name); n++) name = `${stem} ${n}.zip`;
+      const target = backend.join(folder, name);
       await backend.writeBinary(target, data);
       setProgress(null);
       // Show the new archive's contents first — inspect() clears any message,

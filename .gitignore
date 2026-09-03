@@ -38,3 +38,8 @@ src-tauri/gen/schemas
 
 # ruflo plugin local db
 ruvector.db
+
+# Playwright
+test-results
+playwright-report
+blob-report

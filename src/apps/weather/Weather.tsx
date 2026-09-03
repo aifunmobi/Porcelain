@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Icon } from '../../components/Icons';
 import type { AppProps } from '../../types';
 import './Weather.css';
@@ -67,7 +67,9 @@ const getWeatherInfo = (code: number): { icon: string; condition: string } => {
 };
 
 const getDayName = (dateStr: string): string => {
-  const date = new Date(dateStr);
+  // A bare "YYYY-MM-DD" parses as UTC midnight, which is the previous evening
+  // anywhere west of Greenwich. Adding a time makes it local.
+  const date = new Date(`${dateStr}T00:00:00`);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   return days[date.getDay()];
 };
@@ -80,6 +82,10 @@ export const Weather: React.FC<AppProps> = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unit, setUnit] = useState<'F' | 'C'>('F');
+  // Responses are only applied if they belong to the latest request, so a
+  // slow geolocation lookup cannot overwrite a search made in the meantime.
+  const requestIdRef = useRef(0);
+  const beginRequest = () => ++requestIdRef.current;
 
   const convertTemp = (temp: number): number => {
     if (unit === 'C') {
@@ -89,7 +95,8 @@ export const Weather: React.FC<AppProps> = () => {
     return Math.round((temp * 9/5) + 32);
   };
 
-  const fetchWeatherByCoords = useCallback(async (lat: number, lon: number, locationName: string) => {
+  const fetchWeatherByCoords = useCallback(async (lat: number, lon: number, locationName: string, requestId = beginRequest()) => {
+    if (requestId !== requestIdRef.current) return;
     setIsLoading(true);
     setError(null);
 
@@ -101,6 +108,7 @@ export const Weather: React.FC<AppProps> = () => {
       if (!response.ok) throw new Error('Failed to fetch weather data');
 
       const data = await response.json();
+      if (requestId !== requestIdRef.current) return;
 
       const currentWeatherInfo = getWeatherInfo(data.current.weather_code);
 
@@ -131,16 +139,18 @@ export const Weather: React.FC<AppProps> = () => {
       setForecast(forecastDays);
       setDisplayLocation(locationName);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error('Weather fetch error:', err);
       setError('Failed to load weather data');
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
   }, []);
 
   const searchLocation = useCallback(async (query: string) => {
     if (!query.trim()) return;
 
+    const requestId = beginRequest();
     setIsLoading(true);
     setError(null);
 
@@ -152,6 +162,7 @@ export const Weather: React.FC<AppProps> = () => {
       if (!response.ok) throw new Error('Geocoding failed');
 
       const data = await response.json();
+      if (requestId !== requestIdRef.current) return;
 
       if (!data.results || data.results.length === 0) {
         setError(`Location "${query}" not found`);
@@ -164,8 +175,9 @@ export const Weather: React.FC<AppProps> = () => {
         ? `${result.name}, ${result.admin1}`
         : `${result.name}, ${result.country}`;
 
-      await fetchWeatherByCoords(result.latitude, result.longitude, locationName);
+      await fetchWeatherByCoords(result.latitude, result.longitude, locationName, requestId);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error('Search error:', err);
       setError('Failed to search location');
       setIsLoading(false);
@@ -174,19 +186,21 @@ export const Weather: React.FC<AppProps> = () => {
 
   // Get user's location on mount
   useEffect(() => {
+    const requestIds = requestIdRef;
     const getLocation = async () => {
       // Try to get user's location
       if (navigator.geolocation) {
+        const requestId = beginRequest();
         navigator.geolocation.getCurrentPosition(
           async (position) => {
             const { latitude, longitude } = position.coords;
 
             // Open-Meteo doesn't have reverse geocoding, so we'll just use coords
-            await fetchWeatherByCoords(latitude, longitude, 'Current Location');
+            await fetchWeatherByCoords(latitude, longitude, 'Current Location', requestId);
           },
           () => {
-            // Location denied, default to New York
-            searchLocation('New York');
+            // Location denied, default to New York — unless a search already won.
+            if (requestId === requestIds.current) searchLocation('New York');
           },
           { timeout: 5000 }
         );
@@ -197,6 +211,10 @@ export const Weather: React.FC<AppProps> = () => {
     };
 
     getLocation();
+    return () => {
+      // Anything still in flight belongs to an unmounted window.
+      requestIds.current++;
+    };
   }, [fetchWeatherByCoords, searchLocation]);
 
   const handleSearch = (e: React.FormEvent) => {

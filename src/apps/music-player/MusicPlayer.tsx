@@ -64,12 +64,22 @@ export const MusicPlayer: React.FC<AppProps> = () => {
     }
   }, [isInTauri]);
 
-  // Handle audio element updates
+  // Handle audio element updates. The element only exists in Tauri mode, so
+  // re-run once it has mounted or the first volume never reaches it.
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume / 100;
     }
-  }, [volume]);
+  }, [volume, isInTauri]);
+
+  /** play() rejects when the source changes mid-load or cannot be decoded. */
+  const safePlay = (el: HTMLMediaElement) => {
+    el.play().catch((err: DOMException) => {
+      if (err.name === 'AbortError') return; // superseded by a newer track
+      console.error('[Music] Playback failed:', err);
+      setIsPlaying(false);
+    });
+  };
 
   // Load music from Music folder
   const loadMusicFromFolder = async () => {
@@ -149,7 +159,11 @@ export const MusicPlayer: React.FC<AppProps> = () => {
         });
 
         if (newTracks.length > 0) {
-          setTracks((prev) => [...prev, ...newTracks]);
+          // Ids are paths, so adding the same file twice would duplicate keys.
+          setTracks((prev) => {
+            const known = new Set(prev.map((t) => t.id));
+            return [...prev, ...newTracks.filter((t) => !known.has(t.id))];
+          });
           if (!currentTrack) {
             setCurrentTrack(newTracks[0]);
           }
@@ -173,7 +187,7 @@ export const MusicPlayer: React.FC<AppProps> = () => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        safePlay(audioRef.current);
       }
     }
     setIsPlaying(!isPlaying);
@@ -189,7 +203,12 @@ export const MusicPlayer: React.FC<AppProps> = () => {
   const handleNext = () => {
     if (!currentTrack) return;
     const currentIndex = tracks.findIndex((t) => t.id === currentTrack.id);
-    const nextIndex = (currentIndex + 1) % tracks.length;
+    let nextIndex = (currentIndex + 1) % tracks.length;
+    if (shuffle && tracks.length > 1) {
+      // Any track but the one playing.
+      const offset = 1 + Math.floor(Math.random() * (tracks.length - 1));
+      nextIndex = (currentIndex + offset) % tracks.length;
+    }
     handleTrackSelect(tracks[nextIndex]);
   };
 
@@ -200,7 +219,7 @@ export const MusicPlayer: React.FC<AppProps> = () => {
 
     if (isInTauri && track.url && audioRef.current) {
       audioRef.current.src = track.url;
-      audioRef.current.play();
+      safePlay(audioRef.current);
     }
   };
 
@@ -230,7 +249,7 @@ export const MusicPlayer: React.FC<AppProps> = () => {
     if (repeat) {
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
-        audioRef.current.play();
+        safePlay(audioRef.current);
       }
     } else {
       handleNext();
@@ -259,6 +278,9 @@ export const MusicPlayer: React.FC<AppProps> = () => {
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleEnded}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onError={() => setIsPlaying(false)}
         />
       )}
 

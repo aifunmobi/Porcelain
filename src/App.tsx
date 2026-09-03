@@ -16,21 +16,25 @@ import {
   GRID_SIZE,
   createDropToFileManagerEvent,
 } from './utils/desktop';
+import { thumbForPath } from './services/fsAdapter';
 import type { DesktopIcon } from './types';
 import './styles/globals.css';
 
-// Check if running in Tauri
-let convertFileSrc: ((path: string) => string) | null = null;
+/**
+ * Icons are persisted, so a thumbnail has to survive a reload: a blob: URL
+ * dies with the page. Small images are inlined as data URLs; anything bigger
+ * falls back to the generic glyph rather than swelling localStorage.
+ */
+const INLINE_THUMBNAIL_LIMIT = 512 * 1024;
 
-const initTauri = async () => {
-  try {
-    const core = await import('@tauri-apps/api/core');
-    convertFileSrc = core.convertFileSrc;
-    return true;
-  } catch {
-    return false;
-  }
-};
+const readThumbnail = (file: File): Promise<string | undefined> =>
+  new Promise((resolve) => {
+    if (!isImageFile(file.name) || file.size > INLINE_THUMBNAIL_LIMIT) return resolve(undefined);
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : undefined);
+    reader.onerror = () => resolve(undefined);
+    reader.readAsDataURL(file);
+  });
 
 function App() {
   const initializeFileSystem = useFileSystemStore((state) => state.initializeFileSystem);
@@ -47,7 +51,6 @@ function App() {
 
   useEffect(() => {
     initializeFileSystem();
-    initTauri();
   }, [initializeFileSystem]);
 
   // Apply theme class to root element
@@ -143,12 +146,6 @@ function App() {
             return;
           }
 
-          // Generate thumbnail for images
-          let thumbnail: string | undefined;
-          if (isImageFile(fileData.name) && convertFileSrc && fileData.path) {
-            thumbnail = convertFileSrc(fileData.path);
-          }
-
           const newIcon: DesktopIcon = {
             id: `desktop-file-${Date.now()}`,
             name: fileData.name,
@@ -156,14 +153,20 @@ function App() {
             position: snapped,
             filePath: fileData.path,
             isFile: !fileData.isDirectory,
-            thumbnail,
           };
 
           console.log('App Drop - Adding new icon:', newIcon);
           addDesktopIcon(newIcon);
+          // The thumbnail comes from whichever filesystem is live; attach it
+          // once it is known rather than holding the drop up.
+          if (!fileData.isDirectory) {
+            thumbForPath(fileData.path, fileData.name).then((thumbnail) => {
+              if (thumbnail) updateDesktopIcon(newIcon.id, { thumbnail });
+            });
+          }
           return;
         }
-      } catch (err) {
+      } catch {
         console.log('App Drop - Not JSON data');
       }
     }
@@ -177,22 +180,19 @@ function App() {
       for (const file of files) {
         const snapped = snapToGrid(dropX, dropY + offsetY);
 
-        let thumbnail: string | undefined;
-        if (isImageFile(file.name)) {
-          thumbnail = URL.createObjectURL(file);
-        }
-
         const newIcon: DesktopIcon = {
           id: `desktop-file-${Date.now()}-${offsetY}`,
           name: file.name,
           icon: getFileIcon(file.name),
           position: snapped,
           isFile: true,
-          thumbnail,
           mimeType: file.type,
         };
 
         addDesktopIcon(newIcon);
+        readThumbnail(file).then((thumbnail) => {
+          if (thumbnail) updateDesktopIcon(newIcon.id, { thumbnail });
+        });
         offsetY += GRID_SIZE;
       }
     }
@@ -216,12 +216,6 @@ function App() {
       return;
     }
 
-    // Generate thumbnail for images
-    let thumbnail: string | undefined;
-    if (isImageFile(data.name) && convertFileSrc && data.path) {
-      thumbnail = convertFileSrc(data.path);
-    }
-
     const newIcon: DesktopIcon = {
       id: `desktop-file-${Date.now()}`,
       name: data.name,
@@ -229,11 +223,15 @@ function App() {
       position: snapped,
       filePath: data.path,
       isFile: !data.isDirectory,
-      thumbnail,
     };
 
     console.log('[App] overlay drop - adding icon:', newIcon);
     addDesktopIcon(newIcon);
+    if (!data.isDirectory) {
+      thumbForPath(data.path, data.name).then((thumbnail) => {
+        if (thumbnail) updateDesktopIcon(newIcon.id, { thumbnail });
+      });
+    }
   }, [desktopIcons, addDesktopIcon, updateDesktopIcon]);
 
   // Handle drop to file manager - this is a placeholder, actual copy happens in FileManager
