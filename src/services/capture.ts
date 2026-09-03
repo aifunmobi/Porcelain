@@ -75,10 +75,9 @@ export const rasterise = async (element: HTMLElement, clip?: Rect): Promise<HTML
   const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   const image = await loadImage(url);
 
-  // ponytail: 1 device pixel per CSS pixel. At devicePixelRatio a full-desktop
-  // PNG runs to several megabytes, which overruns the browser backend's
-  // localStorage budget; raise this once binaries live somewhere with room.
-  const ratio = 1;
+  // Full device resolution: bytes live in IndexedDB now, so a multi-megabyte
+  // PNG no longer overruns the browser backend.
+  const ratio = Math.max(1, window.devicePixelRatio || 1);
   const out = document.createElement('canvas');
   const cw = clip ? Math.max(1, Math.round(clip.width)) : width;
   const ch = clip ? Math.max(1, Math.round(clip.height)) : height;

@@ -17,7 +17,7 @@ import {
   GRID_SIZE,
 } from '../../utils/desktop';
 import { isTauri } from '../../services/tauriFs';
-import { thumbForPath } from '../../services/fsAdapter';
+import { thumbForPath, getBackend, basename } from '../../services/fsAdapter';
 import type { DesktopIcon } from '../../types';
 import './Desktop.css';
 
@@ -40,7 +40,8 @@ export const Desktop: React.FC = () => {
   } = useSettingsStore();
   const { openWindow } = useWindowStore();
   const { isDragging, startDrag, dragData, endDrag } = useDragStore();
-  const { moveToTrash } = useTrashStore();
+  const recordTrashed = useTrashStore((s) => s.recordTrashed);
+  const addIconOnly = useTrashStore((s) => s.addIconOnly);
   const { isOpen: isSpotlightOpen, open: openSpotlight, close: closeSpotlight } = useSpotlightStore();
 
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
@@ -332,18 +333,39 @@ export const Desktop: React.FC = () => {
     setContextMenu(null);
   }, [clipboard, addDesktopIcon, updateDesktopIcon, desktopIcons]);
 
-  const handleDeleteIcon = useCallback(() => {
-    if (selectedIcon) {
-      const icon = desktopIcons.find(i => i.id === selectedIcon);
-      if (icon) {
-        // Move to trash instead of permanent delete
-        moveToTrash(icon);
-        removeDesktopIcon(selectedIcon);
-      }
-      setSelectedIcon(null);
-    }
+  /**
+   * Move to Trash. An icon that stands for a file moves that file into the
+   * trash folder — the same trash Files uses — and remembers the icon so
+   * Put Back restores both. An icon with no file behind it (an app shortcut,
+   * an untitled folder) is kept in the Trash on its own.
+   */
+  const handleDeleteIcon = useCallback(async () => {
     setContextMenu(null);
-  }, [selectedIcon, desktopIcons, moveToTrash, removeDesktopIcon]);
+    if (!selectedIcon) return;
+    const icon = desktopIcons.find(i => i.id === selectedIcon);
+    setSelectedIcon(null);
+    if (!icon) return;
+    removeDesktopIcon(icon.id);
+    if (!icon.filePath || icon.appId) {
+      addIconOnly(icon);
+      return;
+    }
+    try {
+      const backend = await getBackend();
+      const trashedPath = await backend.trash({
+        id: icon.filePath,
+        name: basename(icon.filePath),
+        path: icon.filePath,
+        isDir: !icon.isFile,
+        size: 0,
+      });
+      recordTrashed(trashedPath, icon.filePath, icon);
+    } catch (err) {
+      // The file is already gone; the icon alone is what was removed.
+      console.error('[Desktop] Could not move file to trash:', err);
+      addIconOnly(icon);
+    }
+  }, [selectedIcon, desktopIcons, recordTrashed, addIconOnly, removeDesktopIcon]);
 
   // Show visual indicator when dragging from file manager over desktop
   const showDropIndicator = isDragging && dragData?.source === 'file-manager';

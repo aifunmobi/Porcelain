@@ -1,19 +1,43 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Icon } from '../../components/Icons';
-import { useTrashStore } from '../../stores/trashStore';
-import type { TrashItem } from '../../stores/trashStore';
+import { useTrashStore, toDesktopIcon } from '../../stores/trashStore';
+import type { IconOnlyItem } from '../../stores/trashStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { getBackend } from '../../services/fsAdapter';
-import type { FsBackend } from '../../services/fsAdapter';
+import { useFileSystemStore } from '../../stores/fileSystemStore';
+import { useWindowStore } from '../../stores/windowStore';
+import { getBackend, basename } from '../../services/fsAdapter';
+import type { FsBackend, FsItem } from '../../services/fsAdapter';
+import { getFileIcon } from '../../utils/desktop';
 import type { AppProps } from '../../types';
 import './Trash.css';
 
-export const Trash: React.FC<AppProps> = () => {
-  const { items, restoreFromTrash, emptyTrash, removeFromTrash } = useTrashStore();
-  const { addDesktopIcon } = useSettingsStore();
+/** A row in the Trash: a file in the trash folder, or an icon with no file. */
+interface TrashRow {
+  key: string;
+  name: string;
+  icon: string;
+  thumbnail?: string;
+  deletedAt?: string;
+  origin?: string;
+  file?: FsItem;
+  iconOnly?: IconOnlyItem;
+}
+
+export const Trash: React.FC<AppProps> = ({ windowId }) => {
+  const records = useTrashStore((s) => s.records);
+  const iconOnly = useTrashStore((s) => s.iconOnly);
+  const forget = useTrashStore((s) => s.forget);
+  const removeIconOnly = useTrashStore((s) => s.removeIconOnly);
+  const addDesktopIcon = useSettingsStore((s) => s.addDesktopIcon);
+  const activeWindowId = useWindowStore((s) => s.activeWindowId);
   const [backend, setBackend] = useState<FsBackend | null>(null);
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: TrashItem } | null>(null);
+  const [files, setFiles] = useState<FsItem[]>([]);
+  /** Bumped whenever the trash folder may have changed, to re-read it. */
+  const [tick, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const isFront = activeWindowId === windowId;
+  const [selected, setSelected] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; row: TrashRow } | null>(null);
   const [confirmingEmpty, setConfirmingEmpty] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,90 +51,140 @@ export const Trash: React.FC<AppProps> = () => {
     };
   }, []);
 
-  /**
-   * Put Back. An item Files moved into the trash folder goes back to the
-   * folder it came from; a desktop-only icon just reappears on the desktop.
-   * Before this, "Put Back" made an icon for a file that was still in the
-   * trash folder, and the file itself was never seen again.
-   */
-  const handleRestore = useCallback(async (id: string) => {
-    const item = items.find((i) => i.id === id);
-    setContextMenu(null);
-    setSelectedItem(null);
-    if (!item) return;
-    setError(null);
+  // The trash folder is what is actually in the Trash; read it, do not
+  // mirror it. Re-read on every tick and whenever this window comes to the
+  // front, so files trashed elsewhere show up.
+  useEffect(() => {
+    if (!backend) return;
+    let live = true;
+    backend
+      .list(backend.trashDir)
+      .then((items) => live && setFiles(items))
+      .catch(() => live && setFiles([])); // no trash folder yet means an empty trash
+    return () => {
+      live = false;
+    };
+  }, [backend, tick, isFront]);
 
-    if (item.trashedPath && item.filePath) {
-      if (!backend) return;
-      try {
-        await backend.moveInto(item.trashedPath, backend.parent(item.filePath));
-      } catch (err) {
-        setError(`Could not put back "${item.name}": ${err instanceof Error ? err.message : String(err)}`);
+  // Virtual-tree changes (browser mode) arrive through the store.
+  useEffect(() => useFileSystemStore.subscribe(refresh), [refresh]);
+
+  const rows = useMemo((): TrashRow[] => {
+    const fileRows: TrashRow[] = files.map((file) => {
+      const record = records[file.path];
+      return {
+        key: `file:${file.path}`,
+        name: file.name,
+        icon: file.isDir ? 'folder' : getFileIcon(file.name),
+        thumbnail: backend?.thumb(file),
+        deletedAt: record?.deletedAt,
+        origin: record ? backend?.parent(record.originalPath) : undefined,
+        file,
+      };
+    });
+    const iconRows: TrashRow[] = iconOnly.map((icon) => ({
+      key: `icon:${icon.id}`,
+      name: icon.name,
+      icon: icon.icon,
+      deletedAt: icon.deletedAt,
+      origin: 'Desktop',
+      iconOnly: icon,
+    }));
+    return [...fileRows, ...iconRows].sort((a, b) =>
+      (b.deletedAt ?? '').localeCompare(a.deletedAt ?? '') || a.name.localeCompare(b.name)
+    );
+  }, [files, records, iconOnly, backend]);
+
+  const closeMenus = () => {
+    setContextMenu(null);
+    setSelected(null);
+  };
+
+  /**
+   * Put Back. A file returns to the folder it came from (or the Desktop
+   * folder when that is unknown or gone), and any desktop icon that pointed
+   * at it comes back with it. An icon-only item simply returns to the desktop.
+   */
+  const putBack = useCallback(
+    async (row: TrashRow) => {
+      closeMenus();
+      setError(null);
+      if (row.iconOnly) {
+        addDesktopIcon(toDesktopIcon(row.iconOnly));
+        removeIconOnly(row.iconOnly.id);
         return;
       }
-      removeFromTrash(id);
-      return;
-    }
+      if (!row.file || !backend) return;
+      const record = records[row.file.path];
+      const desktopDir = backend.favorites.find((f) => f.id === 'desktop')?.path ?? backend.home;
+      let destination = record ? backend.parent(record.originalPath) : desktopDir;
+      const exists = await backend
+        .list(destination)
+        .then(() => true)
+        .catch(() => false);
+      if (!exists || !record) destination = desktopDir;
+      try {
+        await backend.moveInto(row.file.path, destination);
+      } catch (err) {
+        setError(`Could not put back "${row.name}": ${err instanceof Error ? err.message : String(err)}`);
+        return;
+      }
+      if (record?.icon) {
+        addDesktopIcon({ ...record.icon, filePath: backend.join(destination, row.file.name) });
+      }
+      forget(row.file.path);
+      refresh();
+    },
+    [backend, records, addDesktopIcon, removeIconOnly, forget, refresh]
+  );
 
-    const restored = restoreFromTrash(id);
-    if (restored) addDesktopIcon(restored);
-  }, [items, backend, restoreFromTrash, removeFromTrash, addDesktopIcon]);
+  /** Delete for good: the bytes go, not just the entry. */
+  const deleteRow = useCallback(
+    async (row: TrashRow) => {
+      if (row.iconOnly) {
+        removeIconOnly(row.iconOnly.id);
+        return;
+      }
+      if (!row.file || !backend) throw new Error('The filesystem is not ready yet');
+      await backend.remove(row.file.path);
+      forget(row.file.path);
+    },
+    [backend, removeIconOnly, forget]
+  );
 
-  /** Delete Immediately: the bytes go too, not just the list entry. */
-  const deleteForGood = useCallback(async (item: TrashItem) => {
-    if (item.trashedPath) {
-      if (!backend) throw new Error('The filesystem is not ready yet');
-      await backend.remove(item.trashedPath);
-    }
-    removeFromTrash(item.id);
-  }, [backend, removeFromTrash]);
-
-  const handleDelete = useCallback(async (id: string) => {
-    const item = items.find((i) => i.id === id);
-    setContextMenu(null);
-    setSelectedItem(null);
-    if (!item) return;
-    setError(null);
-    try {
-      await deleteForGood(item);
-    } catch (err) {
-      setError(`Could not delete "${item.name}": ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }, [items, deleteForGood]);
+  const handleDelete = useCallback(
+    async (row: TrashRow) => {
+      closeMenus();
+      setError(null);
+      try {
+        await deleteRow(row);
+      } catch (err) {
+        setError(`Could not delete "${row.name}": ${err instanceof Error ? err.message : String(err)}`);
+      }
+      refresh();
+    },
+    [deleteRow, refresh]
+  );
 
   const handleEmptyTrash = useCallback(async () => {
     setConfirmingEmpty(false);
-    setContextMenu(null);
+    closeMenus();
     setError(null);
     const failures: string[] = [];
-    for (const item of items) {
+    for (const row of rows) {
       try {
-        await deleteForGood(item);
+        await deleteRow(row);
       } catch {
-        failures.push(item.name);
+        failures.push(row.name);
       }
     }
-    if (failures.length) {
-      setError(`Could not delete: ${failures.join(', ')}`);
-    } else {
-      emptyTrash();
-    }
-  }, [items, deleteForGood, emptyTrash]);
+    if (failures.length) setError(`Could not delete: ${failures.join(', ')}`);
+    refresh();
+  }, [rows, deleteRow, refresh]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, item: TrashItem) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, item });
-    setSelectedItem(item.id);
-  }, []);
-
-  const handleClick = useCallback(() => {
-    setContextMenu(null);
-  }, []);
-
-  const formatDate = (date: Date) => {
-    const d = new Date(date);
-    return d.toLocaleDateString(undefined, {
+  const formatDate = (iso?: string) => {
+    if (!iso) return 'earlier';
+    return new Date(iso).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -119,16 +193,16 @@ export const Trash: React.FC<AppProps> = () => {
   };
 
   return (
-    <div className="trash" onClick={handleClick}>
+    <div className="trash" onClick={() => setContextMenu(null)}>
       <div className="trash__toolbar">
         <div className="trash__title">
           <Icon name="trash" size={20} />
           <span>Trash</span>
-          <span className="trash__count">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+          <span className="trash__count">{rows.length} item{rows.length !== 1 ? 's' : ''}</span>
         </div>
         {confirmingEmpty ? (
           <div className="trash__confirm">
-            <span>Permanently delete {items.length} item{items.length !== 1 ? 's' : ''}?</span>
+            <span>Permanently delete {rows.length} item{rows.length !== 1 ? 's' : ''}?</span>
             <button className="trash__empty-btn" onClick={() => setConfirmingEmpty(false)}>
               Cancel
             </button>
@@ -140,7 +214,7 @@ export const Trash: React.FC<AppProps> = () => {
           <button
             className="trash__empty-btn"
             onClick={() => setConfirmingEmpty(true)}
-            disabled={items.length === 0}
+            disabled={rows.length === 0}
           >
             Empty Trash
           </button>
@@ -154,37 +228,42 @@ export const Trash: React.FC<AppProps> = () => {
         </div>
       )}
 
-      {items.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="trash__empty">
           <Icon name="trash" size={64} color="var(--color-porcelain-300)" />
           <p>Trash is empty</p>
         </div>
       ) : (
         <div className="trash__items">
-          {items.map((item) => (
+          {rows.map((row) => (
             <div
-              key={item.id}
-              className={`trash__item ${selectedItem === item.id ? 'trash__item--selected' : ''}`}
+              key={row.key}
+              className={`trash__item ${selected === row.key ? 'trash__item--selected' : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedItem(item.id);
+                setSelected(row.key);
                 setContextMenu(null);
               }}
-              onDoubleClick={() => handleRestore(item.id)}
-              onContextMenu={(e) => handleContextMenu(e, item)}
+              onDoubleClick={() => void putBack(row)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenu({ x: e.clientX, y: e.clientY, row });
+                setSelected(row.key);
+              }}
             >
               <div className="trash__item-icon">
-                {item.thumbnail ? (
-                  <img src={item.thumbnail} alt={item.name} className="trash__item-thumbnail" />
+                {row.thumbnail ? (
+                  <img src={row.thumbnail} alt={row.name} className="trash__item-thumbnail" />
                 ) : (
-                  <Icon name={item.icon} size={32} color="var(--color-porcelain-500)" />
+                  <Icon name={row.icon} size={32} color="var(--color-porcelain-500)" />
                 )}
               </div>
               <div className="trash__item-info">
-                <div className="trash__item-name">{item.name}</div>
+                <div className="trash__item-name">{row.name}</div>
                 <div className="trash__item-date">
-                  Deleted {formatDate(item.deletedAt)}
-                  {item.filePath ? ` · from ${item.filePath}` : ''}
+                  Deleted {formatDate(row.deletedAt)}
+                  {row.origin ? ` · from ${row.origin === '/' ? '/' : basename(row.origin) || row.origin}` : ''}
                 </div>
               </div>
             </div>
@@ -198,17 +277,14 @@ export const Trash: React.FC<AppProps> = () => {
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            className="trash__context-menu-item"
-            onClick={() => handleRestore(contextMenu.item.id)}
-          >
+          <button className="trash__context-menu-item" onClick={() => void putBack(contextMenu.row)}>
             <Icon name="refresh" size={14} />
             Put Back
           </button>
           <div className="trash__context-menu-divider" />
           <button
             className="trash__context-menu-item trash__context-menu-item--danger"
-            onClick={() => handleDelete(contextMenu.item.id)}
+            onClick={() => void handleDelete(contextMenu.row)}
           >
             <Icon name="trash" size={14} />
             Delete Immediately

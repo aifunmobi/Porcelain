@@ -7,6 +7,7 @@ import { Icon } from '../../components/Icons';
 import type { AppProps, SortBy, ViewMode } from '../../types';
 import { formatFileSize, getFileIcon, isImageFile, getFileExtension } from '../../services/tauriFs';
 import { useWindowStore } from '../../stores/windowStore';
+import { useFileSystemStore } from '../../stores/fileSystemStore';
 import { getBackend, basename, kindOf } from '../../services/fsAdapter';
 import type { FsBackend, FsItem } from '../../services/fsAdapter';
 import './FileManager.css';
@@ -84,7 +85,7 @@ const COLUMNS: { by: SortBy; label: string; className: string }[] = [
 
 /* -------------------------------------------------------------- component */
 
-export const FileManager: React.FC<AppProps> = () => {
+export const FileManager: React.FC<AppProps> = ({ windowId }) => {
   const [backend, setBackend] = useState<FsBackend | null>(null);
   const [path, setPath] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -118,7 +119,7 @@ export const FileManager: React.FC<AppProps> = () => {
     clearClipboard,
   } = useFileBrowserStore();
   const { startDrag, isDragging, dragData, endDrag } = useDragStore();
-  const moveToTrash = useTrashStore((state) => state.moveToTrash);
+  const recordTrashed = useTrashStore((state) => state.recordTrashed);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -222,6 +223,16 @@ export const FileManager: React.FC<AppProps> = () => {
     setDirCache({});
     setInfo(null);
   }, []);
+
+  // Other apps write to the same filesystem (Trash puts files back, the
+  // editor saves, Screenshot drops PNGs into Pictures). In browser mode the
+  // store announces every change; on the real filesystem the listing is
+  // re-read whenever this window comes to the front.
+  useEffect(() => useFileSystemStore.subscribe(refresh), [refresh]);
+  const isFront = useWindowStore((s) => s.activeWindowId === windowId);
+  useEffect(() => {
+    if (isFront && backend?.isReal) refresh();
+  }, [isFront, backend, refresh]);
 
   const items = useMemo(() => dirCache[path] ?? [], [dirCache, path]);
 
@@ -399,20 +410,12 @@ export const FileManager: React.FC<AppProps> = () => {
     void run(async () => {
       for (const item of selectedItems) {
         const trashedPath = await backend.trash(item);
-        // Mirror it into the Trash app's list so it can be put back from there.
-        moveToTrash({
-          id: `file-${item.path}`,
-          name: item.name,
-          icon: iconFor(item),
-          position: { x: 20, y: 20 },
-          isFile: !item.isDir,
-          filePath: item.path,
-          trashedPath,
-        });
+        // The folder is the trash; this just remembers where it came from.
+        recordTrashed(trashedPath, item.path);
       }
       setSelected(new Set());
     }, 'Failed to move to Trash');
-  }, [backend, selectedItems, run, moveToTrash]);
+  }, [backend, selectedItems, run, recordTrashed]);
 
   const copySelection = useCallback(
     (mode: 'copy' | 'cut') => {

@@ -23,6 +23,7 @@ import {
   deleteFile as deleteRealFile,
 } from './tauriFs';
 import { useFileSystemStore } from '../stores/fileSystemStore';
+import { blobStore, isIdbMarker, idbMarkerFor, IDB_MARKER } from './blobStore';
 import type { FileNode } from '../types';
 
 export interface FsItem {
@@ -316,8 +317,50 @@ const childNodes = (path: string): FileNode[] => {
 
 const VIRTUAL_TRASH = '/Trash';
 
+const dataUrlBytes = (content: string): Uint8Array => {
+  const base64 = content.slice(content.indexOf(',') + 1);
+  const binary = atob(base64);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+};
+
+const textToDataUrl = (path: string, text: string) =>
+  `data:${mimeForPath(path)};base64,${btoa(unescape(encodeURIComponent(text)))}`;
+
+/**
+ * Binaries written before IndexedDB was the byte store sit in localStorage as
+ * data URLs. Move them over once, so the quota they were eating is freed.
+ */
+const migrateInlineBinaries = async () => {
+  const store = fsStore();
+  const inline = Object.values(store.files).filter(
+    (n) => n.type === 'file' && typeof n.content === 'string' && n.content.startsWith('data:')
+  );
+  for (const node of inline) {
+    const content = node.content as string;
+    const bytes = content.includes(';base64,')
+      ? dataUrlBytes(content)
+      : new TextEncoder().encode(decodeURIComponent(content.slice(content.indexOf(',') + 1)));
+    await blobStore.put(node.id, bytes, mimeForPath(node.path));
+    fsStore().updateFileContent(node.id, idbMarkerFor(node.id), bytes.length);
+  }
+};
+
 const virtualBackend = (): FsBackend => {
-  const list = async (path: string) => childNodes(path).map(nodeToItem);
+  /**
+   * `thumb` is synchronous, so listing a folder warms the object-URL cache
+   * for every image held in IndexedDB before the items are handed back.
+   */
+  const list = async (path: string) => {
+    const nodes = childNodes(path);
+    await Promise.all(
+      nodes
+        .filter((n) => n.type === 'file' && isImageFile(n.name) && isIdbMarker(n.content))
+        .map((n) => blobStore.objectUrl(n.id))
+    );
+    return nodes.map(nodeToItem);
+  };
 
   const namesIn = (dir: string) => new Set(childNodes(dir).map((n) => n.name));
 
@@ -377,6 +420,7 @@ const virtualBackend = (): FsBackend => {
       // Keep the name unless the destination already has one.
       const name = freeName(source.name, source.type === 'folder', namesIn(destDir));
       fsStore().copyFile(source.id, dest.id, name);
+      await blobStore.settle();
     },
 
     moveInto: async (sourcePath, destDir) => {
@@ -390,6 +434,7 @@ const virtualBackend = (): FsBackend => {
       if (!node?.parentId) return;
       const dir = parentPath(node.path);
       fsStore().copyFile(node.id, node.parentId, copyName(node.name, node.type === 'folder', namesIn(dir)));
+      await blobStore.settle();
     },
 
     trash: async (item) => {
@@ -401,6 +446,7 @@ const virtualBackend = (): FsBackend => {
     remove: async (path) => {
       const node = nodeAt(path);
       if (node) fsStore().deleteFile(node.id);
+      await blobStore.settle();
     },
 
     dirSize: async (item) => {
@@ -426,10 +472,11 @@ const virtualBackend = (): FsBackend => {
       if (item.isDir || !isImageFile(item.name)) return undefined;
       const node = fsStore().getFile(item.id);
       const content = typeof node?.content === 'string' ? node.content : '';
+      if (isIdbMarker(content)) return blobStore.cachedUrl(node!.id);
       if (content.startsWith('data:')) return content;
       // SVG kept as plain markup still renders once wrapped as a data URL.
       if (!content) return undefined;
-      return `data:${mimeForPath(item.path)};base64,${btoa(unescape(encodeURIComponent(content)))}`;
+      return textToDataUrl(item.path, content);
     },
 
     searchDeep: async (path, query) => {
@@ -451,6 +498,10 @@ const virtualBackend = (): FsBackend => {
       const node = nodeAt(path);
       if (!node || node.type === 'folder') throw new Error(`No such file: ${path}`);
       const content = typeof node.content === 'string' ? node.content : '';
+      if (isIdbMarker(content)) {
+        const bytes = await blobStore.get(node.id);
+        return bytes ? new TextDecoder().decode(bytes) : '';
+      }
       // Anything written through writeBinary — an extracted archive entry, say —
       // is held as a data URL. Text callers want the text back, not the wrapper.
       if (content.startsWith('data:')) {
@@ -486,46 +537,47 @@ const virtualBackend = (): FsBackend => {
       const node = nodeAt(path);
       if (!node || node.type === 'folder') throw new Error(`No such file: ${path}`);
       const content = typeof node.content === 'string' ? node.content : '';
-      // Binary files live as data URLs; anything else is text, encoded as-is.
-      const base64 = content.startsWith('data:') ? content.slice(content.indexOf(',') + 1) : null;
-      if (base64 === null) return new TextEncoder().encode(content);
-      const binary = atob(base64);
-      const out = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
-      return out;
+      if (isIdbMarker(content)) return (await blobStore.get(node.id)) ?? new Uint8Array();
+      // Legacy binaries are data URLs; anything else is text, encoded as-is.
+      if (content.startsWith('data:')) return dataUrlBytes(content);
+      return new TextEncoder().encode(content);
     },
 
     writeBinary: async (path, data) => {
-      let binary = '';
-      // Chunked, because String.fromCharCode(...bigArray) blows the call stack.
-      for (let i = 0; i < data.length; i += 0x8000) {
-        binary += String.fromCharCode(...data.subarray(i, i + 0x8000));
-      }
       const mime = mimeForPath(path);
-      const dataUrl = `data:${mime};base64,${btoa(binary)}`;
       const store = fsStore();
       const existing = nodeAt(path);
-      if (existing) {
-        store.updateFileContent(existing.id, dataUrl);
-        return;
+      let id = existing?.id;
+      if (!id) {
+        const parent = nodeAt(parentPath(path));
+        if (!parent) throw new Error(`No such folder: ${parentPath(path)}`);
+        id = store.createFile(basename(path), parent.id, '', mime, data.length);
       }
-      const parent = nodeAt(parentPath(path));
-      if (!parent) throw new Error(`No such folder: ${parentPath(path)}`);
-      store.createFile(basename(path), parent.id, dataUrl, mime);
+      await blobStore.put(id, data, mime);
+      fsStore().updateFileContent(id, idbMarkerFor(id), data.length);
     },
 
     objectUrl: async (path) => {
       const node = nodeAt(path);
       if (!node || typeof node.content !== 'string') return undefined;
+      if (isIdbMarker(node.content)) return blobStore.objectUrl(node.id);
       if (node.content.startsWith('data:')) return node.content;
       // Text held verbatim still needs a URL an <object>/<img> can load.
-      return `data:${mimeForPath(path)};base64,${btoa(unescape(encodeURIComponent(node.content)))}`;
+      return textToDataUrl(path, node.content);
     },
   };
 };
 
-export const createBackend = async (): Promise<FsBackend> =>
-  isTauri() ? realBackend() : virtualBackend();
+export const createBackend = async (): Promise<FsBackend> => {
+  if (isTauri()) return realBackend();
+  const backend = virtualBackend();
+  try {
+    await migrateInlineBinaries();
+  } catch (err) {
+    console.error('[fs] Could not move inline binaries to IndexedDB:', err);
+  }
+  return backend;
+};
 
 let shared: Promise<FsBackend> | null = null;
 
@@ -554,8 +606,35 @@ export const thumbForPath = async (path: string, name = basename(path)): Promise
     const backend = await getBackend();
     const items = await backend.list(backend.parent(path));
     const item = items.find((i) => i.path === path) ?? { id: path, name, path, isDir: false, size: 0 };
-    return backend.thumb(item);
+    const url = backend.thumb(item);
+    if (!url) return undefined;
+    // Desktop icons are persisted, and a blob: URL dies with the page, so
+    // shrink the image to a small data URL. Where the canvas is tainted
+    // (asset: in Tauri) the original URL is stable across reloads anyway.
+    if (url.startsWith(IDB_MARKER) || url.startsWith('blob:') || url.startsWith('data:')) {
+      return (await shrinkToDataUrl(url, 128)) ?? (url.startsWith('blob:') ? undefined : url);
+    }
+    return url;
   } catch {
     return undefined;
   }
 };
+
+const shrinkToDataUrl = (url: string, edge: number): Promise<string | null> =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, edge / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
